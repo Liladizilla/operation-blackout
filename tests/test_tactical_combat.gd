@@ -58,6 +58,20 @@ func _run_tests() -> void:
     _check(scene.enemies[1]._combat_burst_size() > scene.enemies[2]._combat_burst_size(), "support units use longer controlled bursts than flankers")
     _check(scene.enemies[1]._combat_burst_pause() > scene.enemies[2]._combat_burst_pause(), "support units pause longer between bursts than flankers")
     _check(scene.enemies[2]._combat_reacquire_delay() < scene.enemies[1]._combat_reacquire_delay(), "flankers reacquire targets faster than support units")
+    var support_unit: Node = scene.enemies[1]
+    var maneuver_unit: Node = scene.enemies[2]
+    support_unit.state = "COMBAT"
+    support_unit.burst_shots_remaining = 2
+    _check(maneuver_unit._squad_has_supporting_fire(), "flankers detect an active support firing window")
+    maneuver_unit.state = "COMBAT"
+    _check(is_equal_approx(maneuver_unit._combat_movement_speed(), 2.65), "flankers accelerate during supporting fire")
+    support_unit.state = "SEARCH"
+    _check(not maneuver_unit._squad_has_supporting_fire(), "support units outside combat do not signal a firing window")
+    _check(is_equal_approx(maneuver_unit._combat_movement_speed(), 2.1), "flankers return to baseline speed when support fire stops")
+    support_unit.state = "COMBAT"
+    support_unit.burst_shots_remaining = 0
+    support_unit.muzzle_flash_timer = 0.0
+    maneuver_unit.state = "SEARCH"
     _check(scene.enemies[1]._combat_suppression_weight() > scene.enemies[2]._combat_suppression_weight(), "support units prioritize sustained suppression over maneuver speed")
     _check(scene.enemies[2]._should_take_flank_route(), "designated flankers own the squad's primary maneuver")
     _check(not scene.enemies[0]._should_take_flank_route(), "assault units maintain pressure instead of duplicating the flank")
