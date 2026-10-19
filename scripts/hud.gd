@@ -54,10 +54,20 @@ func _build() -> void:
     enemy_label.position = Vector2(28,88)
     root.add_child(enemy_label)
     health_label = _label("HEALTH  100", 18, Color(0.78,0.83,0.77))
-    health_label.position = Vector2(28, get_viewport().get_visible_rect().size.y - 94)
+    health_label.anchor_top = 1
+    health_label.anchor_bottom = 1
+    health_label.offset_left = 28
+    health_label.offset_right = 220
+    health_label.offset_top = -94
+    health_label.offset_bottom = -70
     root.add_child(health_label)
     stamina_label = _label("STAMINA  100%", 15, Color(0.72,0.78,0.70))
-    stamina_label.position = Vector2(28, get_viewport().get_visible_rect().size.y - 66)
+    stamina_label.anchor_top = 1
+    stamina_label.anchor_bottom = 1
+    stamina_label.offset_left = 28
+    stamina_label.offset_right = 220
+    stamina_label.offset_top = -66
+    stamina_label.offset_bottom = -44
     root.add_child(stamina_label)
     navigation_label = _label("INTEL  --m", 16, Color(0.88,0.76,0.50))
     navigation_label.anchor_left = 1
@@ -71,10 +81,12 @@ func _build() -> void:
     ammo_label = _label("30 / 120", 28, Color(0.92,0.90,0.82))
     ammo_label.anchor_left = 1
     ammo_label.anchor_right = 1
+    ammo_label.anchor_top = 1
+    ammo_label.anchor_bottom = 1
     ammo_label.offset_left = -240
     ammo_label.offset_right = -30
-    ammo_label.offset_top = get_viewport().get_visible_rect().size.y - 86
-    ammo_label.offset_bottom = get_viewport().get_visible_rect().size.y - 40
+    ammo_label.offset_top = -86
+    ammo_label.offset_bottom = -40
     ammo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
     root.add_child(ammo_label)
     center_dot = _label("+", 30, Color(0.88,0.86,0.76))
