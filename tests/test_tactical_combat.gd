@@ -47,6 +47,16 @@ func _run_tests() -> void:
     var cover_candidates: Array[Vector3] = enemy._get_district_cover_candidates()
     _check(cover_candidates.size() == 32, "ammo caches and service crates expose 32 tactical cover positions")
 
+    _check(scene.enemies[0].combat_role == "ASSAULT", "first hostile is assigned the close-pressure assault role")
+    _check(scene.enemies[1].combat_role == "SUPPORT", "second hostile is assigned the wider-lane support role")
+    _check(scene.enemies[2].combat_role == "FLANKER", "third hostile is assigned the mobile flanker role")
+    var assault_ranges: Vector2 = scene.enemies[0]._combat_engagement_ranges()
+    var support_ranges: Vector2 = scene.enemies[1]._combat_engagement_ranges()
+    _check(assault_ranges.y < support_ranges.y and assault_ranges.x < support_ranges.x, "assault and support roles use distinct engagement distances")
+    scene.enemies[1].set_combat_role("unknown")
+    _check(scene.enemies[1].combat_role == "RIFLEMAN", "unknown combat roles safely fall back to rifleman")
+    scene.enemies[1].set_combat_role("SUPPORT")
+
     var alert_source: Node = scene.enemies[0]
     var alert_receiver: Node = scene.enemies[1]
     var saved_receiver_position: Vector3 = alert_receiver.global_position
