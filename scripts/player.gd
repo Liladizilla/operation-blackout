@@ -41,6 +41,9 @@ var ads := false
 var damage_flash := 0.0
 var respawn_invulnerability := 0.0
 var recoil_recovery := 0.0
+var lean_amount := 0.0
+var lean_target := 0.0
+var lean_blocked := false
 var muzzle_light: OmniLight3D
 var muzzle_flash_mesh: MeshInstance3D
 var muzzle_flash_timer := 0.0
@@ -283,6 +286,7 @@ func _physics_process(delta: float) -> void:
     velocity.x = move_toward(velocity.x, direction.x * speed, 18.0 * delta)
     velocity.z = move_toward(velocity.z, direction.z * speed, 18.0 * delta)
     move_and_slide()
+    _update_lean(delta, Input.get_axis("lean_left", "lean_right"))
     var moving_on_foot := is_on_floor() and input_dir.length() > 0.1 and Vector2(velocity.x, velocity.z).length() > 0.45
     _update_footstep_noise(delta, moving_on_foot, sprinting)
     bob_time += delta * (velocity.length() * 0.65)
@@ -300,16 +304,34 @@ func _physics_process(delta: float) -> void:
     var reload_drop := sin(reload_progress * PI) * 0.14
     var weapon_base := Vector3(0.06, -0.17, -0.43) if ads else Vector3(0.28, -0.28, -0.55)
     weapon_root.position = Vector3(
-        weapon_base.x,
+        weapon_base.x + lean_amount * 0.18,
         weapon_base.y + sin(bob_time * 0.5) * (0.004 if ads else 0.008) + recoil * 0.65 - reload_drop,
         weapon_base.z + recoil * 1.8 + reload_drop * 0.3
     )
     weapon_root.rotation.x = recoil + reload_drop * 1.4
     weapon_root.rotation.y = lerpf(weapon_root.rotation.y, -input_dir.x * 0.035, delta * 8.0)
-    weapon_root.rotation.z = lerpf(weapon_root.rotation.z, -0.22 if is_reloading else 0.0, delta * 7.0)
-    camera.rotation.z = lerpf(camera.rotation.z, -input_dir.x * 0.006 + sin(bob_time * 0.4) * 0.0015, delta * 4.0)
+    var weapon_roll_target := (-0.22 if is_reloading else 0.0) - lean_amount * 0.16
+    weapon_root.rotation.z = lerpf(weapon_root.rotation.z, weapon_roll_target, delta * 7.0)
+    camera.rotation.z = lerpf(camera.rotation.z, -input_dir.x * 0.006 + sin(bob_time * 0.4) * 0.0015 - lean_amount * 0.12, delta * 4.0)
     if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and fire_cooldown <= 0 and not is_reloading:
         _fire()
+
+func _update_lean(delta: float, requested_axis: float) -> void:
+    var desired := clampf(requested_axis, -1.0, 1.0) * 0.32
+    lean_blocked = false
+    if absf(desired) > 0.01:
+        var height := 0.72 if is_prone else (1.12 if is_crouched else 1.35)
+        var origin := global_position + Vector3.UP * height
+        var target := origin + global_transform.basis.x * desired
+        var query := PhysicsRayQueryParameters3D.create(origin, target)
+        query.exclude = [get_rid()]
+        query.collision_mask = 1
+        if not get_world_3d().direct_space_state.intersect_ray(query).is_empty():
+            desired = 0.0
+            lean_blocked = true
+    lean_target = desired
+    lean_amount = lerpf(lean_amount, lean_target, clampf(delta * 10.0, 0.0, 1.0))
+    camera_pivot.position.x = lerpf(camera_pivot.position.x, lean_amount, clampf(delta * 12.0, 0.0, 1.0))
 
 func _update_footstep_noise(delta: float, moving: bool, sprinting: bool) -> void:
     footstep_noise_timer = maxf(0.0, footstep_noise_timer - delta)
