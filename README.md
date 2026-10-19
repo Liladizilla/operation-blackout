@@ -12,6 +12,7 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 - Health and directional damage feedback, brief respawn protection, headshot-aware hit confirmation, hold-to-recover intel objective gated behind enemy clearance, a marked extraction zone that requires a second hold interaction, pause menu, and mission-complete/replay screen
 - Combat HUD feedback with low-ammo warning colors, stamina percentage, a live intel distance/bearing indicator, and viewport-anchored layout; weapon view shifts into a tighter aim-down-sights position
 - Three interactable ammo caches let players resupply reserve ammunition, with one-time pickup behaviour and a hard reserve cap
+- Limited frag grenades can be thrown with G; the timed blast applies distance-falloff damage, reduced through solid cover, physical knockback, and a short explosion flash
 - Layered window bays, facade trim, side-wall details, service doors, battered street lamps, road gutters, damaged asphalt patches, scattered debris, and lightweight battlefield smoke
 - Expanded outer district with eight additional ruined perimeter buildings, a secondary service lane, utility crates, drainage details, and distributed rubble clusters; repeated materials are shared to keep the scene lightweight
 - Godot Compatibility renderer for integrated graphics
@@ -53,7 +54,7 @@ The project uses the Compatibility renderer, shared repeated materials, modest g
 
 ## Verification
 
-- **Automated gameplay checks:** test firing/hitscan damage, player damage and respawn, reload ammunition transfer, enemy damage/death, suppression response, enemy-count updates, the intel gate, mission-complete HUD state, the separate intel-to-exfil mission flow, respawn-protection checks, ammo-cache pickup/cap/HUD updates, stamina and ammunition HUD updates, intel rangefinder presence, hostile obstacle steering and cover-goal checks, facade rubble distribution, enemy muzzle-flash/hit-reaction feedback, viewport-anchored HUD layout, and expected outer-district environment props.
+- **Automated gameplay checks:** test firing/hitscan damage, player damage and respawn, reload ammunition transfer, enemy damage/death, suppression response, enemy-count updates, the intel gate, mission-complete HUD state, the separate intel-to-exfil mission flow, respawn-protection checks, ammo-cache pickup/cap/HUD updates, grenade inventory/throw/damage-falloff/knockback checks, stamina and ammunition HUD updates, intel rangefinder presence, hostile obstacle steering and cover-goal checks, facade rubble distribution, enemy muzzle-flash/hit-reaction feedback, viewport-anchored HUD layout, and expected outer-district environment props.
 - **Headless smoke test:** GitHub Actions imports the project and runs the main scene for 300 frames on Godot 4.7.2 before executing gameplay regressions.
 - **Still requires local verification:** visual quality, enemy behaviour in a live fight, mouse capture, pause-menu interaction, actual FPS, and GPU load.
 - GitHub Actions runs the headless scene test and gameplay regression suite on pushes and pull requests.

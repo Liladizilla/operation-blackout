@@ -47,6 +47,7 @@ func _run_tests() -> void:
     await physics_frame
 
     _check(scene.get_node_or_null("Player") != null, "player spawns")
+    _check(InputMap.has_action("throw_grenade"), "G grenade input action is registered")
     _check(scene.get_remaining_enemies() == 5, "five hostiles spawn")
     var visual_test_enemy: Node = scene.enemies[0]
     _check(visual_test_enemy.get_node_or_null("EnemyMuzzleFlash") != null, "hostiles have muzzle flash geometry")
@@ -73,6 +74,24 @@ func _run_tests() -> void:
     _check(mesh_count < 650, "procedural scene stays within mesh budget")
 
     var player := scene.get_node("Player")
+    _check(player.grenades == 2 and scene.hud.grenade_label.text == "FRAG  02", "player starts with two grenades and HUD inventory")
+    var grenades_before: int = player.grenades
+    player._throw_grenade()
+    var test_grenade: Node = scene.get_node_or_null("FragGrenade")
+    _check(player.grenades == grenades_before - 1 and scene.hud.grenade_label.text == "FRAG  01", "throwing a grenade consumes one inventory slot")
+    _check(is_instance_valid(test_grenade) and is_equal_approx(test_grenade._damage_for_distance(0.0), 85.0), "grenade uses full damage at the blast center")
+    _check(is_equal_approx(test_grenade._damage_for_distance(3.0), 42.5), "grenade damage falls off with distance")
+    if is_instance_valid(test_grenade):
+        test_grenade.set_process(false)
+        test_grenade.set_physics_process(false)
+        test_grenade.queue_free()
+    await process_frame
+    player.grenades = 0
+    scene.hud.set_grenades(0)
+    player._throw_grenade()
+    _check(player.grenades == 0 and scene.hud.grenade_label.text == "FRAG  00", "player cannot throw grenades after inventory is depleted")
+    player.grenades = 2
+    scene.hud.set_grenades(2)
     var ammo_caches: Array = scene.get_tree().get_nodes_in_group("ammo_caches")
     var first_cache: Node = ammo_caches[0]
     player.reserve = 0
@@ -165,6 +184,26 @@ func _run_tests() -> void:
         enemy.take_damage(1000.0)
     await process_frame
     _check(scene.get_remaining_enemies() == 0, "clearing all hostiles updates objective gate")
+
+    var blast_target := CharacterBody3D.new()
+    blast_target.set_script(load("res://scripts/enemy.gd"))
+    blast_target.position = Vector3(0.0, 0.95, 0.0)
+    blast_target.set_physics_process(false)
+    scene.add_child(blast_target)
+    await physics_frame
+    blast_target.global_position = Vector3(0.0, 0.95, 0.0)
+    var blast := RigidBody3D.new()
+    blast.set_script(load("res://scripts/grenade.gd"))
+    scene.add_child(blast)
+    blast.global_position = blast_target.global_position
+    blast.freeze = true
+    await physics_frame
+    blast.fuse_timer = 0.001
+    await physics_frame
+    _check(blast_target.health < 100.0, "grenade explosion damages a hostile inside the blast radius")
+    _check(blast_target.velocity.length() > 0.0, "grenade blast applies physical knockback")
+    blast_target.queue_free()
+    await process_frame
 
     var objective := scene.get_node_or_null("IntelObjective")
     if objective:
