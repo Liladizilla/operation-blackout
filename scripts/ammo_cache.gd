@@ -69,7 +69,9 @@ func _process(_delta: float) -> void:
     if used or not player_inside or not Input.is_action_just_pressed("interact"):
         return
     var scene := get_tree().current_scene
-    var player := scene.get("player") as Node if scene else null
+    var player: Node = null
+    if is_instance_valid(scene):
+        player = scene.get("player") as Node
     if not is_instance_valid(player):
         return
     var reserve := int(player.get("reserve"))
