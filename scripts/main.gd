@@ -139,7 +139,7 @@ func _building(pos: Vector3, size: Vector3, color: Color) -> void:
             var wy := pos.y + 2.0 + float(row) * 2.7
             if wy > pos.y + size.y - 0.8:
                 continue
-            var wz := pos.z + side * size.z * 0.5 + side * 0.045
+            var wz: float = pos.z + side * size.z * 0.5 + side * 0.045
             for col in range(2):
                 var wx := pos.x - size.x * 0.22 + float(col) * size.x * 0.44
                 _box("SideWindow", Vector3(wx, wy, wz), Vector3(0.06, 0.9, 1.0), Color(0.055, 0.065, 0.06), false)
