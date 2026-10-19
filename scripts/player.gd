@@ -9,6 +9,10 @@ var mouse_sensitivity := 0.0018
 const MAG_SIZE := 30
 const MAX_STAMINA := 8.0
 const STAMINA_REGEN_DELAY := 1.0
+const SPENT_CASING_SCRIPT = preload("res://scripts/spent_casing.gd")
+const BULLET_IMPACT_SCRIPT = preload("res://scripts/bullet_impact.gd")
+const MAX_SPENT_CASINGS := 8
+const MAX_BULLET_IMPACTS := 12
 const STAMINA_REGEN_RATE := 1.4
 
 var camera_pivot: Node3D
@@ -381,6 +385,7 @@ func _fire() -> void:
     if is_instance_valid(active_scene) and active_scene.has_method("report_noise"):
         active_scene.report_noise(global_position, 58.0, "GUNSHOT", self)
     ammo -= 1
+    _spawn_spent_casing()
     fire_cooldown = 0.095
     recoil = 0.055 if ads else 0.09
     weapon_root.rotation.y = randf_range(-0.018, 0.018)
@@ -410,6 +415,8 @@ func _fire() -> void:
             var killed: bool = damage_target.take_damage(34.0, hit.get("position", to), headshot)
             if hud and hud.has_method("flash_hitmarker"):
                 hud.flash_hitmarker(killed, headshot)
+        if not confirmed_hit and collider is StaticBody3D:
+            _spawn_bullet_impact(hit.get("position", to), hit.get("normal", Vector3.UP))
         _impact_spark(hit.get("position", to), hit.get("normal", Vector3.UP))
     var scene := get_tree().current_scene
     if is_instance_valid(scene) and scene.has_method("register_shot"):
@@ -421,6 +428,78 @@ func _fire() -> void:
     muzzle_flash_timer = 0.045
     if hud and hud.has_method("flash_muzzle"):
         hud.flash_muzzle()
+
+func _spawn_spent_casing() -> void:
+    var active_scene := get_tree().current_scene
+    if not is_instance_valid(active_scene) or not is_instance_valid(weapon_root):
+        return
+    var existing := get_tree().get_nodes_in_group("spent_casings")
+    while existing.size() >= MAX_SPENT_CASINGS:
+        var oldest := existing.pop_front() as Node
+        if is_instance_valid(oldest):
+            oldest.remove_from_group("spent_casings")
+            oldest.queue_free()
+
+    var casing := RigidBody3D.new()
+    casing.name = "SpentCasing"
+    casing.set_script(SPENT_CASING_SCRIPT)
+    casing.mass = 0.018
+    casing.gravity_scale = 1.0
+    casing.linear_damp = 1.4
+    casing.angular_damp = 2.0
+    casing.collision_layer = 0
+    casing.collision_mask = 1
+    var physics_material := PhysicsMaterial.new()
+    physics_material.friction = 0.62
+    physics_material.bounce = 0.12
+    casing.physics_material_override = physics_material
+
+    var casing_mesh := MeshInstance3D.new()
+    casing_mesh.name = "CasingMesh"
+    var cylinder := CylinderMesh.new()
+    cylinder.top_radius = 0.025
+    cylinder.bottom_radius = 0.025
+    cylinder.height = 0.09
+    cylinder.radial_segments = 8
+    casing_mesh.mesh = cylinder
+    casing_mesh.rotation.z = PI * 0.5
+    var brass := StandardMaterial3D.new()
+    brass.albedo_color = Color(0.58, 0.39, 0.13, 1.0)
+    brass.metallic = 0.72
+    brass.roughness = 0.36
+    brass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    casing_mesh.material_override = brass
+    casing.add_child(casing_mesh)
+
+    var collision := CollisionShape3D.new()
+    collision.name = "CollisionShape3D"
+    var casing_shape := CylinderShape3D.new()
+    casing_shape.radius = 0.025
+    casing_shape.height = 0.09
+    collision.shape = casing_shape
+    collision.rotation.z = PI * 0.5
+    casing.add_child(collision)
+
+    active_scene.add_child(casing)
+    casing.global_position = weapon_root.global_transform * Vector3(0.18, 0.04, 0.0)
+    casing.linear_velocity = camera.global_transform.basis.x * randf_range(1.2, 2.1) + Vector3.UP * randf_range(0.8, 1.6) + (-camera.global_transform.basis.z) * randf_range(-0.4, 0.4)
+    casing.angular_velocity = Vector3(randf_range(-18.0, 18.0), randf_range(-18.0, 18.0), randf_range(-18.0, 18.0))
+
+func _spawn_bullet_impact(pos: Vector3, normal: Vector3) -> void:
+    var active_scene := get_tree().current_scene
+    if not is_instance_valid(active_scene):
+        return
+    var existing := get_tree().get_nodes_in_group("bullet_impacts")
+    while existing.size() >= MAX_BULLET_IMPACTS:
+        var oldest := existing.pop_front() as Node
+        if is_instance_valid(oldest):
+            oldest.remove_from_group("bullet_impacts")
+            oldest.queue_free()
+    var mark := MeshInstance3D.new()
+    mark.name = "BulletImpactMark"
+    mark.set_script(BULLET_IMPACT_SCRIPT)
+    active_scene.add_child(mark)
+    mark.call("configure", pos, normal)
 
 func _impact_spark(pos: Vector3, normal: Vector3) -> void:
     var marker := MeshInstance3D.new()
