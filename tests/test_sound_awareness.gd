@@ -68,6 +68,14 @@ func _run_tests() -> void:
     _check(enemies[0].state == "INVESTIGATE" and enemies[0].alert_memory_timer > 0.0, "crouched footsteps alert a nearby guard")
     player.is_crouched = false
 
+    # A round striking nearby hard cover can reveal the impact location.
+    enemies[0].global_position = player.global_position + Vector3(3.0, -0.25, 0.0)
+    enemies[0].state = "SEARCH"
+    enemies[0].alert_memory_timer = 0.0
+    var heard_impact: int = scene.call("report_noise", player.global_position, 24.0, "IMPACT", player)
+    _check(heard_impact >= 1, "nearby enemies can hear a bullet strike on hard cover")
+    _check(enemies[0].state == "INVESTIGATE" and enemies[0].alert_memory_timer >= 2.8, "impact noise gives guards a short investigation memory")
+
     # A loud shot carries far enough to put all five enemies on alert.
     for index in range(enemies.size()):
         enemies[index].global_position = original_enemy_positions[index]
