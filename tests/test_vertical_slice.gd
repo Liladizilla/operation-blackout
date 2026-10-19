@@ -58,6 +58,23 @@ func _run_tests() -> void:
     scene.hud.update_stamina(2.0, 8.0)
     _check(scene.hud.stamina_label.text.contains("025%"), "stamina HUD reflects depleted stamina")
     scene.hud.update_stamina(8.0, 8.0)
+    player := scene.get_node("Player")
+    player.velocity = Vector3.ZERO
+    player.is_crouched = false
+    player.is_prone = false
+    player.stamina = 8.0
+    var standing_spread: float = player._current_weapon_spread()
+    player.is_crouched = true
+    var crouched_spread: float = player._current_weapon_spread()
+    player.is_crouched = false
+    player.is_prone = true
+    var prone_spread: float = player._current_weapon_spread()
+    player.is_prone = false
+    player.velocity = Vector3(0.0, 0.0, -6.0)
+    var moving_spread: float = player._current_weapon_spread()
+    player.velocity = Vector3.ZERO
+    _check(crouched_spread < standing_spread and prone_spread < crouched_spread, "lower stances improve weapon stability")
+    _check(moving_spread > standing_spread, "movement increases weapon spread")
     scene.hud.set_ammo(5, 30)
     _check(scene.hud.ammo_label.text == "05 / 030", "ammo HUD formats low ammunition")
     _check(scene.get_node_or_null("EnvironmentDetails") != null, "outer district dressing is attached")
