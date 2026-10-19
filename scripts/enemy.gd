@@ -144,13 +144,15 @@ func _physics_process(delta: float) -> void:
                 cover_goal = _choose_cover(player.global_position)
                 cover_timer = 1.6
         elif sees_player:
+            if state != "COMBAT":
+                strafe_sign = _choose_flank_sign(player.global_position)
             state = "COMBAT"
             last_known_position = player.global_position
         elif distance < 42.0:
             state = "INVESTIGATE"
         else:
             state = "SEARCH"
-        if distance < 15.0 and randf() < 0.28:
+        if distance < 15.0 and randf() < 0.12:
             strafe_sign *= -1.0
         if not sees_player and suppression_timer <= 0.0 and cover_timer <= 0.0:
             cover_goal = _choose_cover(last_known_position if last_known_position != Vector3.ZERO else player.global_position)
@@ -202,6 +204,33 @@ func _physics_process(delta: float) -> void:
     velocity.x = move_toward(velocity.x, target_dir.x * 2.1, delta * 4.0)
     velocity.z = move_toward(velocity.z, target_dir.z * 2.1, delta * 4.0)
     move_and_slide()
+
+func _choose_flank_sign(threat_position: Vector3) -> float:
+    # Prefer the side with fewer nearby allies so hostiles spread their angles
+    # instead of stacking on the same firing lane.
+    var to_threat := threat_position - global_position
+    to_threat.y = 0.0
+    if to_threat.length_squared() < 0.01:
+        return strafe_sign
+    var right := Vector3(-to_threat.z, 0.0, to_threat.x).normalized()
+    var left_count := 0
+    var right_count := 0
+    for ally in get_tree().get_nodes_in_group("enemies"):
+        if ally == self or not is_instance_valid(ally):
+            continue
+        if not ally is Node3D:
+            continue
+        var offset: Vector3 = (ally as Node3D).global_position - global_position
+        offset.y = 0.0
+        if offset.length() > 10.0:
+            continue
+        if offset.dot(right) > 0.0:
+            right_count += 1
+        else:
+            left_count += 1
+    if left_count == right_count:
+        return strafe_sign
+    return 1.0 if right_count < left_count else -1.0
 
 func _search_direction(search_target: Vector3) -> Vector3:
     var to_search := search_target - global_position
