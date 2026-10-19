@@ -406,6 +406,7 @@ func _spawn_ammo_caches() -> void:
 
 func _spawn_enemies() -> void:
     var positions := [Vector3(-8,0,-13), Vector3(8,0,-24), Vector3(17,0,1), Vector3(-17,0,16), Vector3(3,0,-38)]
+    var roles := ["ASSAULT", "SUPPORT", "FLANKER", "RIFLEMAN", "FLANKER"]
     for i in range(positions.size()):
         var enemy := CharacterBody3D.new()
         enemy.name = "Vanguard_%02d" % (i+1)
@@ -413,6 +414,7 @@ func _spawn_enemies() -> void:
         enemy.position = positions[i] + Vector3(0,0.95,0)
         enemy.set_meta("arena", self)
         add_child(enemy)
+        enemy.set_combat_role(roles[i])
         enemy.set_difficulty(difficulty)
         enemies.append(enemy)
 
