@@ -110,6 +110,9 @@ func _run_tests() -> void:
     _check(flank_goal.distance_to(alert_receiver.global_position) > 1.5, "flank goal breaks the current firing lane")
     alert_source.flank_goal = flank_goal
     _check(alert_receiver._flank_ally_spacing_penalty(flank_goal) > alert_receiver._flank_ally_spacing_penalty(Vector3(40.0, 0.0, 40.0)), "flank selection discourages teammates from converging on the same flank goal")
+    var shared_flank_score: float = alert_receiver._score_flank_candidate(flank_goal, 8.0)
+    var open_flank_score: float = alert_receiver._score_flank_candidate(Vector3(40.0, 0.0, 40.0), 8.0)
+    _check(shared_flank_score < open_flank_score, "flank route scoring strongly avoids a teammate's chosen flank position")
     alert_receiver.global_position = alert_source.global_position + Vector3(1.0, 0.0, 0.0)
     var separation_direction: Vector3 = alert_receiver._apply_ally_separation(Vector3.FORWARD)
     _check(separation_direction.dot(Vector3.RIGHT) > 0.0, "movement steering creates lateral separation from a nearby teammate")
