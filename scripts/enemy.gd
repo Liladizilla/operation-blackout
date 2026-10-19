@@ -556,6 +556,9 @@ func _physics_process(delta: float) -> void:
                 cover_timer = _cover_commitment_duration()
         elif sees_player:
             if state != "COMBAT":
+                var mission_scene := get_tree().current_scene
+                if mission_scene and mission_scene.has_method("report_hostile_contact"):
+                    mission_scene.report_hostile_contact(self)
                 _broadcast_alert(player.global_position)
                 # Reacquire deliberately after losing sight or leaving cover.
                 fire_timer = maxf(fire_timer, _combat_reacquire_delay())
