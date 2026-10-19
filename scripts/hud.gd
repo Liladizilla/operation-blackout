@@ -15,6 +15,8 @@ var player_ref: Node
 var pause_panel: PanelContainer
 var sensitivity_slider: HSlider
 var sensitivity_value_label: Label
+var briefing_panel: PanelContainer
+var briefing_backdrop: ColorRect
 var hitmarker_timer := 0.0
 var damage_direction_label: Label
 var damage_direction_timer := 0.0
@@ -33,6 +35,7 @@ func initialize(scene: Node, player: Node) -> void:
     health_label.text = "HEALTH  %03d" % int(player.get("health"))
     if scene.has_method("get_remaining_enemies"):
         set_enemy_count(scene.get_remaining_enemies())
+    show_briefing()
 
 func _build() -> void:
     root = Control.new()
@@ -298,6 +301,86 @@ func flash_muzzle() -> void:
     var c := muzzle_flash.color
     c.a = 0.06
     muzzle_flash.color = c
+
+func is_briefing_open() -> bool:
+    return is_instance_valid(briefing_panel)
+
+func show_briefing() -> void:
+    if is_briefing_open():
+        return
+    get_tree().paused = true
+    Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+    briefing_backdrop = ColorRect.new()
+    briefing_backdrop.name = "MissionBriefingBackdrop"
+    briefing_backdrop.color = Color(0.015, 0.02, 0.018, 0.88)
+    briefing_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    briefing_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+    root.add_child(briefing_backdrop)
+
+    briefing_panel = PanelContainer.new()
+    briefing_panel.name = "MissionBriefingPanel"
+    briefing_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+    briefing_panel.offset_left = -310
+    briefing_panel.offset_right = 310
+    briefing_panel.offset_top = -220
+    briefing_panel.offset_bottom = 220
+    var panel_style := StyleBoxFlat.new()
+    panel_style.bg_color = Color(0.035, 0.045, 0.04, 0.98)
+    panel_style.border_color = Color(0.62, 0.37, 0.14, 1.0)
+    panel_style.set_border_width_all(1)
+    panel_style.set_content_margin_all(24.0)
+    panel_style.corner_radius_top_left = 3
+    panel_style.corner_radius_top_right = 3
+    panel_style.corner_radius_bottom_left = 3
+    panel_style.corner_radius_bottom_right = 3
+    briefing_panel.add_theme_stylebox_override("panel", panel_style)
+    var box := VBoxContainer.new()
+    box.add_theme_constant_override("separation", 10)
+    briefing_panel.add_child(box)
+
+    var eyebrow := _label("FIELD OPERATIONS  /  MISSION 01", 13, Color(0.82, 0.48, 0.20))
+    box.add_child(eyebrow)
+    var title := _label("OPERATION BLACKOUT", 30, Color(0.91, 0.88, 0.78))
+    box.add_child(title)
+    var subtitle := _label("FIRST LIGHT  /  INTERCEPT RECOVERY", 16, Color(0.72, 0.77, 0.69))
+    box.add_child(subtitle)
+    var divider := ColorRect.new()
+    divider.custom_minimum_size = Vector2(0, 1)
+    divider.color = Color(0.36, 0.29, 0.19, 0.9)
+    box.add_child(divider)
+    var briefing := _label("Hostile elements occupy the ruined district. Clear the area, recover the intercepted intelligence, then reach the extraction beacon.", 16, Color(0.82, 0.84, 0.78))
+    briefing.custom_minimum_size = Vector2(520, 58)
+    briefing.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    box.add_child(briefing)
+    var objectives := _label("01   ELIMINATE ALL HOSTILES\n02   HOLD F TO RECOVER INTEL\n03   REACH EXFIL AND HOLD F TO CONFIRM", 14, Color(0.89, 0.75, 0.52))
+    objectives.custom_minimum_size = Vector2(520, 66)
+    box.add_child(objectives)
+    var controls := _label("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE\nLMB FIRE   RMB AIM   R RELOAD   G GRENADE", 12, Color(0.65, 0.70, 0.65))
+    controls.custom_minimum_size = Vector2(520, 40)
+    box.add_child(controls)
+    var deploy := Button.new()
+    deploy.name = "DeployButton"
+    deploy.text = "DEPLOY  /  BEGIN OPERATION"
+    deploy.custom_minimum_size = Vector2(300, 42)
+    deploy.pressed.connect(dismiss_briefing)
+    box.add_child(deploy)
+    root.add_child(briefing_panel)
+
+func dismiss_briefing() -> void:
+    if is_instance_valid(briefing_panel):
+        briefing_panel.queue_free()
+    if is_instance_valid(briefing_backdrop):
+        briefing_backdrop.queue_free()
+    briefing_panel = null
+    briefing_backdrop = null
+    get_tree().paused = false
+    Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func _input(event: InputEvent) -> void:
+    if not is_briefing_open():
+        return
+    if event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_ENTER or event.keycode == KEY_SPACE):
+        dismiss_briefing()
 
 func hide_pause() -> void:
     if is_instance_valid(pause_panel):
