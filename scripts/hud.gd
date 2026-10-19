@@ -387,8 +387,8 @@ func show_briefing() -> void:
     var objectives := _label("01   ELIMINATE ALL HOSTILES\n02   HOLD F TO RECOVER INTEL\n03   REACH EXFIL AND HOLD F TO CONFIRM", 14, Color(0.89, 0.75, 0.52))
     objectives.custom_minimum_size = Vector2(520, 66)
     box.add_child(objectives)
-    var controls := _label("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   Q/E LEAN\nLMB FIRE   RMB AIM   R RELOAD   G GRENADE", 12, Color(0.65, 0.70, 0.65))
-    controls.custom_minimum_size = Vector2(520, 40)
+    var controls := _label("KEYBOARD: WASD MOVE / SHIFT SPRINT / CTRL CROUCH / Z PRONE / Q,E LEAN\nMOUSE: LMB FIRE / RMB AIM / R RELOAD / F INTERACT / G GRENADE\nCONTROLLER: LS MOVE / RS LOOK / RT FIRE / LT AIM / A JUMP / B CROUCH / X RELOAD / Y FRAG / LB USE", 11, Color(0.65, 0.70, 0.65))
+    controls.custom_minimum_size = Vector2(520, 58)
     box.add_child(controls)
 
     var difficulty_row := HBoxContainer.new()
@@ -463,15 +463,15 @@ func show_pause() -> void:
     pause_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
     pause_panel.offset_left = -210
     pause_panel.offset_right = 210
-    pause_panel.offset_top = -180
-    pause_panel.offset_bottom = 180
+    pause_panel.offset_top = -220
+    pause_panel.offset_bottom = 220
     var box := VBoxContainer.new()
     box.add_theme_constant_override("separation", 8)
     pause_panel.add_child(box)
     var title := _label("PAUSED", 28, Color(0.9,0.82,0.65))
     title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     box.add_child(title)
-    var controls := _label("WASD MOVE  /  SHIFT SPRINT  /  CTRL CROUCH  /  Z PRONE  /  Q/E LEAN\nLMB FIRE  /  RMB AIM  /  R RELOAD  /  F INTERACT  /  G GRENADE", 12, Color(0.70,0.73,0.68))
+    var controls := _label("KEYBOARD: WASD MOVE / SHIFT SPRINT / CTRL CROUCH / Z PRONE / Q,E LEAN\nMOUSE: LMB FIRE / RMB AIM   R RELOAD / F INTERACT / G GRENADE\nPAD: LS MOVE / RS LOOK / RT FIRE / LT AIM / A JUMP / B CROUCH / X RELOAD / Y FRAG\nLB INTERACT / L3 SPRINT / R3 PRONE / START PAUSE", 11, Color(0.70,0.73,0.68))
     controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     box.add_child(controls)
     sensitivity_value_label = _label("MOUSE SENSITIVITY", 14, Color(0.82,0.84,0.78))
