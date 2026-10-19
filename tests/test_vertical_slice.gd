@@ -22,8 +22,8 @@ func _run_tests() -> void:
         return
 
     var scene := packed.instantiate()
-    current_scene = scene
     root.add_child(scene)
+    current_scene = scene
     await process_frame
     await physics_frame
 
