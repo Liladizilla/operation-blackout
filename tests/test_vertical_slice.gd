@@ -251,6 +251,9 @@ func _run_tests() -> void:
     await process_frame
     _check(scene.get_node_or_null("ExfilZone") == null, "holding interact completes extraction and removes the zone")
     _check(scene.mission_complete and scene.hud.objective_label.text.contains("EXFILTRATION COMPLETE"), "extraction completes the mission and updates HUD")
+    _check(scene.hud.mission_stats_label != null and scene.hud.mission_stats_label.text.contains("HOSTILES NEUTRALIZED 5"), "mission debrief reports hostiles eliminated")
+    _check(scene.hud.mission_stats_label.text.contains("FRAGS 1") and scene.hud.mission_stats_label.text.contains("AMMO CACHES 2"), "mission debrief reports grenade and resupply usage")
+    _check(paused, "mission completion pauses gameplay behind the debrief")
 
     print("RESULT: ", passed, " checks passed; failed=", failed)
     quit(1 if failed else 0)
