@@ -442,6 +442,10 @@ func _physics_process(delta: float) -> void:
                 cover_timer = 1.0
             state = "REPOSITION"
             suppression_timer = maxf(suppression_timer, 0.35)
+        elif state == "REPOSITION" and cover_timer > 0.0:
+            # Finish the committed move and briefly hold cover even if the near-miss timer expires.
+            # Otherwise visible enemies immediately abandon cover and repeat the same exposed exchange.
+            state = "REPOSITION"
         elif suppression_timer > 0.0:
             state = "REPOSITION"
             # Preserve the actual source of incoming fire; do not assume it is the player.
