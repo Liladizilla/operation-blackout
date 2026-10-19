@@ -78,6 +78,11 @@ func _run_tests() -> void:
     var lamp_collision_shapes := first_lamp.find_children("*", "CollisionShape3D", true, false) if first_lamp != null else []
     _check(first_lamp != null and not lamp_collision_shapes.is_empty(), "street lamp shafts have physical collision")
     _check(scene.get_tree().get_nodes_in_group("utility_cables").size() == 12, "overhead utility cables span between lamp poles in sagging segments")
+    _check(scene.get_tree().get_nodes_in_group("vehicle_props").size() == 3, "street vehicles use separate detailed assemblies")
+    _check(scene.get_tree().get_nodes_in_group("vehicle_collision").size() == 12, "all four wheels on each vehicle have physical collision")
+    var vehicle_nodes := scene.get_tree().get_nodes_in_group("vehicle_props")
+    var first_vehicle := vehicle_nodes[0] as Node3D if not vehicle_nodes.is_empty() else null
+    _check(first_vehicle != null and first_vehicle.find_child("FrontWindshield", true, false) != null and first_vehicle.find_child("FrontGrille", true, false) != null, "vehicles include distinct glass, grille and body details")
     var skyline_environment: WorldEnvironment = scene.world_environment as WorldEnvironment
     _check(skyline_environment != null and skyline_environment.environment.fog_enabled and skyline_environment.environment.fog_density >= 0.008, "depth fog softens the distant skyline")
     _check(skyline_environment.environment.sky.sky_material is ShaderMaterial, "battlefield sky uses a dedicated procedural sky shader")
@@ -111,8 +116,8 @@ func _run_tests() -> void:
     var node_count := _count_nodes(scene)
     var mesh_count := _count_meshes(scene)
     print("PROFILE: scene_nodes=", node_count, " mesh_instances=", mesh_count)
-    _check(node_count < 2000, "procedural scene stays within node budget")
-    _check(mesh_count < 1000, "procedural scene stays within mesh budget after adding character equipment and horizon detail")
+    _check(node_count < 2200, "procedural scene stays within node budget")
+    _check(mesh_count < 1200, "procedural scene stays within mesh budget after adding vehicle, character and horizon detail")
 
     var player := scene.get_node("Player")
     var audio_fx = load("res://scripts/audio_fx.gd")
