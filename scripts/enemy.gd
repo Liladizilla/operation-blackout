@@ -767,6 +767,12 @@ func _choose_flank_goal() -> Vector3:
 func _score_flank_candidate(candidate: Vector3, travel: float) -> float:
     var score := -travel * 0.35 + randf_range(-0.25, 0.25)
     score -= _flank_ally_spacing_penalty(candidate)
+    score -= _flank_lane_occupancy_penalty(candidate)
+    # Keep a useful route instead of oscillating between nearby alternatives every think cycle.
+    if flank_goal != Vector3.ZERO and global_position.distance_to(flank_goal) > 1.5:
+        var goal_reuse_distance := candidate.distance_to(flank_goal)
+        if goal_reuse_distance < 3.5:
+            score -= (3.5 - goal_reuse_distance) * 1.6
     var space := get_world_3d().direct_space_state
     var origin := global_position + Vector3.UP * 0.9
     var flat_to_candidate := candidate - global_position
@@ -784,6 +790,36 @@ func _score_flank_candidate(candidate: Vector3, travel: float) -> float:
     if not space.intersect_ray(cover_ray).is_empty():
         score += 1.8
     return score
+
+func _flank_lane_occupancy_penalty(candidate: Vector3) -> float:
+    if not is_instance_valid(player):
+        return 0.0
+    var side_axis := player.global_transform.basis.x
+    side_axis.y = 0.0
+    if side_axis.length_squared() < 0.01:
+        side_axis = Vector3.RIGHT
+    side_axis = side_axis.normalized()
+    var candidate_offset := candidate - player.global_position
+    candidate_offset.y = 0.0
+    var candidate_side := candidate_offset.dot(side_axis)
+    if absf(candidate_side) < 0.75:
+        return 0.0
+    var penalty := 0.0
+    for node in get_tree().get_nodes_in_group("enemies"):
+        if node == self or not is_instance_valid(node) or not node is Node3D:
+            continue
+        var ally := node as Node3D
+        if float(ally.get("health")) <= 0.0:
+            continue
+        var ally_goal: Vector3 = ally.get("flank_goal")
+        if ally_goal == Vector3.ZERO:
+            continue
+        var ally_offset := ally_goal - player.global_position
+        ally_offset.y = 0.0
+        var ally_side := ally_offset.dot(side_axis)
+        if absf(ally_side) >= 0.75 and signf(candidate_side) == signf(ally_side):
+            penalty += 2.2
+    return penalty
 
 func _movement_ray_exclusions() -> Array[RID]:
     var exclusions: Array[RID] = [get_rid()]
