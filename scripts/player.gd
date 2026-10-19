@@ -186,7 +186,7 @@ func _physics_process(delta: float) -> void:
         speed = SPRINT_SPEED
         stamina = maxf(0.0, stamina - delta)
     else:
-        stamina = minf(8.0, stamina + delta * 1.4)
+        stamina = minf(8.0, stamina + delta * (2.0 if input_dir.length() < 0.1 else 1.25))
     if not is_on_floor():
         velocity.y -= 9.8 * delta
     elif Input.is_action_just_pressed("jump") and not is_prone:
@@ -246,7 +246,7 @@ func _fire() -> void:
     weapon_root.rotation.y = randf_range(-0.018, 0.018)
     camera_pivot.rotation.x = clampf(camera_pivot.rotation.x - recoil * (0.48 if ads else 0.7), deg_to_rad(-85), deg_to_rad(85))
     pitch = camera_pivot.rotation.x
-    var spread := 0.002 if ads else 0.009
+    var spread := _current_weapon_spread()
     var dir := -camera.global_transform.basis.z
     dir += camera.global_transform.basis.x * randf_range(-spread, spread)
     dir += camera.global_transform.basis.y * randf_range(-spread, spread)
@@ -276,6 +276,15 @@ func _fire() -> void:
     muzzle_flash_timer = 0.045
     if hud and hud.has_method("flash_muzzle"):
         hud.flash_muzzle()
+
+func _current_weapon_spread() -> float:
+    # Moving shots are less stable; crouching and prone reduce weapon sway.
+    var base_spread := 0.002 if ads else 0.009
+    var horizontal_speed := Vector2(velocity.x, velocity.z).length()
+    var movement_penalty := clampf(horizontal_speed / SPRINT_SPEED, 0.0, 1.0) * (0.012 if ads else 0.018)
+    var stance_multiplier := 0.62 if is_prone else (0.78 if is_crouched else 1.0)
+    var fatigue_penalty := 0.004 if stamina <= 1.0 else 0.0
+    return maxf(0.001, (base_spread + movement_penalty + fatigue_penalty) * stance_multiplier)
 
 func _impact_spark(pos: Vector3, normal: Vector3) -> void:
     var marker := MeshInstance3D.new()
