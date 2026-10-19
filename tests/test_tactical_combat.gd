@@ -67,6 +67,16 @@ func _run_tests() -> void:
     _check(alert_receiver.last_known_position.is_equal_approx(second_alert), "broadcast alerts update nearby teammates")
     _check(alert_source.alert_broadcast_timer > 0.0, "alert broadcasts are rate limited")
 
+    alert_receiver.state = "SEARCH"
+    alert_receiver.suppression_timer = 0.0
+    alert_receiver.cover_timer = 0.0
+    alert_receiver.alert_memory_timer = 0.0
+    var suppression_source := alert_source.global_position + Vector3(5.0, 0.0, 2.0)
+    alert_receiver.apply_suppression(suppression_source)
+    _check(alert_receiver.suppression_timer >= 0.85, "near-miss suppression creates a short tactical reaction window")
+    _check(alert_receiver.state == "REPOSITION", "suppressed hostiles break from their current firing lane")
+    _check(alert_receiver.last_known_position.is_equal_approx(suppression_source), "suppressed hostiles remember the source of incoming fire")
+
     alert_receiver.global_position = saved_receiver_position
     alert_receiver.set_physics_process(true)
 
