@@ -1,6 +1,8 @@
 extends CharacterBody3D
 
 var health := 100.0
+var is_dead := false
+var death_timer := 0.0
 var player: Node3D
 var state := "SEARCH"
 var think_timer := 0.0
@@ -123,6 +125,12 @@ func _ready() -> void:
     add_to_group("enemies")
 
 func _physics_process(delta: float) -> void:
+    if is_dead:
+        if not get_tree().paused:
+            death_timer -= delta
+            if death_timer <= 0.0:
+                queue_free()
+        return
     if get_tree().paused:
         return
     if muzzle_flash_timer > 0.0:
@@ -340,6 +348,8 @@ func _show_muzzle_flash() -> void:
     muzzle_flash_timer = 0.055
 
 func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot: bool = false) -> bool:
+    if is_dead:
+        return true
     health -= amount * (3.0 if headshot else 1.0)
     # Incoming fire alerts the unit and forces a short break from its current firing lane.
     if is_instance_valid(player):
@@ -356,10 +366,23 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot:
     else:
         body_material.albedo_color = Color(0.08,0.09,0.08)
         hit_flash_timer = 0.0
-    if health <= 0:
+    if health <= 0.0:
+        is_dead = true
+        death_timer = 22.0
+        collision_mask = 0
+        remove_from_group("enemies")
+        var head_area := get_node_or_null("HeadHitZone") as Area3D
+        if is_instance_valid(head_area):
+            head_area.collision_layer = 0
+            head_area.collision_mask = 0
+        velocity = Vector3.ZERO
+        var fall_direction := -1.0 if randf() < 0.5 else 1.0
+        var fall_tween := create_tween()
+        fall_tween.set_parallel(true)
+        fall_tween.tween_property(self, "rotation:z", fall_direction * PI * 0.5, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+        fall_tween.tween_property(self, "global_position:y", 0.38, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
         var scene := get_tree().current_scene
         if scene and scene.has_method("enemy_killed"):
             scene.enemy_killed(self)
-        queue_free()
         return true
     return false
