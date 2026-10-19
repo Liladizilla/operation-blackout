@@ -864,6 +864,9 @@ func hear_alert(threat_position: Vector3) -> void:
 
 func _complete_investigation() -> void:
     # Reaching a noise location should trigger a brief scan, not an instant return to patrol.
+    var mission_scene := get_tree().current_scene
+    if mission_scene and mission_scene.has_method("report_hostile_search"):
+        mission_scene.report_hostile_search(self)
     state = "SEARCH"
     alert_memory_timer = 0.0
     patrol_pause_timer = maxf(patrol_pause_timer, 1.35)
