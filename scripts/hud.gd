@@ -449,9 +449,9 @@ func dismiss_briefing() -> void:
 func _input(event: InputEvent) -> void:
     if not is_briefing_open():
         return
-    if event.is_action_pressed("jump") and not (event is InputEventKey and event.echo):
+    if event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_ENTER or event.keycode == KEY_SPACE):
         dismiss_briefing()
-    elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ENTER:
+    elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_A:
         dismiss_briefing()
 
 func hide_pause() -> void:
