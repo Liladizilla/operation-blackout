@@ -835,6 +835,17 @@ func _cover_ally_spacing_penalty(candidate: Vector3) -> float:
 func _cover_approach_scale(distance: float) -> float:
     return clampf(distance / 3.0, 0.0, 1.0)
 
+func _has_cover_from_threat(threat_position: Vector3, candidate: Vector3) -> bool:
+    var threat_eye := threat_position + Vector3.UP * 1.25
+    var cover_point := candidate + Vector3.UP * 1.0
+    if threat_eye.distance_to(cover_point) < 0.5:
+        return false
+    var cover_ray := PhysicsRayQueryParameters3D.create(threat_eye, cover_point)
+    # Only world geometry should count as cover; players and squadmates are not cover.
+    cover_ray.exclude = _movement_ray_exclusions()
+    cover_ray.collision_mask = 1
+    return not get_world_3d().direct_space_state.intersect_ray(cover_ray).is_empty()
+
 func _choose_cover(threat_position: Vector3) -> Vector3:
     # Candidate positions sit near concrete barriers and wreckage in the arena.
     # Stand beside cover rather than targeting the solid center of each obstacle.
@@ -864,11 +875,11 @@ func _choose_cover(threat_position: Vector3) -> Vector3:
         # Avoid cycling straight back to the last position when other cover is available.
         if has_last_cover_goal and candidate.distance_to(last_cover_goal) < 4.5:
             score -= 12.0
-        var cover_ray := PhysicsRayQueryParameters3D.create(threat_position + Vector3.UP * 1.25, candidate + Vector3.UP * 1.0)
-        cover_ray.exclude = [get_rid()]
-        var obstruction := get_world_3d().direct_space_state.intersect_ray(cover_ray)
-        if not obstruction.is_empty():
-            score += 5.0
+        # Prefer positions with real world geometry between the hostile and the threat.
+        if _has_cover_from_threat(threat_position, candidate):
+            score += 8.0
+        else:
+            score -= 3.0
         if score > best_score:
             best_score = score
             best = candidate
