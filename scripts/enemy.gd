@@ -290,7 +290,9 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot:
     if is_instance_valid(player):
         last_known_position = player.global_position
         state = "REPOSITION"
-        suppression_timer = 1.1 if headshot else 0.75
+        # Repeated hits keep the unit suppressed long enough to actually break
+        # the firing lane instead of snapping straight back into a shootout.
+        suppression_timer = maxf(suppression_timer, 1.25 if headshot else 0.9)
         cover_timer = 0.0
         think_timer = 0.0
     if health > 0.0:
