@@ -249,7 +249,7 @@ func _build_distant_skyline() -> void:
     for side in [-1.0, 1.0]:
         for row in range(9):
             var depth := -62.0 + float(row) * 14.0
-            var height := 9.0 + float((row * 7 + int(side * 3.0)) % 8) * 2.1
+            var height := 9.0 + float(absi(row * 7 + int(side * 3.0)) % 8) * 2.1
             var width := 5.5 + float((row * 3) % 5) * 1.7
             var x := side * (53.0 + float((row * 11) % 9))
             var z := depth + float((row % 3) - 1) * 4.0
