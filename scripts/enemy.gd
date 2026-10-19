@@ -442,7 +442,7 @@ func _physics_process(delta: float) -> void:
                 cover_timer = 1.0
             state = "REPOSITION"
             suppression_timer = maxf(suppression_timer, 0.35)
-        elif state == "REPOSITION" and cover_timer > 0.0:
+        elif _should_hold_committed_cover():
             # Finish the committed move and briefly hold cover even if the near-miss timer expires.
             # Otherwise visible enemies immediately abandon cover and repeat the same exposed exchange.
             state = "REPOSITION"
@@ -871,6 +871,9 @@ func _cover_ally_spacing_penalty(candidate: Vector3) -> float:
         if body_distance < 2.6:
             penalty += (2.6 - body_distance) * 1.2
     return penalty
+
+func _should_hold_committed_cover() -> bool:
+    return state == "REPOSITION" and cover_timer > 0.0
 
 func _cover_approach_scale(distance: float) -> float:
     return clampf(distance / 3.0, 0.0, 1.0)
