@@ -57,8 +57,14 @@ func _run_tests() -> void:
     _check(player.ammo == 29, "firing still consumes exactly one round")
     var casings: Array = get_nodes_in_group("spent_casings")
     var impacts: Array = get_nodes_in_group("bullet_impacts")
+    var impact_audio: Array = get_nodes_in_group("impact_audio")
     _check(casings.size() == 1, "a fired round ejects one spent casing")
     _check(impacts.size() == 1, "a hit on solid world geometry creates an impact mark")
+    _check(impact_audio.size() == 1, "solid bullet impacts create a positional audio emitter")
+    if not impact_audio.is_empty():
+        var emitter := impact_audio[0] as AudioStreamPlayer3D
+        _check(emitter.stream is AudioStreamWAV, "impact audio is synthesized without downloaded assets")
+        _check(emitter.max_distance >= 25.0 and emitter.volume_db <= -6.0, "impact sound has a bounded, local hearing range")
 
     if not casings.is_empty():
         var casing := casings[0] as RigidBody3D
@@ -72,6 +78,10 @@ func _run_tests() -> void:
         _check((impact.mesh as BoxMesh).size.z < 0.02, "impact mark is thin enough to sit against a surface")
         _check(impact.get_node_or_null("CollisionShape3D") == null, "impact mark adds no invisible collision")
         _check(is_instance_valid(impact.material_override as StandardMaterial3D), "impact mark has its own surface material")
+
+    for index in range(12):
+        player._play_impact_audio(Vector3(float(index), 1.0, -2.0))
+    _check(get_nodes_in_group("impact_audio").size() <= 8, "impact audio emitters stay within the audio budget")
 
     for index in range(15):
         player._spawn_bullet_impact(Vector3(float(index), 1.0, -2.0), Vector3.UP)
