@@ -80,13 +80,24 @@ func _explode() -> void:
         if collider.is_in_group("enemies") and collider.has_method("take_damage"):
             damage *= _line_of_sight_factor(space, collider)
             collider.take_damage(damage, global_position, false)
+            _apply_blast_impulse(collider)
             damaged[instance_id] = true
         elif collider.is_in_group("player") and collider.has_method("apply_damage"):
             damage *= _line_of_sight_factor(space, collider)
             collider.apply_damage(damage, global_position)
+            _apply_blast_impulse(collider)
             damaged[instance_id] = true
     _spawn_explosion_effect()
     queue_free()
+
+func _apply_blast_impulse(target: Node3D) -> void:
+    if not target is CharacterBody3D:
+        return
+    var push_direction := target.global_position - global_position
+    push_direction.y = 0.0
+    if push_direction.length_squared() < 0.01:
+        push_direction = Vector3.FORWARD
+    target.velocity += push_direction.normalized() * 4.0 + Vector3.UP * 1.2
 
 func _line_of_sight_factor(space: PhysicsDirectSpaceState3D, target: Node3D) -> float:
     var target_point := target.global_position + Vector3.UP * 0.8
