@@ -215,6 +215,37 @@ func _combat_reacquire_delay() -> float:
         _:
             return 0.35
 
+func _squad_has_live_flanker() -> bool:
+    # Riflemen should not all abandon their lanes when the squad already has flankers.
+    for node in get_tree().get_nodes_in_group("enemies"):
+        if node == self or not is_instance_valid(node) or not node is Node3D:
+            continue
+        if str(node.get("combat_role")) != "FLANKER" or float(node.get("health")) <= 0.0:
+            continue
+        if global_position.distance_to((node as Node3D).global_position) <= 28.0:
+            return true
+    return false
+
+func _should_take_flank_route() -> bool:
+    # Flankers own the maneuver; riflemen only inherit it if no living flanker can do so.
+    if combat_role == "FLANKER":
+        return true
+    if combat_role == "RIFLEMAN":
+        return not _squad_has_live_flanker()
+    return false
+
+func _combat_suppression_weight() -> float:
+    # Support units sustain pressure while maneuver elements use shorter, faster bursts.
+    match combat_role:
+        "SUPPORT":
+            return 1.35
+        "FLANKER":
+            return 0.75
+        "ASSAULT":
+            return 0.9
+        _:
+            return 1.0
+
 func _combat_can_engage(distance: float) -> bool:
     # Keep firing distance aligned with each role's movement doctrine.
     var engagement := _combat_engagement_ranges()
@@ -540,8 +571,8 @@ func _physics_process(delta: float) -> void:
                 strafe_sign *= -1.0
                 flank_timer = randf_range(1.8, 3.0)
             target_dir = Vector3(-to_player.z, 0.0, to_player.x).normalized() * strafe_sign * 0.22
-        else:
-            # Flankers and riflemen break predictable left-right strafing with short runs.
+        elif _should_take_flank_route():
+            # Maneuver elements take the route; line units keep pressure on the target.
             if flank_timer <= 0.0 or global_position.distance_to(flank_goal) < 1.6:
                 flank_goal = _choose_flank_goal()
                 flank_timer = randf_range(2.2, 3.8)
@@ -552,6 +583,15 @@ func _physics_process(delta: float) -> void:
                 target_dir = to_flank.normalized()
             else:
                 target_dir = Vector3(-to_player.z, 0.0, to_player.x).normalized() * strafe_sign * 0.42
+        else:
+            # Assault units close the gap; riflemen hold a lane while designated flankers maneuver.
+            if combat_role == "ASSAULT" and distance_to_player > engagement.x + 1.0:
+                target_dir = to_player.normalized() * 0.32
+            else:
+                if flank_timer <= 0.0:
+                    strafe_sign *= -1.0
+                    flank_timer = randf_range(1.8, 3.0)
+                target_dir = Vector3(-to_player.z, 0.0, to_player.x).normalized() * strafe_sign * 0.18
         look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
         if _combat_can_engage(distance_to_player) and fire_timer <= 0:
             if burst_shots_remaining <= 0:
