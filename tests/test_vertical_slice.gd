@@ -85,7 +85,7 @@ func _run_tests() -> void:
     var perimeter_building := perimeter_buildings[0] as Node3D if not perimeter_buildings.is_empty() else null
     var perimeter_mesh := perimeter_building.find_child("MeshInstance3D", true, false) as MeshInstance3D if perimeter_building != null else null
     _check(perimeter_mesh != null and perimeter_mesh.material_override is ShaderMaterial, "perimeter ruins share the weathered concrete material system")
-    var environment_node := scene.world_environment
+    var environment_node: WorldEnvironment = scene.world_environment as WorldEnvironment
     _check(environment_node != null and environment_node.environment.fog_enabled, "battlefield atmosphere keeps depth fog enabled")
     _check(scene.get_tree().get_nodes_in_group("district_buildings").size() == 8, "eight perimeter buildings are generated")
     _check(scene.get_tree().get_nodes_in_group("service_alley_crates").size() == 5, "service alley utility crates are generated")
