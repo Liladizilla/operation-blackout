@@ -71,7 +71,7 @@ func _run_tests() -> void:
     alert_receiver.suppression_timer = 0.0
     alert_receiver.cover_timer = 0.0
     alert_receiver.alert_memory_timer = 0.0
-    var suppression_source := alert_source.global_position + Vector3(5.0, 0.0, 2.0)
+    var suppression_source: Vector3 = alert_source.global_position + Vector3(5.0, 0.0, 2.0)
     alert_receiver.apply_suppression(suppression_source)
     _check(alert_receiver.suppression_timer >= 0.85, "near-miss suppression creates a short tactical reaction window")
     _check(alert_receiver.state == "REPOSITION", "suppressed hostiles break from their current firing lane")
