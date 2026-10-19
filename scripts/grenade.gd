@@ -54,6 +54,9 @@ func _explode() -> void:
     if exploded:
         return
     exploded = true
+    var active_scene := get_tree().current_scene
+    if is_instance_valid(active_scene) and active_scene.has_method("report_noise"):
+        active_scene.report_noise(global_position, 65.0, "GRENADE", self)
     var space := get_world_3d().direct_space_state
     var blast_shape := SphereShape3D.new()
     blast_shape.radius = BLAST_RADIUS
