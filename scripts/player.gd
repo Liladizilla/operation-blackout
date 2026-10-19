@@ -163,7 +163,7 @@ func _physics_process(delta: float) -> void:
             if hud and hud.has_method("set_ammo"):
                 hud.set_ammo(ammo, reserve)
             if hud and hud.has_method("set_status"):
-                hud.set_status("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   RMB AIM   LMB FIRE   R RELOAD   F INTERACT")
+                hud.set_status("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   RMB AIM   LMB FIRE   R RELOAD   F INTERACT   G GRENADE")
     if Input.is_action_just_pressed("reload"):
         _start_reload()
     if Input.is_action_just_pressed("throw_grenade"):
