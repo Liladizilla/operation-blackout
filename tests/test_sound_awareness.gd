@@ -73,7 +73,7 @@ func _run_tests() -> void:
         enemies[index].global_position = original_enemy_positions[index]
         enemies[index].state = "SEARCH"
         enemies[index].alert_memory_timer = 0.0
-    var heard_gunshot := scene.report_noise(player.global_position, 120.0, "GUNSHOT", player)
+    var heard_gunshot: int = scene.call("report_noise", player.global_position, 120.0, "GUNSHOT", player)
     _check(heard_gunshot == enemies.size(), "gunshot noise propagates to all enemies within range")
     var all_investigating := true
     for enemy in enemies:
