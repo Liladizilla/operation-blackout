@@ -9,6 +9,7 @@ var hud: CanvasLayer
 var enemies: Array[Node] = []
 var mission_complete := false
 var mission_started := false
+var mission_phase := "BRIEFING"
 var mission_elapsed := 0.0
 var shots_fired := 0
 var shots_hit := 0
@@ -41,7 +42,10 @@ func _process(delta: float) -> void:
         mission_elapsed += delta
 
 func begin_mission() -> void:
+    if mission_complete:
+        return
     mission_started = true
+    mission_phase = "ENGAGEMENT"
     mission_elapsed = 0.0
 
 func set_difficulty(value: String) -> void:
@@ -806,7 +810,8 @@ func enemy_killed(enemy: Node) -> void:
         hud.call("set_enemy_count", enemies.size())
         if not enemies.is_empty():
             hud.call("notify_hostile_neutralized", enemies.size())
-    if enemies.is_empty():
+    if enemies.is_empty() and mission_phase == "ENGAGEMENT":
+        mission_phase = "INTEL_RECOVERY"
         if is_instance_valid(hud):
             hud.call("set_mission_state", "AREA SECURE. RECOVER THE INTEL.")
 
@@ -838,6 +843,10 @@ func get_remaining_enemies() -> int:
     return enemies.size()
 
 func objective_complete() -> void:
+    # Only the active intel-recovery phase may advance the operation to extraction.
+    if mission_complete or mission_phase != "INTEL_RECOVERY":
+        return
+    mission_phase = "EXTRACTION"
     _spawn_exfil_zone()
     if is_instance_valid(hud):
         hud.call("set_mission_state", "INTEL SECURED. MOVE TO EXFIL.")
@@ -852,6 +861,10 @@ func _spawn_exfil_zone() -> void:
     add_child(zone)
 
 func exfiltration_complete() -> void:
+    # Completion is terminal; duplicate callbacks cannot replay or regress the debrief.
+    if mission_complete or mission_phase != "EXTRACTION":
+        return
+    mission_phase = "COMPLETE"
     mission_complete = true
     if is_instance_valid(hud):
         hud.call("set_mission_state", "INTEL RECOVERED. EXFILTRATION COMPLETE.")
