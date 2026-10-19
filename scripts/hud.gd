@@ -261,6 +261,11 @@ func set_enemy_count(count: int) -> void:
     if count == 0:
         objective_label.text = "AREA SECURE  //  RECOVER THE INTERCEPTED INTEL"
 
+func notify_hostile_neutralized(remaining: int) -> void:
+    # Give the player an immediate, readable confirmation without replacing the main objective.
+    status_label.text = "HOSTILE NEUTRALIZED  //  %d REMAINING" % remaining
+    status_label.add_theme_color_override("font_color", Color(1.0, 0.62, 0.28))
+
 func set_status(message: String) -> void:
     status_label.text = message
 
