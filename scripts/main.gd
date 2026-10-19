@@ -16,6 +16,7 @@ var grenades_used := 0
 var ammo_caches_used := 0
 var hostiles_eliminated := 0
 var hostile_contact_reported := false
+var hostile_investigation_reported := false
 var difficulty := "STANDARD"
 var world_environment: WorldEnvironment
 var material_cache: Dictionary = {}
@@ -815,6 +816,14 @@ func report_hostile_contact(_enemy: Node) -> void:
     hostile_contact_reported = true
     if is_instance_valid(hud):
         hud.call("notify_hostile_contact")
+
+func report_hostile_investigation(_enemy: Node, noise_type: String) -> void:
+    # Report the first audible escalation only; visual contact takes priority over this warning.
+    if hostile_investigation_reported or hostile_contact_reported or mission_complete:
+        return
+    hostile_investigation_reported = true
+    if is_instance_valid(hud):
+        hud.call("notify_hostile_investigation", noise_type)
 
 func get_remaining_enemies() -> int:
     return enemies.size()
