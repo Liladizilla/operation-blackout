@@ -123,7 +123,11 @@ func _setup_environment() -> void:
     var sky := Sky.new()
     var sky_mat := ProceduralSkyMaterial.new()
     sky_mat.sky_top_color = Color(0.12, 0.17, 0.20)
-    sky_mat.sky_horizon_color = Color(0.48, 0.43, 0.34)
+    sky_mat.sky_horizon_color = Color(0.52, 0.46, 0.36)
+    sky_mat.sky_curve = 0.22
+    sky_mat.ground_curve = 0.16
+    sky_mat.energy_multiplier = 0.82
+    sky_mat.use_debanding = true
     sky_mat.ground_bottom_color = Color(0.055, 0.06, 0.055)
     sky_mat.ground_horizon_color = Color(0.28, 0.26, 0.22)
     sky.sky_material = sky_mat
@@ -134,12 +138,16 @@ func _setup_environment() -> void:
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     env.fog_enabled = true
     env.fog_light_color = Color(0.42, 0.40, 0.35)
-    env.fog_density = 0.006
+    env.fog_density = 0.009
+    env.fog_sky_affect = 0.72
+    env.tonemap_exposure = 0.92
     world_environment.environment = env
     add_child(world_environment)
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-42, -28, 0)
-    sun.light_energy = 1.15
+    sun.light_energy = 1.05
+    sun.light_color = Color(1.0, 0.87, 0.72)
+    sun.directional_shadow_max_distance = 85.0
     sun.shadow_enabled = true
     add_child(sun)
 
@@ -228,6 +236,38 @@ func _build_arena() -> void:
     _box("ObjectiveLight", Vector3(0, 2.4, -30.5), Vector3(0.25, 0.25, 0.25), Color(0.85,0.58,0.18), false)
     _street_furniture()
     _add_road_markings()
+    _build_distant_skyline()
+
+func _build_distant_skyline() -> void:
+    # A layered horizon prevents the playable block from ending at a hard wall.
+    # Distant silhouettes are visual-only; gameplay collision stays in the arena.
+    var skyline_root := Node3D.new()
+    skyline_root.name = "DistantCityHorizon"
+    add_child(skyline_root)
+    var palettes := [Color(0.15, 0.17, 0.17), Color(0.19, 0.19, 0.17), Color(0.22, 0.20, 0.18), Color(0.17, 0.19, 0.19)]
+    var index := 0
+    for side in [-1.0, 1.0]:
+        for row in range(9):
+            var depth := -62.0 + float(row) * 14.0
+            var height := 9.0 + float((row * 7 + int(side * 3.0)) % 8) * 2.1
+            var width := 5.5 + float((row * 3) % 5) * 1.7
+            var x := side * (53.0 + float((row * 11) % 9))
+            var z := depth + float((row % 3) - 1) * 4.0
+            var color: Color = palettes[index % palettes.size()]
+            index += 1
+            var tower := _box_child(skyline_root, "HorizonBuilding_%02d" % index, Vector3(x, height * 0.5, z), Vector3(width, height, 7.0 + float(row % 4) * 1.8), color, false)
+            tower.add_to_group("distant_skyline")
+            # A few roof plants, elevator overruns and aerials break the flat roofline.
+            if row % 3 == 0:
+                _box_child(skyline_root, "RoofOverrun_%02d" % index, Vector3(x - width * 0.18, height + 0.65, z), Vector3(width * 0.28, 1.3, 2.2), color.darkened(0.16), false)
+            if row % 4 == 1:
+                _box_child(skyline_root, "RoofAerial_%02d" % index, Vector3(x + width * 0.22, height + 1.25, z), Vector3(0.08, 2.5, 0.08), Color(0.10, 0.11, 0.10), false)
+            # Sparse, dim window slits provide scale without turning the horizon into a grid.
+            for window_index in range(2 + row % 3):
+                var window_x := x - width * 0.35 + float(window_index) * width * 0.28
+                var window_y := 2.0 + float((window_index * 3 + row) % maxi(1, int(height / 3.0))) * 2.5
+                if window_y < height - 0.8:
+                    _box_child(skyline_root, "HorizonWindow_%02d_%02d" % [index, window_index], Vector3(window_x, window_y, z - (4.0 + float(row % 4) * 1.8) * 0.5 - 0.035), Vector3(0.38, 0.7, 0.06), Color(0.10, 0.12, 0.12), false)
 
 func _add_road_markings() -> void:
     var faded_white := Color(0.50, 0.51, 0.46)
