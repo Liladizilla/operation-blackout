@@ -280,6 +280,7 @@ func _choose_cover(threat_position: Vector3) -> Vector3:
 func _try_shoot_player() -> void:
     _show_muzzle_flash()
     if is_instance_valid(enemy_fire_audio):
+        enemy_fire_audio.pitch_scale = randf_range(0.94, 1.06)
         enemy_fire_audio.play()
     var from := global_position + Vector3.UP*1.35
     var to := player.global_position + Vector3.UP*1.2
