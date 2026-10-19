@@ -50,6 +50,7 @@ func _run_tests() -> void:
     _check(scene.get_remaining_enemies() == 5, "five hostiles spawn")
     _check(scene.get_node_or_null("IntelObjective") != null, "intel objective spawns")
     _check(scene.hud.navigation_label != null, "HUD includes the intel rangefinder")
+    _check(scene.hud.health_label.anchor_bottom == 1.0 and scene.hud.ammo_label.anchor_bottom == 1.0, "health and ammo HUD stay anchored when the viewport resizes")
     scene.hud.update_stamina(2.0, 8.0)
     _check(scene.hud.stamina_label.text.contains("025%"), "stamina HUD reflects depleted stamina")
     scene.hud.update_stamina(8.0, 8.0)
