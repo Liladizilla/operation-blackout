@@ -5,7 +5,7 @@ const SPRINT_SPEED := 7.5
 const CROUCH_SPEED := 2.0
 const PRONE_SPEED := 1.0
 const JUMP_VELOCITY := 4.2
-const MOUSE_SENSITIVITY := 0.0018
+var mouse_sensitivity := 0.0018
 const MAG_SIZE := 30
 
 var camera_pivot: Node3D
@@ -137,8 +137,8 @@ func _input(event: InputEvent) -> void:
     # Read mouse motion before full-screen HUD Controls can consume it.
     # The camera should only rotate while the game owns the captured mouse.
     if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not get_tree().paused:
-        rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
-        pitch = clamp(pitch - event.relative.y * MOUSE_SENSITIVITY, deg_to_rad(-85), deg_to_rad(85))
+        rotate_y(-event.relative.x * mouse_sensitivity)
+        pitch = clamp(pitch - event.relative.y * mouse_sensitivity, deg_to_rad(-85), deg_to_rad(85))
         camera_pivot.rotation.x = pitch
 
 func _physics_process(delta: float) -> void:

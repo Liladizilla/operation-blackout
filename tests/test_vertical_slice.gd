@@ -77,6 +77,13 @@ func _run_tests() -> void:
     _check(mesh_count < 650, "procedural scene stays within mesh budget")
 
     var player := scene.get_node("Player")
+    var original_sensitivity: float = player.mouse_sensitivity
+    scene.hud.show_pause()
+    _check(scene.hud.sensitivity_slider != null, "pause menu exposes mouse sensitivity control")
+    scene.hud.sensitivity_slider.value = 0.0026
+    _check(is_equal_approx(player.mouse_sensitivity, 0.0026), "mouse sensitivity slider updates player look sensitivity")
+    scene.hud.hide_pause()
+    player.mouse_sensitivity = original_sensitivity
     _check(player.grenades == 2 and scene.hud.grenade_label.text == "FRAG  02", "player starts with two grenades and HUD inventory")
     var grenades_before: int = player.grenades
     player._throw_grenade()
