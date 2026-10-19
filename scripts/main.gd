@@ -355,6 +355,20 @@ func get_remaining_enemies() -> int:
     return enemies.size()
 
 func objective_complete() -> void:
+    _spawn_exfil_zone()
+    if is_instance_valid(hud):
+        hud.call("set_mission_state", "INTEL SECURED. MOVE TO EXFIL.")
+
+func _spawn_exfil_zone() -> void:
+    if get_node_or_null("ExfilZone"):
+        return
+    var zone := Node3D.new()
+    zone.name = "ExfilZone"
+    zone.position = Vector3(0.0, 0.05, 39.0)
+    zone.set_script(load("res://scripts/exfil_zone.gd"))
+    add_child(zone)
+
+func exfiltration_complete() -> void:
     mission_complete = true
     if is_instance_valid(hud):
         hud.call("set_mission_state", "INTEL RECOVERED. EXFILTRATION COMPLETE.")
