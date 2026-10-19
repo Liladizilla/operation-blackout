@@ -327,6 +327,16 @@ func _run_tests() -> void:
         scene.player.global_position = Vector3(0.0, 1.2, 39.0)
         exfil.player_inside = true
         Input.action_press("interact")
+        exfil._process(0.5)
+        _check(exfil.beacon_mesh_instance.rotation.y > 0.0, "extraction beacon rotates during confirmation")
+        _check(exfil.beacon_light.light_energy > 1.0, "extraction beacon intensifies during confirmation")
+        var exfil_material := exfil.beacon_mesh_instance.material_override as StandardMaterial3D
+        _check(exfil_material.emission.r > 0.75, "extraction beacon emission brightens during confirmation")
+        exfil._on_exit(scene.player)
+        _check(not exfil.player_inside and exfil.progress == 0.0, "leaving extraction radius resets confirmation progress")
+        _check(scene.hud.status_label.text.contains("EXTRACTION INTERRUPTED"), "leaving extraction displays an interruption warning")
+        exfil.player_inside = true
+        Input.action_press("interact")
         exfil._process(2.1)
         Input.action_release("interact")
     await process_frame
