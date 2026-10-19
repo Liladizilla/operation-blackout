@@ -7,6 +7,9 @@ const PRONE_SPEED := 1.0
 const JUMP_VELOCITY := 4.2
 const MOUSE_SENSITIVITY := 0.0018
 const MAG_SIZE := 30
+const MAX_STAMINA := 8.0
+const STAMINA_REGEN_DELAY := 1.0
+const STAMINA_REGEN_RATE := 1.4
 
 var camera_pivot: Node3D
 var camera: Camera3D
@@ -22,7 +25,8 @@ var reload_time := 0.0
 var is_reloading := false
 var is_crouched := false
 var is_prone := false
-var stamina := 8.0
+var stamina := MAX_STAMINA
+var stamina_regen_delay := 0.0
 var bob_time := 0.0
 var recoil := 0.0
 var ads := false
@@ -180,16 +184,15 @@ func _physics_process(delta: float) -> void:
         _set_stance()
     var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
     var direction := (transform.basis * Vector3(input_dir.x,0,input_dir.y)).normalized()
+    var sprinting := not is_prone and not is_crouched and Input.is_action_pressed("sprint") and input_dir.length() > 0.0 and stamina > 0.1
+    _update_stamina(delta, sprinting)
     var speed := WALK_SPEED
     if is_prone:
         speed = PRONE_SPEED
     elif is_crouched:
         speed = CROUCH_SPEED
-    elif Input.is_action_pressed("sprint") and stamina > 0.1 and input_dir.length() > 0:
+    elif sprinting:
         speed = SPRINT_SPEED
-        stamina = maxf(0.0, stamina - delta)
-    else:
-        stamina = minf(8.0, stamina + delta * 1.4)
     if not is_on_floor():
         velocity.y -= 9.8 * delta
     elif Input.is_action_just_pressed("jump") and not is_prone:
@@ -221,6 +224,20 @@ func _physics_process(delta: float) -> void:
     camera.rotation.z = lerpf(camera.rotation.z, -input_dir.x * 0.006 + sin(bob_time * 0.4) * 0.0015, delta * 4.0)
     if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and fire_cooldown <= 0 and not is_reloading:
         _fire()
+
+func _update_stamina(delta: float, sprinting: bool) -> void:
+    if sprinting:
+        stamina = maxf(0.0, stamina - delta)
+        stamina_regen_delay = STAMINA_REGEN_DELAY
+        return
+    if stamina_regen_delay > 0.0:
+        var delay_elapsed := minf(stamina_regen_delay, delta)
+        stamina_regen_delay = maxf(0.0, stamina_regen_delay - delta)
+        var recovery_delta := delta - delay_elapsed
+        if recovery_delta > 0.0:
+            stamina = minf(MAX_STAMINA, stamina + recovery_delta * STAMINA_REGEN_RATE)
+        return
+    stamina = minf(MAX_STAMINA, stamina + delta * STAMINA_REGEN_RATE)
 
 func _set_stance() -> void:
     var col := get_node_or_null("CollisionShape3D") as CollisionShape3D
