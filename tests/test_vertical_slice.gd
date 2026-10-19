@@ -114,6 +114,13 @@ func _run_tests() -> void:
     _check(player.ammo == 29, "firing consumes one round")
     _check(firing_target.health < 100.0 or not scene.enemies.has(firing_target), "hitscan shot damages target")
 
+    var gated_objective: Node = scene.get_node("IntelObjective")
+    gated_objective.player_inside = true
+    Input.action_press("interact")
+    gated_objective._process(1.0)
+    Input.action_release("interact")
+    _check(not gated_objective.completed and is_equal_approx(gated_objective.progress, 0.0), "intel recovery stays locked while hostiles remain")
+
     var first_enemy: Node = scene.enemies[0]
     var survived: bool = first_enemy.take_damage(10.0)
     _check(not survived and is_equal_approx(first_enemy.health, 90.0), "enemy survives nonlethal damage")
