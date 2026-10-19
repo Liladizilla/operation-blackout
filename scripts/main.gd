@@ -481,7 +481,7 @@ func _car(pos: Vector3, yaw: float) -> void:
     headlight_material.emission = Color(0.35, 0.22, 0.09)
     for side in [-1.0, 1.0]:
         var headlight := _box_child(root, "Headlight", Vector3(side * 0.69, 0.78, -2.04), Vector3(0.34, 0.18, 0.05), headlight_material.albedo_color, false)
-        var headlight_mesh := headlight.get_node("MeshInstance3D") as MeshInstance3D
+        var headlight_mesh := headlight.get_child(0) as MeshInstance3D
         headlight_mesh.material_override = headlight_material
         _box_child(root, "TailLight", Vector3(side * 0.70, 0.78, 2.025), Vector3(0.30, 0.17, 0.055), Color(0.34, 0.075, 0.045), false)
     for side in [-1.0, 1.0]:
