@@ -122,6 +122,12 @@ func _run_tests() -> void:
     _check(not gated_objective.completed and is_equal_approx(gated_objective.progress, 0.0), "intel recovery stays locked while hostiles remain")
 
     var first_enemy: Node = scene.enemies[0]
+    var chosen_cover: Vector3 = first_enemy._choose_cover(player.global_position)
+    var solid_obstacle_centers := [
+        Vector3(-7, 0, -10), Vector3(7, 0, -18), Vector3(-5, 0, 7),
+        Vector3(6, 0, 19), Vector3(-12, 0, 25), Vector3(13, 0, -1)
+    ]
+    _check(not solid_obstacle_centers.has(chosen_cover), "hostile cover goals sit beside obstacles instead of inside them")
     var survived: bool = first_enemy.take_damage(10.0)
     _check(not survived and is_equal_approx(first_enemy.health, 90.0), "enemy survives nonlethal damage")
     _check(first_enemy.hit_flash_timer > 0.0, "nonlethal hits trigger a temporary enemy hit reaction")
