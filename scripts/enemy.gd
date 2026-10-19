@@ -596,6 +596,9 @@ func _try_shoot_player() -> void:
         if player.has_method("apply_damage"):
             player.apply_damage(shot_damage, global_position)
     _spawn_shot_tracer(from, tracer_end, tracer_tint)
+    var active_scene := get_tree().current_scene
+    if is_instance_valid(active_scene) and active_scene.has_method("report_noise"):
+        active_scene.call("report_noise", from, 42.0, "GUNSHOT", self)
     if not hit.is_empty() and hit.get("collider") is StaticBody3D and is_instance_valid(player):
         if player.has_method("_spawn_bullet_impact"):
             player.call("_spawn_bullet_impact", hit.get("position", tracer_end), hit.get("normal", Vector3.UP))
