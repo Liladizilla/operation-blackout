@@ -644,8 +644,8 @@ func _physics_process(delta: float) -> void:
             target_dir = to_target.normalized() * 0.72
             look_at(Vector3(investigate_target.x, global_position.y, investigate_target.z), Vector3.UP)
         else:
-            state = "SEARCH"
-            alert_memory_timer = 0.0
+            _complete_investigation()
+            look_at(Vector3(investigate_target.x, global_position.y, investigate_target.z), Vector3.UP)
     elif state == "SEARCH":
         if patrol_pause_timer > 0.0:
             patrol_pause_timer = maxf(0.0, patrol_pause_timer - delta)
@@ -854,6 +854,13 @@ func hear_alert(threat_position: Vector3) -> void:
         cover_goal = _choose_cover(threat_position)
         cover_timer = 1.2
     think_timer = minf(think_timer, 0.1)
+
+func _complete_investigation() -> void:
+    # Reaching a noise location should trigger a brief scan, not an instant return to patrol.
+    state = "SEARCH"
+    alert_memory_timer = 0.0
+    patrol_pause_timer = maxf(patrol_pause_timer, 1.35)
+    patrol_goal = Vector3.ZERO
 
 func _get_district_cover_candidates() -> Array[Vector3]:
     var candidates: Array[Vector3] = []
