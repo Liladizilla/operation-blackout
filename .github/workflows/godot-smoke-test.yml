@@ -46,3 +46,6 @@ jobs:
 
       - name: Run footstep audio regression checks
         run: godot --headless --path . --script res://tests/test_footstep_audio.gd
+
+      - name: Run grenade evasion regression checks
+        run: godot --headless --path . --script res://tests/test_grenade_evasion.gd
