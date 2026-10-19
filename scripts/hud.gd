@@ -16,6 +16,9 @@ var hitmarker_timer := 0.0
 var damage_direction_label: Label
 var damage_direction_timer := 0.0
 var mission_panel: PanelContainer
+var stamina_label: Label
+var navigation_label: Label
+var navigation_update_timer := 0.0
 
 func initialize(scene: Node, player: Node) -> void:
     owner_scene = scene
@@ -51,8 +54,20 @@ func _build() -> void:
     enemy_label.position = Vector2(28,88)
     root.add_child(enemy_label)
     health_label = _label("HEALTH  100", 18, Color(0.78,0.83,0.77))
-    health_label.position = Vector2(28, get_viewport().get_visible_rect().size.y - 68)
+    health_label.position = Vector2(28, get_viewport().get_visible_rect().size.y - 94)
     root.add_child(health_label)
+    stamina_label = _label("STAMINA  100%", 15, Color(0.72,0.78,0.70))
+    stamina_label.position = Vector2(28, get_viewport().get_visible_rect().size.y - 66)
+    root.add_child(stamina_label)
+    navigation_label = _label("INTEL  --m", 16, Color(0.88,0.76,0.50))
+    navigation_label.anchor_left = 1
+    navigation_label.anchor_right = 1
+    navigation_label.offset_left = -320
+    navigation_label.offset_right = -28
+    navigation_label.offset_top = 24
+    navigation_label.offset_bottom = 50
+    navigation_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+    root.add_child(navigation_label)
     ammo_label = _label("30 / 120", 28, Color(0.92,0.90,0.82))
     ammo_label.anchor_left = 1
     ammo_label.anchor_right = 1
@@ -104,6 +119,12 @@ func _label(text: String, font_size: int, color: Color) -> Label:
     return label
 
 func _process(delta: float) -> void:
+    navigation_update_timer -= delta
+    if navigation_update_timer <= 0.0:
+        navigation_update_timer = 0.15
+        _update_navigation()
+    if is_instance_valid(player_ref):
+        update_stamina(float(player_ref.get("stamina")), 8.0)
     if damage_direction_timer > 0.0:
         damage_direction_timer = maxf(0.0, damage_direction_timer - delta)
         if damage_direction_timer == 0.0 and is_instance_valid(damage_direction_label):
@@ -133,6 +154,43 @@ func flash_hitmarker(killed: bool = false, headshot: bool = false) -> void:
 
 func set_ammo(current: int, reserve: int) -> void:
     ammo_label.text = "%02d / %03d" % [current, reserve]
+    var ammo_color := Color(0.92, 0.90, 0.82)
+    if current <= 5:
+        ammo_color = Color(0.95, 0.27, 0.18)
+    elif current <= 10:
+        ammo_color = Color(0.95, 0.65, 0.25)
+    ammo_label.add_theme_color_override("font_color", ammo_color)
+
+func update_stamina(value: float, maximum: float) -> void:
+    if not is_instance_valid(stamina_label):
+        return
+    var ratio := clampf(value / maxf(maximum, 0.001), 0.0, 1.0)
+    stamina_label.text = "STAMINA  %03d%%" % int(round(ratio * 100.0))
+    var stamina_color := Color(0.72, 0.78, 0.70)
+    if ratio <= 0.25:
+        stamina_color = Color(0.95, 0.35, 0.22)
+    elif ratio <= 0.5:
+        stamina_color = Color(0.95, 0.68, 0.30)
+    stamina_label.add_theme_color_override("font_color", stamina_color)
+
+func _update_navigation() -> void:
+    if not is_instance_valid(navigation_label) or not is_instance_valid(player_ref):
+        return
+    var objective := owner_scene.get_node_or_null("IntelObjective") if is_instance_valid(owner_scene) else null
+    if not is_instance_valid(objective):
+        navigation_label.text = "INTEL SECURED  /  EXFIL COMPLETE"
+        return
+    var offset: Vector3 = objective.global_position - player_ref.global_position
+    var distance := int(round(Vector2(offset.x, offset.z).length()))
+    var local_offset: Vector3 = player_ref.global_transform.basis.inverse() * offset
+    var direction := "FRONT"
+    if absf(local_offset.x) > absf(local_offset.z) * 1.5:
+        direction = "RIGHT" if local_offset.x > 0.0 else "LEFT"
+    elif local_offset.z > 0.0:
+        direction = "BEHIND"
+    elif absf(local_offset.x) > 1.5:
+        direction = "FRONT-RIGHT" if local_offset.x > 0.0 else "FRONT-LEFT"
+    navigation_label.text = "INTEL  %02dm  /  %s" % [distance, direction]
 
 func set_health(value: float) -> void:
     health_label.text = "HEALTH  %03d" % int(value)
