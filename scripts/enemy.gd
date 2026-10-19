@@ -498,6 +498,8 @@ func hear_noise(source_position: Vector3, noise_type: String) -> void:
             memory_duration = 2.0
         "GUNSHOT":
             memory_duration = 5.0
+        "IMPACT":
+            memory_duration = 2.8
         "GRENADE":
             memory_duration = 6.0
     last_known_position = source_position
