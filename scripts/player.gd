@@ -483,7 +483,7 @@ func _spawn_spent_casing() -> void:
     active_scene.add_child(casing)
     casing.global_position = weapon_root.global_transform * Vector3(0.18, 0.04, 0.0)
     casing.linear_velocity = camera.global_transform.basis.x * randf_range(1.2, 2.1) + Vector3.UP * randf_range(0.8, 1.6) + (-camera.global_transform.basis.z) * randf_range(-0.4, 0.4)
-    casing.angular_velocity = Vector3(randf_range(-18.0, 18.0), randf_range(-18.0, 18.0), randf_range(-18.0, 18.0)
+    casing.angular_velocity = Vector3(randf_range(-18.0, 18.0), randf_range(-18.0, 18.0), randf_range(-18.0, 18.0))
 
 func _spawn_bullet_impact(pos: Vector3, normal: Vector3) -> void:
     var active_scene := get_tree().current_scene
