@@ -184,6 +184,21 @@ func _run_tests() -> void:
     await process_frame
     _check(scene.get_remaining_enemies() == 0, "clearing all hostiles updates objective gate")
 
+    var blast_target := CharacterBody3D.new()
+    blast_target.set_script(load("res://scripts/enemy.gd"))
+    blast_target.position = Vector3(0.0, 0.95, 0.0)
+    scene.add_child(blast_target)
+    await process_frame
+    blast_target.set_physics_process(false)
+    var blast := RigidBody3D.new()
+    blast.set_script(load("res://scripts/grenade.gd"))
+    scene.add_child(blast)
+    blast.global_position = blast_target.global_position
+    blast._explode()
+    _check(blast_target.health < 100.0, "grenade explosion damages a hostile inside the blast radius")
+    blast_target.queue_free()
+    await process_frame
+
     var objective := scene.get_node_or_null("IntelObjective")
     if objective:
         objective.player_inside = true
