@@ -13,6 +13,8 @@ var state := "SEARCH"
 var think_timer := 0.0
 var fire_timer := 0.7
 var strafe_sign := 1.0
+var flank_timer := 0.0
+var flank_goal := Vector3.ZERO
 var visual_root: Node3D
 var left_arm_pivot: Node3D
 var right_arm_pivot: Node3D
@@ -276,6 +278,7 @@ func _physics_process(delta: float) -> void:
     think_timer -= delta
     fire_timer -= delta
     cover_timer = maxf(0.0, cover_timer - delta)
+    flank_timer = maxf(0.0, flank_timer - delta)
     suppression_timer = maxf(0.0, suppression_timer - delta)
     alert_memory_timer = maxf(0.0, alert_memory_timer - delta)
     alert_broadcast_timer = maxf(0.0, alert_broadcast_timer - delta)
@@ -325,8 +328,19 @@ func _physics_process(delta: float) -> void:
             target_dir = to_player.normalized()
         elif distance_to_player < 5.5:
             target_dir = -to_player.normalized()
+            flank_timer = 0.0
         else:
-            target_dir = Vector3(-to_player.z,0,to_player.x).normalized() * strafe_sign * 0.42
+            # Break predictable left-right strafing with short, readable flank runs.
+            if flank_timer <= 0.0 or global_position.distance_to(flank_goal) < 1.6:
+                flank_goal = _choose_flank_goal()
+                flank_timer = randf_range(2.2, 3.8)
+                strafe_sign *= -1.0
+            var to_flank := flank_goal - global_position
+            to_flank.y = 0.0
+            if to_flank.length() > 1.0:
+                target_dir = to_flank.normalized()
+            else:
+                target_dir = Vector3(-to_player.z,0,to_player.x).normalized() * strafe_sign * 0.42
         look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
         if distance_to_player < maxf(10.0, detection_range - 5.0) and fire_timer <= 0:
             fire_timer = randf_range(fire_interval_min, fire_interval_max)
@@ -545,6 +559,34 @@ func _get_district_cover_candidates() -> Array[Vector3]:
             for offset in offsets:
                 candidates.append(prop_position + offset)
     return candidates
+
+func _choose_flank_goal() -> Vector3:
+    if not is_instance_valid(player):
+        return global_position
+    var away := global_position - player.global_position
+    away.y = 0.0
+    if away.length_squared() < 0.01:
+        away = Vector3.FORWARD
+    away = away.normalized()
+    var best := global_position
+    var best_score := -INF
+    # Offset around the player's position instead of charging directly down the same lane.
+    for angle in [-1.25, 1.25, -0.78, 0.78, 2.2, -2.2]:
+        var direction := away.rotated(Vector3.UP, angle)
+        var candidate := player.global_position + direction * randf_range(7.5, 10.0)
+        candidate.y = global_position.y
+        var travel := candidate.distance_to(global_position)
+        if travel < 1.5:
+            continue
+        var score := -travel * 0.35 + randf_range(-0.25, 0.25)
+        var cover_ray := PhysicsRayQueryParameters3D.create(player.global_position + Vector3.UP * 1.25, candidate + Vector3.UP * 1.0)
+        cover_ray.exclude = [get_rid(), player.get_rid()]
+        if not get_world_3d().direct_space_state.intersect_ray(cover_ray).is_empty():
+            score += 1.8
+        if score > best_score:
+            best_score = score
+            best = candidate
+    return best
 
 func _choose_cover(threat_position: Vector3) -> Vector3:
     # Candidate positions sit near concrete barriers and wreckage in the arena.
