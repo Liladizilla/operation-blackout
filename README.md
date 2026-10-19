@@ -1,6 +1,6 @@
 # OPERATION BLACKOUT: FIRST LIGHT
 
-Suppression now preserves a valid cover commitment across repeated near misses and tracks the actual incoming-fire source when choosing evasive cover.
+Suppression now preserves a valid cover commitment across repeated near misses and tracks the actual incoming-fire source when choosing evasive cover. Enemies also finish their short defensive hold after the suppression window expires, then return to visible-target combat once that commitment runs out.
 
 Tactical AI scores cover using actual world-geometry line of sight, discourages reusing the same cover, separates squadmates' cover and flank goals, biases flankers toward the less occupied side of the player's position, and penalizes near-identical flank routes to reduce movement oscillation.
 
