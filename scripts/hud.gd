@@ -188,13 +188,17 @@ func update_stamina(value: float, maximum: float) -> void:
 func _update_navigation() -> void:
     if not is_instance_valid(navigation_label) or not is_instance_valid(player_ref):
         return
-    var objective: Node = null
+    var target: Node3D = null
+    var target_label := "INTEL"
     if is_instance_valid(owner_scene):
-        objective = owner_scene.get_node_or_null("IntelObjective")
-    if not is_instance_valid(objective):
-        navigation_label.text = "INTEL SECURED  /  EXFIL COMPLETE"
+        target = owner_scene.get_node_or_null("IntelObjective") as Node3D
+        if not is_instance_valid(target):
+            target = owner_scene.get_node_or_null("ExfilZone") as Node3D
+            target_label = "EXFIL"
+    if not is_instance_valid(target):
+        navigation_label.text = "EXFIL COMPLETE"
         return
-    var offset: Vector3 = objective.global_position - player_ref.global_position
+    var offset: Vector3 = target.global_position - player_ref.global_position
     var distance := int(round(Vector2(offset.x, offset.z).length()))
     var local_offset: Vector3 = player_ref.global_transform.basis.inverse() * offset
     var direction := "FRONT"
@@ -204,7 +208,7 @@ func _update_navigation() -> void:
         direction = "BEHIND"
     elif absf(local_offset.x) > 1.5:
         direction = "FRONT-RIGHT" if local_offset.x > 0.0 else "FRONT-LEFT"
-    navigation_label.text = "INTEL  %02dm  /  %s" % [distance, direction]
+    navigation_label.text = "%s  %02dm  /  %s" % [target_label, distance, direction]
 
 func set_health(value: float) -> void:
     health_label.text = "HEALTH  %03d" % int(value)
