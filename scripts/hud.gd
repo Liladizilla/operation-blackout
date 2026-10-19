@@ -2,6 +2,7 @@ extends CanvasLayer
 
 var root: Control
 var ammo_label: Label
+var grenade_label: Label
 var health_label: Label
 var enemy_label: Label
 var status_label: Label
@@ -26,6 +27,7 @@ func initialize(scene: Node, player: Node) -> void:
     player.set("hud", self)
     _build()
     set_ammo(int(player.get("ammo")), int(player.get("reserve")))
+    set_grenades(int(player.get("grenades")))
     health_label.text = "HEALTH  %03d" % int(player.get("health"))
     if scene.has_method("get_remaining_enemies"):
         set_enemy_count(scene.get_remaining_enemies())
@@ -89,6 +91,17 @@ func _build() -> void:
     ammo_label.offset_bottom = -40
     ammo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
     root.add_child(ammo_label)
+    grenade_label = _label("FRAG  02", 16, Color(0.88,0.76,0.50))
+    grenade_label.anchor_left = 1
+    grenade_label.anchor_right = 1
+    grenade_label.anchor_top = 1
+    grenade_label.anchor_bottom = 1
+    grenade_label.offset_left = -210
+    grenade_label.offset_right = -30
+    grenade_label.offset_top = -122
+    grenade_label.offset_bottom = -94
+    grenade_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+    root.add_child(grenade_label)
     center_dot = _label("+", 30, Color(0.88,0.86,0.76))
     center_dot.anchor_left = 0.5
     center_dot.anchor_right = 0.5
@@ -111,7 +124,7 @@ func _build() -> void:
     damage_direction_label.offset_bottom = 62
     damage_direction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     root.add_child(damage_direction_label)
-    status_label = _label("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   RMB AIM   LMB FIRE   R RELOAD   F INTERACT", 13, Color(0.70,0.72,0.68))
+    status_label = _label("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   RMB AIM   LMB FIRE   R RELOAD   F INTERACT   G GRENADE", 13, Color(0.70,0.72,0.68))
     status_label.anchor_top = 1
     status_label.anchor_bottom = 1
     status_label.offset_left = 28
@@ -163,6 +176,12 @@ func flash_hitmarker(killed: bool = false, headshot: bool = false) -> void:
     center_dot.text = "X" if killed else ("x" if headshot else "+")
     center_dot.add_theme_color_override("font_color", Color(0.95,0.30,0.18) if killed else (Color(1.0,0.68,0.24) if headshot else Color(0.95,0.92,0.80)))
     hitmarker_timer = 0.22 if killed or headshot else 0.11
+
+func set_grenades(count: int) -> void:
+    if not is_instance_valid(grenade_label):
+        return
+    grenade_label.text = "FRAG  %02d" % count
+    grenade_label.add_theme_color_override("font_color", Color(0.88,0.76,0.50) if count > 0 else Color(0.95,0.30,0.18))
 
 func set_ammo(current: int, reserve: int) -> void:
     ammo_label.text = "%02d / %03d" % [current, reserve]
