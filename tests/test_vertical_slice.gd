@@ -197,6 +197,7 @@ func _run_tests() -> void:
     blast.global_position = blast_target.global_position
     blast._explode()
     _check(blast_target.health < 100.0, "grenade explosion damages a hostile inside the blast radius")
+    _check(blast_target.velocity.length() > 0.0, "grenade blast applies physical knockback")
     blast_target.queue_free()
     await process_frame
 
