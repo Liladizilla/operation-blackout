@@ -192,8 +192,9 @@ func _smoke_plume(pos: Vector3, particle_count: int) -> void:
 func _build_arena() -> void:
     _box("Ground", Vector3(0, -0.5, 0), Vector3(100, 1, 100), Color(0.19, 0.20, 0.18), true)
     _box("Road", Vector3(0, 0.015, -3), Vector3(14, 0.04, 78), Color(0.105, 0.11, 0.105), false)
-    for z in range(-36, 38, 12):
-        _box("RoadMark", Vector3(0, 0.04, float(z)), Vector3(0.18, 0.02, 4.5), Color(0.55, 0.49, 0.35), false)
+    for z in [-26, -18, -10, -2, 6, 14]:
+        var center_mark := _box("WornCenterline", Vector3(0, 0.047, float(z)), Vector3(0.15, 0.018, 3.3), Color(0.52, 0.46, 0.32), false)
+        center_mark.add_to_group("road_markings")
     _building(Vector3(-17, 0, -17), Vector3(12, 9, 12), Color(0.32, 0.30, 0.26))
     _building(Vector3(18, 0, -23), Vector3(13, 12, 15), Color(0.28, 0.29, 0.27))
     _building(Vector3(-22, 0, 8), Vector3(10, 7, 14), Color(0.36, 0.32, 0.27))
@@ -215,6 +216,20 @@ func _build_arena() -> void:
         _box("Sandbag", Vector3(-2.5 + i * 1.15, 0.35, -29), Vector3(1.05, 0.7, 0.55), Color(0.40,0.35,0.25), true)
     _box("ObjectiveLight", Vector3(0, 2.4, -30.5), Vector3(0.25, 0.25, 0.25), Color(0.85,0.58,0.18), false)
     _street_furniture()
+    _add_road_markings()
+
+func _add_road_markings() -> void:
+    var faded_white := Color(0.50, 0.51, 0.46)
+    var faded_yellow := Color(0.52, 0.46, 0.32)
+    for side in [-1.0, 1.0]:
+        var edge_line := _box("WornRoadEdge", Vector3(side * 6.45, 0.047, -0.5), Vector3(0.10, 0.016, 52.0), faded_white, false)
+        edge_line.add_to_group("road_markings")
+    for x in [-5.4, -3.8, -2.2, -0.6, 1.0, 2.6, 4.2, 5.8]:
+        var stripe := _box("CrosswalkStripe", Vector3(x, 0.047, 22.0), Vector3(0.55, 0.018, 0.14), faded_white, false)
+        stripe.add_to_group("road_markings")
+    for z in [-32, -24, -16, -8, 18, 26, 32]:
+        var alley_mark := _box("ServiceLaneMark", Vector3(-25.5, 0.047, float(z)), Vector3(0.09, 0.016, 2.8), faded_yellow, false)
+        alley_mark.add_to_group("road_markings")
 
 func _street_furniture() -> void:
     # Reusable, low-cost street details: gutters, damaged asphalt, and battered lamps.
