@@ -444,10 +444,10 @@ func _physics_process(delta: float) -> void:
             suppression_timer = maxf(suppression_timer, 0.35)
         elif suppression_timer > 0.0:
             state = "REPOSITION"
-            last_known_position = player.global_position
-            alert_memory_timer = 5.0
+            # Preserve the actual source of incoming fire; do not assume it is the player.
+            var suppression_source := last_known_position if last_known_position != Vector3.ZERO else player.global_position
             if cover_timer <= 0.0:
-                cover_goal = _choose_cover(player.global_position)
+                cover_goal = _choose_cover(suppression_source)
                 cover_timer = 1.6
         elif sees_player:
             if state != "COMBAT":
@@ -974,7 +974,9 @@ func apply_suppression(source_position: Vector3) -> void:
     last_known_position = source_position
     alert_memory_timer = maxf(alert_memory_timer, 3.5)
     suppression_timer = maxf(suppression_timer, 0.85)
-    cover_timer = 0.0
+    # A second near miss should reinforce the current evasive move, not restart it.
+    if state != "REPOSITION" or cover_goal == Vector3.ZERO or global_position.distance_to(cover_goal) < 1.2:
+        cover_timer = 0.0
     think_timer = 0.0
     if state != "COMBAT":
         state = "REPOSITION"
