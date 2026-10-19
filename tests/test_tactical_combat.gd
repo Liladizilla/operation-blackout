@@ -143,6 +143,14 @@ func _run_tests() -> void:
     _check(alert_receiver._should_hold_committed_cover(), "hostile holds its defensive position after suppression ends while the cover timer remains active")
     alert_receiver.cover_timer = 0.0
     _check(not alert_receiver._should_hold_committed_cover(), "hostile may resume combat once its defensive cover commitment expires")
+    alert_receiver.set_combat_role("SUPPORT")
+    _check(is_equal_approx(alert_receiver._cover_commitment_duration(), 2.0), "support units hold defensive cover longer than riflemen")
+    alert_receiver.set_combat_role("FLANKER")
+    _check(is_equal_approx(alert_receiver._cover_commitment_duration(), 1.15), "flankers use shorter cover commitments to preserve maneuver tempo")
+    alert_receiver.set_combat_role("RIFLEMAN")
+    alert_receiver.health = 35.0
+    _check(is_equal_approx(alert_receiver._cover_commitment_duration(), 2.4), "wounded hostiles commit to cover longer regardless of role")
+    alert_receiver.health = 100.0
     alert_receiver.cover_goal = Vector3.ZERO
 
     _check(is_equal_approx(alert_receiver._cover_approach_scale(1.5), 0.5), "hostile slows to half approach speed near cover")
