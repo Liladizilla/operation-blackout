@@ -219,6 +219,8 @@ func _run_tests() -> void:
     var exfil: Node = scene.get_node_or_null("ExfilZone")
     if exfil:
         _check(exfil.get_node_or_null("ExfilBeacon") != null, "extraction zone has a visible beacon")
+        _check(exfil.get_node_or_null("ExfilSmoke") != null, "extraction beacon emits a visible smoke plume")
+        _check(scene.get_tree().get_nodes_in_group("exfil_bollards").size() == 4, "extraction pad has four safety bollards")
         scene.hud._update_navigation()
         _check(scene.hud.navigation_label.text.begins_with("EXFIL"), "HUD switches navigation from intel to extraction")
     if exfil:
