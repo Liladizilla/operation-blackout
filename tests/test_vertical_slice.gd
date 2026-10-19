@@ -98,6 +98,8 @@ func _run_tests() -> void:
     objective_script.player_inside = false
     objective_script.progress = 0.0
 
+    scene.hud.notify_hostile_neutralized(3)
+    _check(scene.hud.status_label.text == "HOSTILE NEUTRALIZED  //  3 REMAINING", "HUD confirms a hostile elimination and remaining threat count")
     _check(scene.hud.navigation_label != null, "HUD includes the intel rangefinder")
     _check(scene.hud.health_label.anchor_bottom == 1.0 and scene.hud.ammo_label.anchor_bottom == 1.0, "health and ammo HUD stay anchored when the viewport resizes")
     scene.hud.update_stamina(2.0, 8.0)
