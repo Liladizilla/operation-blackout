@@ -233,6 +233,20 @@ func _build_equipment_details() -> void:
 
     _add_equipment_box("TacticalBackpack", Vector3(0.0, 1.22, 0.19), Vector3(0.43, 0.54, 0.22), fabric_material)
     _add_equipment_box("BackpackTopFlap", Vector3(0.0, 1.48, 0.19), Vector3(0.36, 0.12, 0.235), helmet_material)
+    # Compact squad radio and whip antenna break up the otherwise flat backpack silhouette.
+    _add_equipment_box("RadioPack", Vector3(-0.19, 1.34, 0.075), Vector3(0.14, 0.23, 0.12), rubber_material)
+    var radio_antenna := MeshInstance3D.new()
+    radio_antenna.name = "RadioAntenna"
+    var antenna_mesh := CylinderMesh.new()
+    antenna_mesh.top_radius = 0.009
+    antenna_mesh.bottom_radius = 0.014
+    antenna_mesh.height = 0.34
+    radio_antenna.mesh = antenna_mesh
+    radio_antenna.position = Vector3(-0.22, 1.60, 0.10)
+    radio_antenna.rotation.z = -0.12
+    radio_antenna.material_override = rubber_material
+    visual_root.add_child(radio_antenna)
+    _add_equipment_box("SidearmHolster", Vector3(0.285, 0.76, -0.015), Vector3(0.13, 0.23, 0.16), rubber_material)
     _add_equipment_box("WaistBelt", Vector3(0.0, 0.79, -0.005), Vector3(0.55, 0.105, 0.29), rubber_material)
     _add_equipment_box("BeltBuckle", Vector3(0.0, 0.79, -0.165), Vector3(0.09, 0.075, 0.025), buckle_material)
 
