@@ -4,6 +4,7 @@ var player_inside := false
 var progress := 0.0
 var completed := false
 var current_status := ""
+var interruption_timer := 0.0
 var area: Area3D
 var beacon_light: OmniLight3D
 
@@ -65,18 +66,22 @@ func _build_marker() -> void:
 func _process(delta: float) -> void:
     if completed:
         return
+    interruption_timer = maxf(0.0, interruption_timer - delta)
     if not player_inside:
         progress = 0.0
-        _set_status("INTEL SECURED. MOVE TO THE EXFIL BEACON.")
+        if interruption_timer <= 0.0:
+            _set_status("INTEL SECURED. MOVE TO THE EXFIL BEACON.")
         return
     if Input.is_action_pressed("interact"):
+        interruption_timer = 0.0
         progress += delta
         _set_status("EXFIL IN PROGRESS  %d%%" % int(minf(progress / 2.0, 1.0) * 100.0))
         if progress >= 2.0:
             _complete()
     else:
         progress = 0.0
-        _set_status("HOLD F TO CONFIRM EXTRACTION")
+        if interruption_timer <= 0.0:
+            _set_status("HOLD F TO CONFIRM EXTRACTION")
 
 func _on_enter(body: Node3D) -> void:
     if body.is_in_group("player") or body.name == "Player":
@@ -87,6 +92,7 @@ func _on_exit(body: Node3D) -> void:
         player_inside = false
         progress = 0.0
         if not completed:
+            interruption_timer = 1.25
             _set_status("EXTRACTION INTERRUPTED. RETURN TO THE BEACON.")
 
 func _set_status(message: String) -> void:
