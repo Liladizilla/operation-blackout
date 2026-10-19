@@ -52,6 +52,8 @@ func _run_tests() -> void:
     _check(visual_test_enemy.get_node_or_null("EnemyMuzzleFlash") != null, "hostiles have muzzle flash geometry")
     visual_test_enemy._show_muzzle_flash()
     _check(visual_test_enemy.enemy_muzzle_flash.visible and visual_test_enemy.enemy_muzzle_light.light_energy > 0.0, "hostile muzzle flash activates")
+    var cover_test_goal: Vector3 = visual_test_enemy._choose_cover(scene.get_node("Player").global_position)
+    _check(absf(cover_test_goal.x) <= 50.0 and absf(cover_test_goal.z) <= 50.0, "hostile cover selection stays within the playable district")
     _check(scene.get_node_or_null("IntelObjective") != null, "intel objective spawns")
     _check(scene.hud.navigation_label != null, "HUD includes the intel rangefinder")
     _check(scene.hud.health_label.anchor_bottom == 1.0 and scene.hud.ammo_label.anchor_bottom == 1.0, "health and ammo HUD stay anchored when the viewport resizes")
