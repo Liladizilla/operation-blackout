@@ -94,7 +94,9 @@ func _run_tests() -> void:
     alert_receiver.apply_suppression(repeat_suppression_source)
     _check(is_equal_approx(alert_receiver.cover_timer, 1.4), "repeated suppression preserves an active cover commitment")
     _check(alert_receiver.last_known_position.is_equal_approx(repeat_suppression_source), "repeated suppression updates the remembered firing source")
+    _check(alert_receiver._should_hold_committed_cover(), "hostile holds its defensive position after suppression ends while the cover timer remains active")
     alert_receiver.cover_timer = 0.0
+    _check(not alert_receiver._should_hold_committed_cover(), "hostile may resume combat once its defensive cover commitment expires")
     alert_receiver.cover_goal = Vector3.ZERO
 
     _check(is_equal_approx(alert_receiver._cover_approach_scale(1.5), 0.5), "hostile slows to half approach speed near cover")
