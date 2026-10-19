@@ -13,6 +13,8 @@ var owner_scene: Node
 var player_ref: Node
 var pause_panel: PanelContainer
 var hitmarker_timer := 0.0
+var hit_feedback_label: Label
+var hit_feedback_timer := 0.0
 var damage_direction_label: Label
 var damage_direction_timer := 0.0
 var mission_panel: PanelContainer
@@ -102,6 +104,18 @@ func _build() -> void:
     center_dot.offset_bottom = 22
     center_dot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     root.add_child(center_dot)
+    hit_feedback_label = _label("", 16, Color(0.95, 0.92, 0.80))
+    hit_feedback_label.anchor_left = 0.5
+    hit_feedback_label.anchor_right = 0.5
+    hit_feedback_label.anchor_top = 0.5
+    hit_feedback_label.anchor_bottom = 0.5
+    hit_feedback_label.offset_left = -140
+    hit_feedback_label.offset_right = 140
+    hit_feedback_label.offset_top = -68
+    hit_feedback_label.offset_bottom = -42
+    hit_feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    hit_feedback_label.visible = false
+    root.add_child(hit_feedback_label)
     damage_direction_label = _label("", 18, Color(0.92,0.24,0.16))
     damage_direction_label.anchor_left = 0.5
     damage_direction_label.anchor_right = 0.5
@@ -149,6 +163,10 @@ func _process(delta: float) -> void:
         if hitmarker_timer == 0.0 and is_instance_valid(center_dot):
             center_dot.text = "+"
             center_dot.add_theme_color_override("font_color", Color(0.88,0.86,0.76))
+    if hit_feedback_timer > 0.0:
+        hit_feedback_timer = maxf(0.0, hit_feedback_timer - delta)
+        if hit_feedback_timer == 0.0 and is_instance_valid(hit_feedback_label):
+            hit_feedback_label.visible = false
     if hit_flash and hit_flash.color.a > 0:
         var c := hit_flash.color
         c.a = maxf(0.0, c.a - delta * 0.8)
@@ -166,6 +184,21 @@ func flash_hitmarker(killed: bool = false, headshot: bool = false) -> void:
     center_dot.text = "X" if killed else ("x" if headshot else "+")
     center_dot.add_theme_color_override("font_color", Color(0.95,0.30,0.18) if killed else (Color(1.0,0.68,0.24) if headshot else Color(0.95,0.92,0.80)))
     hitmarker_timer = 0.22 if killed or headshot else 0.11
+    if is_instance_valid(hit_feedback_label):
+        if killed and headshot:
+            hit_feedback_label.text = "HEADSHOT  /  ELIMINATED"
+            hit_feedback_label.add_theme_color_override("font_color", Color(1.0, 0.36, 0.20))
+        elif killed:
+            hit_feedback_label.text = "TARGET ELIMINATED"
+            hit_feedback_label.add_theme_color_override("font_color", Color(1.0, 0.36, 0.20))
+        elif headshot:
+            hit_feedback_label.text = "HEADSHOT"
+            hit_feedback_label.add_theme_color_override("font_color", Color(1.0, 0.68, 0.24))
+        else:
+            hit_feedback_label.text = "TARGET HIT"
+            hit_feedback_label.add_theme_color_override("font_color", Color(0.95, 0.92, 0.80))
+        hit_feedback_label.visible = true
+        hit_feedback_timer = 0.65
 
 func set_ammo(current: int, reserve: int) -> void:
     ammo_label.text = "%02d / %03d" % [current, reserve]
