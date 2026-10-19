@@ -16,6 +16,8 @@ var last_known_position := Vector3.ZERO
 var cover_goal := Vector3.ZERO
 var cover_timer := 0.0
 var suppression_timer := 0.0
+var alert_memory_timer := 0.0
+var alert_broadcast_timer := 0.0
 
 func _ready() -> void:
     var capsule := CapsuleShape3D.new()
@@ -128,8 +130,10 @@ func _physics_process(delta: float) -> void:
         return
     think_timer -= delta
     fire_timer -= delta
-    cover_timer -= delta
+    cover_timer = maxf(0.0, cover_timer - delta)
     suppression_timer = maxf(0.0, suppression_timer - delta)
+    alert_memory_timer = maxf(0.0, alert_memory_timer - delta)
+    alert_broadcast_timer = maxf(0.0, alert_broadcast_timer - delta)
     if think_timer <= 0:
         think_timer = 0.25
         var distance := global_position.distance_to(player.global_position)
@@ -140,12 +144,18 @@ func _physics_process(delta: float) -> void:
         if suppression_timer > 0.0:
             state = "REPOSITION"
             last_known_position = player.global_position
+            alert_memory_timer = 5.0
             if cover_timer <= 0.0:
                 cover_goal = _choose_cover(player.global_position)
                 cover_timer = 1.6
         elif sees_player:
+            if state != "COMBAT":
+                _broadcast_alert(player.global_position)
             state = "COMBAT"
             last_known_position = player.global_position
+            alert_memory_timer = 5.0
+        elif alert_memory_timer > 0.0:
+            state = "INVESTIGATE"
         elif distance < 42.0:
             state = "INVESTIGATE"
         else:
@@ -233,6 +243,27 @@ func _steering_ray(space: PhysicsDirectSpaceState3D, origin: Vector3, direction:
     query.collision_mask = 1
     return space.intersect_ray(query)
 
+func _broadcast_alert(threat_position: Vector3) -> void:
+    if alert_broadcast_timer > 0.0:
+        return
+    alert_broadcast_timer = 1.5
+    for ally in get_tree().get_nodes_in_group("enemies"):
+        if ally == self or not is_instance_valid(ally) or not ally.has_method("hear_alert"):
+            continue
+        if ally.global_position.distance_to(global_position) <= 36.0:
+            ally.hear_alert(threat_position)
+
+func hear_alert(threat_position: Vector3) -> void:
+    if health <= 0.0:
+        return
+    last_known_position = threat_position
+    alert_memory_timer = 5.0
+    if state != "COMBAT":
+        state = "INVESTIGATE"
+        cover_goal = _choose_cover(threat_position)
+        cover_timer = 1.2
+    think_timer = minf(think_timer, 0.1)
+
 func _choose_cover(threat_position: Vector3) -> Vector3:
     # Candidate positions sit near concrete barriers and wreckage in the arena.
     # Stand beside cover rather than targeting the solid center of each obstacle.
@@ -248,6 +279,20 @@ func _choose_cover(threat_position: Vector3) -> Vector3:
         Vector3(-28.5, 0, 0), Vector3(-28.5, 0, 12),
         Vector3(-28.5, 0, 24)
     ]
+    # Add positions beside actual service-alley caches so nearby enemies can use
+    # the expanded district rather than treating the original arena as the map.
+    for cache in get_tree().get_nodes_in_group("ammo_caches"):
+        if not is_instance_valid(cache):
+            continue
+        var cache_position: Vector3 = cache.global_position
+        for offset in [Vector3(-1.65, 0, 0), Vector3(1.65, 0, 0), Vector3(0, 0, -1.35), Vector3(0, 0, 1.35)]:
+            candidates.append(cache_position + offset)
+    for crate in get_tree().get_nodes_in_group("service_alley_crates"):
+        if not is_instance_valid(crate):
+            continue
+        var crate_position: Vector3 = crate.global_position
+        for offset in [Vector3(-1.65, 0, 0), Vector3(1.65, 0, 0), Vector3(0, 0, -1.35), Vector3(0, 0, 1.35)]:
+            candidates.append(crate_position + offset)
     var best := global_position
     var best_score := -INF
     for candidate in candidates:
@@ -293,6 +338,8 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot:
         suppression_timer = 1.1 if headshot else 0.75
         cover_timer = 0.0
         think_timer = 0.0
+        alert_memory_timer = 5.0
+        _broadcast_alert(player.global_position)
     if health > 0.0:
         body_material.albedo_color = Color(0.55,0.12,0.08)
         hit_flash_timer = 0.14
