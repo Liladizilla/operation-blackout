@@ -16,6 +16,7 @@ var camera: Camera3D
 var weapon_audio: AudioStreamPlayer3D
 var footstep_audio: AudioStreamPlayer3D
 var weapon_root: Node3D
+var weapon_magazine: MeshInstance3D
 var hud: Node
 var pitch := 0.0
 var health := 100.0
@@ -63,6 +64,7 @@ func _ready() -> void:
 
 func _build_view_weapon() -> void:
     weapon_root = Node3D.new()
+    weapon_root.name = "WeaponRoot"
     weapon_root.position = Vector3(0.28, -0.28, -0.55)
     camera.add_child(weapon_root)
     var body := MeshInstance3D.new()
@@ -126,14 +128,15 @@ func _build_view_weapon() -> void:
     handguard.position = Vector3(0, -0.005, -0.34)
     handguard.material_override = mat
     weapon_root.add_child(handguard)
-    var magazine := MeshInstance3D.new()
+    weapon_magazine = MeshInstance3D.new()
+    weapon_magazine.name = "WeaponMagazine"
     var mag_mesh := BoxMesh.new()
     mag_mesh.size = Vector3(0.105, 0.24, 0.15)
-    magazine.mesh = mag_mesh
-    magazine.position = Vector3(0, -0.18, -0.02)
-    magazine.rotation.x = -0.12
-    magazine.material_override = mat
-    weapon_root.add_child(magazine)
+    weapon_magazine.mesh = mag_mesh
+    weapon_magazine.position = Vector3(0, -0.18, -0.02)
+    weapon_magazine.rotation.x = -0.12
+    weapon_magazine.material_override = mat
+    weapon_root.add_child(weapon_magazine)
     var front_sight := MeshInstance3D.new()
     var front_mesh := BoxMesh.new()
     front_mesh.size = Vector3(0.025, 0.09, 0.025)
@@ -238,6 +241,7 @@ func _physics_process(delta: float) -> void:
     recoil = lerpf(recoil, 0.0, delta * 7.0)
     var reload_duration := 2.7 if ammo <= 0 else 2.0
     var reload_progress := clampf(1.0 - reload_time / reload_duration, 0.0, 1.0) if is_reloading else 0.0
+    _update_magazine_reload(reload_progress)
     var reload_drop := sin(reload_progress * PI) * 0.14
     var weapon_base := Vector3(0.06, -0.17, -0.43) if ads else Vector3(0.28, -0.28, -0.55)
     weapon_root.position = Vector3(
@@ -382,6 +386,27 @@ func _impact_spark(pos: Vector3, normal: Vector3) -> void:
     marker.global_position = pos + normal * 0.04
     var timer := get_tree().create_timer(0.18)
     timer.timeout.connect(marker.queue_free)
+
+func _update_magazine_reload(progress: float) -> void:
+    if not is_instance_valid(weapon_magazine):
+        return
+    if not is_reloading:
+        weapon_magazine.visible = true
+        weapon_magazine.position = Vector3(0.0, -0.18, -0.02)
+        weapon_magazine.rotation.x = -0.12
+        return
+    if progress < 0.24:
+        weapon_magazine.visible = true
+        weapon_magazine.position = Vector3(0.0, -0.18, -0.02)
+        weapon_magazine.rotation.x = -0.12
+    elif progress < 0.62:
+        weapon_magazine.visible = false
+    else:
+        weapon_magazine.visible = true
+        var insert_progress := clampf((progress - 0.62) / 0.20, 0.0, 1.0)
+        insert_progress = insert_progress * insert_progress * (3.0 - 2.0 * insert_progress)
+        weapon_magazine.position = Vector3(0.0, lerpf(-0.42, -0.18, insert_progress), -0.02)
+        weapon_magazine.rotation.x = lerpf(-0.72, -0.12, insert_progress)
 
 func _start_reload() -> void:
     if is_reloading or ammo == MAG_SIZE or reserve <= 0:
