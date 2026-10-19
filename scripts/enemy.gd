@@ -10,6 +10,7 @@ var body_mesh: MeshInstance3D
 var last_known_position := Vector3.ZERO
 var cover_goal := Vector3.ZERO
 var cover_timer := 0.0
+var suppression_timer := 0.0
 
 func _ready() -> void:
     var capsule := CapsuleShape3D.new()
@@ -84,23 +85,30 @@ func _physics_process(delta: float) -> void:
     think_timer -= delta
     fire_timer -= delta
     cover_timer -= delta
+    suppression_timer = maxf(0.0, suppression_timer - delta)
     if think_timer <= 0:
         think_timer = 0.25
         var distance := global_position.distance_to(player.global_position)
-        var query := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP*1.2, player.global_position + Vector3.UP*1.3)
+        var query := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 1.2, player.global_position + Vector3.UP * 1.3)
         query.exclude = [get_rid()]
         var sight := get_world_3d().direct_space_state.intersect_ray(query)
-        var sees_player: bool = distance < 30 and (sight.is_empty() or sight.get("collider") == player)
-        if sees_player:
+        var sees_player: bool = distance < 30.0 and (sight.is_empty() or sight.get("collider") == player)
+        if suppression_timer > 0.0:
+            state = "REPOSITION"
+            last_known_position = player.global_position
+            if cover_timer <= 0.0:
+                cover_goal = _choose_cover(player.global_position)
+                cover_timer = 1.6
+        elif sees_player:
             state = "COMBAT"
             last_known_position = player.global_position
-        elif distance < 42:
+        elif distance < 42.0:
             state = "INVESTIGATE"
         else:
             state = "SEARCH"
-        if distance < 15 and randf() < 0.28:
-            strafe_sign *= -1
-        if not sees_player and cover_timer <= 0.0:
+        if distance < 15.0 and randf() < 0.28:
+            strafe_sign *= -1.0
+        if not sees_player and suppression_timer <= 0.0 and cover_timer <= 0.0:
             cover_goal = _choose_cover(last_known_position if last_known_position != Vector3.ZERO else player.global_position)
             cover_timer = randf_range(2.5, 4.0)
     var target_dir := Vector3.ZERO
@@ -118,9 +126,20 @@ func _physics_process(delta: float) -> void:
         if distance_to_player < 25 and fire_timer <= 0:
             fire_timer = randf_range(0.65,1.25)
             _try_shoot_player()
+    elif state == "REPOSITION":
+        var to_cover := cover_goal - global_position
+        to_cover.y = 0.0
+        if to_cover.length() > 1.1:
+            target_dir = to_cover.normalized()
+        else:
+            # If no nearby cover is reachable, at least break the player's firing line.
+            var retreat := global_position - player.global_position
+            retreat.y = 0.0
+            target_dir = retreat.normalized()
+        look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
     elif state == "INVESTIGATE":
         var to_cover := cover_goal - global_position
-        to_cover.y = 0
+        to_cover.y = 0.0
         if to_cover.length() > 1.0:
             target_dir = to_cover.normalized() * 0.72
             look_at(Vector3(last_known_position.x, global_position.y, last_known_position.z), Vector3.UP)
@@ -133,17 +152,23 @@ func _physics_process(delta: float) -> void:
     move_and_slide()
 
 func _choose_cover(threat_position: Vector3) -> Vector3:
+    # Candidate positions sit near concrete barriers and wreckage in the arena.
     var candidates := [Vector3(-7, 0, -10), Vector3(7, 0, -18), Vector3(-5, 0, 7), Vector3(6, 0, 19), Vector3(-12, 0, 25), Vector3(13, 0, -1), Vector3(-2, 0, -29)]
     var best := global_position
     var best_score := -INF
     for candidate in candidates:
         var flat: Vector3 = candidate - global_position
-        flat.y = 0
+        flat.y = 0.0
         if flat.length() > 18.0:
             continue
         var away: Vector3 = candidate - threat_position
-        away.y = 0
-        var score: float = away.length() - flat.length() * 0.45 + randf_range(-1.2, 1.2)
+        away.y = 0.0
+        var score: float = away.length() * 0.65 - flat.length() * 0.55 + randf_range(-0.6, 0.6)
+        var cover_ray := PhysicsRayQueryParameters3D.create(threat_position + Vector3.UP * 1.25, candidate + Vector3.UP * 1.0)
+        cover_ray.exclude = [get_rid()]
+        var obstruction := get_world_3d().direct_space_state.intersect_ray(cover_ray)
+        if not obstruction.is_empty():
+            score += 5.0
         if score > best_score:
             best_score = score
             best = candidate
@@ -161,6 +186,13 @@ func _try_shoot_player() -> void:
 
 func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot: bool = false) -> bool:
     health -= amount * (3.0 if headshot else 1.0)
+    # Incoming fire alerts the unit and forces a short break from its current firing lane.
+    if is_instance_valid(player):
+        last_known_position = player.global_position
+        state = "REPOSITION"
+        suppression_timer = 1.1 if headshot else 0.75
+        cover_timer = 0.0
+        think_timer = 0.0
     var mat := StandardMaterial3D.new()
     mat.albedo_color = Color(0.55,0.12,0.08) if health > 0 else Color(0.08,0.09,0.08)
     body_mesh.material_override = mat
