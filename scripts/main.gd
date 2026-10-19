@@ -382,6 +382,49 @@ func _building(pos: Vector3, size: Vector3, color: Color) -> void:
     var building := _box("Building", pos + Vector3(0,size.y/2,0), size, color, true)
     building.add_to_group("arena_buildings")
     _box("RoofRubble", pos + Vector3(0,size.y + 0.3,0), Vector3(size.x*0.45,0.6,size.z*0.5), color.darkened(0.18), true)
+
+    # Roof services add recognizable scale cues to the otherwise damaged roofline.
+    if int(abs(pos.x)) % 2 == 0:
+        var tank_root := Node3D.new()
+        tank_root.name = "RooftopWaterTank"
+        tank_root.position = Vector3(pos.x + size.x * 0.24, pos.y + size.y + 1.25, pos.z + size.z * 0.12)
+        tank_root.add_to_group("roof_water_tanks")
+        add_child(tank_root)
+        var tank := MeshInstance3D.new()
+        var tank_mesh := CylinderMesh.new()
+        tank_mesh.top_radius = 0.58
+        tank_mesh.bottom_radius = 0.62
+        tank_mesh.height = 1.65
+        tank.mesh = tank_mesh
+        tank.material_override = _material(Color(0.16, 0.19, 0.18))
+        tank_root.add_child(tank)
+        for band_y in [-0.48, 0.43]:
+            var band := MeshInstance3D.new()
+            var band_mesh := CylinderMesh.new()
+            band_mesh.top_radius = 0.635
+            band_mesh.bottom_radius = 0.635
+            band_mesh.height = 0.075
+            band.mesh = band_mesh
+            band.position.y = band_y
+            band.material_override = _material(Color(0.29, 0.28, 0.24))
+            tank_root.add_child(band)
+        var tank_base := MeshInstance3D.new()
+        var tank_base_mesh := BoxMesh.new()
+        tank_base_mesh.size = Vector3(1.2, 0.16, 1.2)
+        tank_base.mesh = tank_base_mesh
+        tank_base.position.y = -0.9
+        tank_base.material_override = _material(Color(0.25, 0.24, 0.21))
+        tank_root.add_child(tank_base)
+        var tank_pipe := MeshInstance3D.new()
+        var tank_pipe_mesh := CylinderMesh.new()
+        tank_pipe_mesh.top_radius = 0.055
+        tank_pipe_mesh.bottom_radius = 0.055
+        tank_pipe_mesh.height = 0.9
+        tank_pipe.mesh = tank_pipe_mesh
+        tank_pipe.position = Vector3(0.42, -0.78, 0.36)
+        tank_pipe.material_override = _material(Color(0.11, 0.13, 0.12))
+        tank_root.add_child(tank_pipe)
+
     # Repeated window bays with recessed glass, chipped concrete surrounds, and sill lines.
     var columns := maxi(2, int(size.x / 3.0))
     var rows := maxi(1, int(size.y / 3.2))
@@ -398,6 +441,9 @@ func _building(pos: Vector3, size: Vector3, color: Color) -> void:
             _box("WindowSill", Vector3(wx, wy - 0.64, pos.z - size.z * 0.5 - 0.08), Vector3(ww + 0.28, 0.13, 0.18), color.darkened(0.12), false)
             if (row + col) % 4 == 1:
                 _box("BrokenShutter", Vector3(wx + ww * 0.25, wy, pos.z - size.z * 0.5 - 0.13), Vector3(0.08, 0.95, 0.08), Color(0.16, 0.15, 0.12), false)
+            if (row + col) % 2 == 0:
+                var grime := _box("RainStreakWeathering", Vector3(wx - ww * 0.24, wy - 0.93, pos.z - size.z * 0.5 - 0.075), Vector3(0.065, 0.42 + float((row + col) % 3) * 0.12, 0.025), Color(0.18, 0.18, 0.16), false)
+                grime.add_to_group("facade_weathering")
     # One damaged balcony per block gives the skyline a different silhouette
     # while keeping the collision hull simple and predictable.
     var balcony_col := columns - 1 if pos.x < 0.0 else 0
@@ -423,6 +469,17 @@ func _building(pos: Vector3, size: Vector3, color: Color) -> void:
         var rebar := _box("RustedRebar", Vector3(pos.x + (-0.32 if damage_index == 0 else 0.34) * size.x, pos.y + size.y + 0.34, pos.z - size.z * 0.2), Vector3(0.045, 0.78, 0.045), Color(0.23, 0.12, 0.075), false)
         rebar.rotation_degrees.z = 24.0 if damage_index == 0 else -21.0
         rebar.add_to_group("facade_damage_details")
+    # Surface-mounted electrical service hardware and conduit runs.
+    var service_x := pos.x + size.x * 0.37
+    var service_y := pos.y + 1.35
+    var front_z := pos.z - size.z * 0.5 - 0.13
+    var junction := _box("FacadeElectricalJunction", Vector3(service_x, service_y, front_z), Vector3(0.42, 0.48, 0.16), Color(0.16, 0.17, 0.15), false)
+    junction.add_to_group("facade_service_details")
+    var conduit := _box("FacadeConduit", Vector3(service_x + 0.3, service_y + 0.7, front_z - 0.015), Vector3(0.055, 1.45, 0.055), Color(0.10, 0.12, 0.11), false)
+    conduit.add_to_group("facade_service_details")
+    var conduit_elbow := _box("FacadeConduitElbow", Vector3(service_x + 0.15, service_y + 1.42, front_z - 0.015), Vector3(0.34, 0.055, 0.055), Color(0.10, 0.12, 0.11), false)
+    conduit_elbow.add_to_group("facade_service_details")
+
     var ac_unit := _box("BatteredAirConditioner", Vector3(pos.x + size.x * 0.27, pos.y + minf(3.1, size.y * 0.52), pos.z - size.z * 0.5 - 0.24), Vector3(0.72, 0.46, 0.28), Color(0.19, 0.20, 0.18), true)
     ac_unit.add_to_group("facade_damage_details")
     for grille_index in range(3):
