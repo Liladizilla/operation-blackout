@@ -42,12 +42,25 @@ func _run_tests() -> void:
     _check(cover.is_in_group("arena_cover"), "intact destructible panels are valid tactical cover")
     _check(is_equal_approx(cover.health, cover.max_health), "cover begins at full structural health")
 
-    var survived: bool = cover.take_damage(34.0, Vector3.ZERO, false)
-    _check(not survived and is_equal_approx(cover.health, 102.0), "first rifle hit damages but does not destroy the panel")
+    var player: Node = scene.get_node("Player")
+    player.set_physics_process(false)
+    player.rotation.y = 0.0
+    player.pitch = 0.0
+    player.camera_pivot.rotation = Vector3.ZERO
+    player.camera_pivot.position.y = 0.72
+    player.ammo = 30
+    player.fire_cooldown = 0.0
+    player.is_reloading = false
+    cover.position = Vector3(0.0, 1.1, 22.0)
+    await physics_frame
+    player._fire()
+    await physics_frame
+    _check(player.ammo == 29, "firing at cover still consumes one rifle round")
+    _check(not cover.is_destroyed and is_equal_approx(cover.health, 102.0), "player hitscan damage reaches cover without destroying it")
     _check(cover.get_node_or_null("DamageCrack_01").visible, "damaged cover reveals visible fracture marks")
     _check(not cover.get_node("CollisionShape3D").disabled, "partially damaged cover remains solid")
 
-    survived = cover.take_damage(200.0, Vector3.ZERO, false)
+    var survived: bool = cover.take_damage(200.0, Vector3.ZERO, false)
     _check(survived and cover.is_destroyed, "lethal damage destroys the cover")
     await physics_frame
     _check(cover.get_node("CollisionShape3D").disabled, "destroyed cover disables its collision")
