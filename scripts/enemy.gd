@@ -32,6 +32,8 @@ var muzzle_flash_timer := 0.0
 var hit_flash_timer := 0.0
 var last_known_position := Vector3.ZERO
 var cover_goal := Vector3.ZERO
+var last_cover_goal := Vector3.ZERO
+var has_last_cover_goal := false
 var cover_timer := 0.0
 var suppression_timer := 0.0
 var low_health_retreat_used := false
@@ -569,6 +571,9 @@ func _choose_cover(threat_position: Vector3) -> Vector3:
         var away: Vector3 = candidate - threat_position
         away.y = 0.0
         var score: float = away.length() * 0.65 - flat.length() * 0.55 + randf_range(-0.6, 0.6)
+        # Avoid cycling straight back to the last position when other cover is available.
+        if has_last_cover_goal and candidate.distance_to(last_cover_goal) < 4.5:
+            score -= 12.0
         var cover_ray := PhysicsRayQueryParameters3D.create(threat_position + Vector3.UP * 1.25, candidate + Vector3.UP * 1.0)
         cover_ray.exclude = [get_rid()]
         var obstruction := get_world_3d().direct_space_state.intersect_ray(cover_ray)
@@ -577,6 +582,9 @@ func _choose_cover(threat_position: Vector3) -> Vector3:
         if score > best_score:
             best_score = score
             best = candidate
+    if best.distance_to(global_position) > 0.75:
+        last_cover_goal = best
+        has_last_cover_goal = true
     return best
 
 func _try_shoot_player() -> void:
