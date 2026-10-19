@@ -49,7 +49,9 @@ func _run_tests() -> void:
 
     # Place a target in the camera's forward line and exercise the actual hitscan path.
     var firing_target: Node = scene.enemies[1]
+    firing_target.set_physics_process(false)
     firing_target.global_position = Vector3(0.0, 0.95, 19.0)
+    await physics_frame
     player.camera_pivot.rotation = Vector3.ZERO
     player.pitch = 0.0
     player.ammo = 30
