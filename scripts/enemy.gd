@@ -381,7 +381,10 @@ func _animate_visuals(delta: float) -> void:
         right_arm_pivot.rotation.x = swing * 0.42
         visual_root.position.y = absf(sin(gait_time * 2.0)) * (0.024 if weapon_ready else 0.035)
         var local_velocity := global_transform.basis.inverse() * velocity
-        visual_root.rotation.z = clampf(-local_velocity.x * 0.018, -0.055, 0.055)
+        var lateral_lean := clampf(-local_velocity.x * 0.018, -0.055, 0.055)
+        # Ease into and out of lateral lean so direction changes feel weighted, not snapped.
+        var lean_weight := minf(delta * 6.0, 1.0)
+        visual_root.rotation.z = lerpf(visual_root.rotation.z - hit_reaction_direction * 0.12 * reaction_strength, lateral_lean, lean_weight)
     else:
         gait_time += delta * 1.2
         left_leg_pivot.rotation.x = lerpf(left_leg_pivot.rotation.x, 0.0, delta * 7.0)
