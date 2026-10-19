@@ -266,6 +266,10 @@ func notify_hostile_neutralized(remaining: int) -> void:
     status_label.text = "HOSTILE NEUTRALIZED  //  %d REMAINING" % remaining
     status_label.add_theme_color_override("font_color", Color(1.0, 0.62, 0.28))
 
+func notify_hostile_contact() -> void:
+    status_label.text = "CONTACT  //  HOSTILES HAVE VISUAL"
+    status_label.add_theme_color_override("font_color", Color(1.0, 0.32, 0.22))
+
 func set_status(message: String) -> void:
     status_label.text = message
 
