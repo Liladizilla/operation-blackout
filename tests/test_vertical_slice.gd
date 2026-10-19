@@ -89,6 +89,12 @@ func _run_tests() -> void:
     _check(moving_spread > standing_spread, "movement increases weapon spread")
     scene.hud.set_ammo(5, 30)
     _check(scene.hud.ammo_label.text == "05 / 030", "ammo HUD formats low ammunition")
+    scene.hud.flash_hitmarker(false, false)
+    _check(scene.hud.hit_feedback_label.text == "TARGET HIT" and scene.hud.hit_feedback_label.visible, "ordinary hits display readable confirmation")
+    scene.hud.flash_hitmarker(false, true)
+    _check(scene.hud.hit_feedback_label.text == "HEADSHOT", "headshots receive distinct confirmation")
+    scene.hud.flash_hitmarker(true, true)
+    _check(scene.hud.hit_feedback_label.text == "HEADSHOT  /  ELIMINATED", "headshot eliminations preserve both combat cues")
     _check(scene.get_node_or_null("EnvironmentDetails") != null, "outer district dressing is attached")
     _check(scene.get_tree().get_nodes_in_group("district_buildings").size() == 8, "eight perimeter buildings are generated")
     _check(scene.get_tree().get_nodes_in_group("service_alley_crates").size() == 5, "service alley utility crates are generated")
@@ -173,6 +179,7 @@ func _run_tests() -> void:
         enemy.take_damage(1000.0)
     await process_frame
     _check(scene.get_remaining_enemies() == 0, "clearing all hostiles updates objective gate")
+    _check(scene.mission_phase == "RECOVER_INTEL", "clearing hostiles advances mission into intel recovery")
 
     var objective := scene.get_node_or_null("IntelObjective")
     if objective:
@@ -184,6 +191,9 @@ func _run_tests() -> void:
     _check(scene.get_node_or_null("IntelObjective") == null, "intel objective completes and is removed")
     _check(scene.get_node_or_null("ExfilZone") != null, "recovering intel activates the extraction zone")
     _check(not scene.mission_complete and scene.hud.objective_label.text.contains("MOVE TO EXFIL"), "intel recovery starts a separate extraction phase")
+    _check(scene.mission_phase == "EXFIL", "intel recovery advances mission into extraction phase")
+    scene.objective_complete()
+    _check(scene.get_node_or_null("ExfilZone") != null, "duplicate objective completion does not duplicate extraction")
 
     var exfil: Node = scene.get_node_or_null("ExfilZone")
     if exfil:
@@ -199,6 +209,9 @@ func _run_tests() -> void:
     await process_frame
     _check(scene.get_node_or_null("ExfilZone") == null, "holding interact completes extraction and removes the zone")
     _check(scene.mission_complete and scene.hud.objective_label.text.contains("EXFILTRATION COMPLETE"), "extraction completes the mission and updates HUD")
+    _check(scene.mission_phase == "COMPLETE", "successful extraction closes the mission state machine")
+    scene.exfiltration_complete()
+    _check(scene.mission_complete and scene.mission_phase == "COMPLETE", "duplicate extraction completion remains harmless")
 
     print("RESULT: ", passed, " checks passed; failed=", failed)
     quit(1 if failed else 0)
