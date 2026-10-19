@@ -23,7 +23,8 @@ func _process(delta: float) -> void:
     if completed:
         return
     if not player_inside:
-        progress = 0.0
+        if progress > 0.0:
+            progress = 0.0
         return
     var scene := get_tree().current_scene
     if scene and scene.has_method("get_remaining_enemies") and scene.get_remaining_enemies() > 0:
@@ -47,6 +48,8 @@ func _on_exit(body: Node3D) -> void:
     if body.name == "Player":
         player_inside = false
         progress = 0.0
+        if not completed:
+            _set_status("INTEL RECOVERY INTERRUPTED")
 
 func interact(_player: Node) -> void:
     # Kept as an interaction hook for future controller/input variants.
