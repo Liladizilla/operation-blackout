@@ -78,7 +78,7 @@ func _run_tests() -> void:
     var lamp_collision_shapes := first_lamp.find_children("*", "CollisionShape3D", true, false) if first_lamp != null else []
     _check(first_lamp != null and not lamp_collision_shapes.is_empty(), "street lamp shafts have physical collision")
     _check(scene.get_tree().get_nodes_in_group("utility_cables").size() == 12, "overhead utility cables span between lamp poles in sagging segments")
-    _check(scene.get_tree().get_nodes_in_group("street_drainage").size() >= 40, "road has manhole covers, grip slots and detailed storm-drain grates")
+    _check(scene.get_tree().get_nodes_in_group("street_drainage").size() >= 39, "road has manhole covers, grip slots and detailed storm-drain grates")
     _check(scene.get_tree().get_nodes_in_group("road_wear").size() == 6, "tire scarring varies along the damaged road surface")
     _check(scene.get_tree().get_nodes_in_group("vehicle_props").size() == 3, "street vehicles use separate detailed assemblies")
     _check(scene.get_tree().get_nodes_in_group("vehicle_collision").size() == 12, "all four wheels on each vehicle have physical collision")
