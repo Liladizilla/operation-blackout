@@ -96,7 +96,7 @@ func _run_tests() -> void:
     var mesh_count := _count_meshes(scene)
     print("PROFILE: scene_nodes=", node_count, " mesh_instances=", mesh_count)
     _check(node_count < 1800, "procedural scene stays within node budget")
-    _check(mesh_count < 650, "procedural scene stays within mesh budget")
+    _check(mesh_count < 850, "procedural scene stays within mesh budget after adding character equipment")
 
     var player := scene.get_node("Player")
     var audio_fx = load("res://scripts/audio_fx.gd")
