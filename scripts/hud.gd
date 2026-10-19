@@ -328,7 +328,9 @@ func show_pause() -> void:
     sensitivity_slider.max_value = 0.004
     sensitivity_slider.step = 0.0002
     sensitivity_slider.custom_minimum_size = Vector2(300, 24)
-    var current_sensitivity := float(player_ref.get("mouse_sensitivity")) if is_instance_valid(player_ref) else 0.0018
+    var current_sensitivity: float = 0.0018
+    if is_instance_valid(player_ref):
+        current_sensitivity = float(player_ref.get("mouse_sensitivity"))
     sensitivity_slider.value = clampf(current_sensitivity, sensitivity_slider.min_value, sensitivity_slider.max_value)
     sensitivity_value_label.text = "MOUSE SENSITIVITY  %.1fx" % (sensitivity_slider.value / 0.0018)
     sensitivity_slider.value_changed.connect(func(value: float):
