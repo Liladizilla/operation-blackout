@@ -195,6 +195,7 @@ func _build_arena() -> void:
     for z in [-26, -18, -10, -2, 6, 14]:
         var center_mark := _box("WornCenterline", Vector3(0, 0.047, float(z)), Vector3(0.15, 0.018, 3.3), Color(0.52, 0.46, 0.32), false)
         center_mark.add_to_group("road_markings")
+        center_mark.add_to_group("road_centerline_markings")
     _building(Vector3(-17, 0, -17), Vector3(12, 9, 12), Color(0.32, 0.30, 0.26))
     _building(Vector3(18, 0, -23), Vector3(13, 12, 15), Color(0.28, 0.29, 0.27))
     _building(Vector3(-22, 0, 8), Vector3(10, 7, 14), Color(0.36, 0.32, 0.27))
@@ -224,12 +225,15 @@ func _add_road_markings() -> void:
     for side in [-1.0, 1.0]:
         var edge_line := _box("WornRoadEdge", Vector3(side * 6.45, 0.047, -0.5), Vector3(0.10, 0.016, 52.0), faded_white, false)
         edge_line.add_to_group("road_markings")
+        edge_line.add_to_group("road_edge_markings")
     for x in [-5.4, -3.8, -2.2, -0.6, 1.0, 2.6, 4.2, 5.8]:
         var stripe := _box("CrosswalkStripe", Vector3(x, 0.047, 22.0), Vector3(0.55, 0.018, 0.14), faded_white, false)
         stripe.add_to_group("road_markings")
+        stripe.add_to_group("crosswalk_markings")
     for z in [-32, -24, -16, -8, 18, 26, 32]:
         var alley_mark := _box("ServiceLaneMark", Vector3(-25.5, 0.047, float(z)), Vector3(0.09, 0.016, 2.8), faded_yellow, false)
         alley_mark.add_to_group("road_markings")
+        alley_mark.add_to_group("service_lane_markings")
 
 func _street_furniture() -> void:
     # Reusable, low-cost street details: gutters, damaged asphalt, and battered lamps.
