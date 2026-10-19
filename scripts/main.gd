@@ -444,22 +444,84 @@ func _building(pos: Vector3, size: Vector3, color: Color) -> void:
 
 func _car(pos: Vector3, yaw: float) -> void:
     var root := Node3D.new()
+    root.name = "WreckedVehicle"
     root.position = pos
     root.rotation_degrees.y = yaw
+    root.add_to_group("vehicle_props")
     add_child(root)
-    _box_child(root, "CarBody", Vector3(0,0.65,0), Vector3(2.0,0.75,4.0), Color(0.17,0.20,0.19), true)
-    _box_child(root, "CarCabin", Vector3(0,1.25,-0.2), Vector3(1.55,0.7,1.8), Color(0.10,0.13,0.13), true)
-    for x in [-0.85, 0.85]:
-        for z in [-1.25, 1.25]:
-            var wheel := _mesh_box(Vector3(0.22,0.22,0.42), Color(0.045,0.045,0.04))
-            wheel.position = Vector3(x,0.28,z)
-            root.add_child(wheel)
-            var col := CollisionShape3D.new()
-            var shape := BoxShape3D.new()
-            shape.size = Vector3(0.22,0.22,0.42)
-            col.shape = shape
-            col.position = wheel.position
-            root.add_child(col)
+
+    _box_child(root, "CarBody", Vector3(0, 0.65, 0), Vector3(2.0, 0.75, 4.0), Color(0.17, 0.20, 0.19), true)
+    _box_child(root, "CarHood", Vector3(0, 1.02, -1.18), Vector3(1.78, 0.16, 1.42), Color(0.14, 0.17, 0.16), true)
+    _box_child(root, "CarTrunk", Vector3(0, 1.02, 1.45), Vector3(1.72, 0.15, 0.82), Color(0.13, 0.16, 0.15), true)
+    _box_child(root, "CarCabin", Vector3(0, 1.25, -0.2), Vector3(1.55, 0.7, 1.8), Color(0.075, 0.09, 0.09), true)
+
+    var glass_material := StandardMaterial3D.new()
+    glass_material.albedo_color = Color(0.045, 0.075, 0.078)
+    glass_material.metallic = 0.18
+    glass_material.roughness = 0.24
+    glass_material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+    _box_child(root, "FrontWindshield", Vector3(0, 1.49, -1.12), Vector3(1.38, 0.43, 0.055), glass_material.albedo_color, false)
+    _box_child(root, "RearWindow", Vector3(0, 1.49, 0.78), Vector3(1.32, 0.40, 0.055), glass_material.albedo_color, false)
+    for side in [-1.0, 1.0]:
+        _box_child(root, "FrontSideWindow", Vector3(side * 0.79, 1.48, -0.62), Vector3(0.045, 0.38, 0.72), glass_material.albedo_color, false)
+        _box_child(root, "RearSideWindow", Vector3(side * 0.79, 1.48, 0.27), Vector3(0.045, 0.34, 0.58), glass_material.albedo_color, false)
+        _box_child(root, "SideMirror", Vector3(side * 0.96, 1.32, -0.75), Vector3(0.16, 0.12, 0.20), Color(0.09, 0.10, 0.095), true)
+        _box_child(root, "FrontDoorHandle", Vector3(side * 1.01, 0.91, -0.35), Vector3(0.035, 0.045, 0.20), Color(0.28, 0.29, 0.26), false)
+        _box_child(root, "RearDoorHandle", Vector3(side * 1.01, 0.91, 0.43), Vector3(0.035, 0.045, 0.20), Color(0.28, 0.29, 0.26), false)
+
+    _box_child(root, "FrontBumper", Vector3(0, 0.43, -2.02), Vector3(1.92, 0.19, 0.16), Color(0.10, 0.11, 0.105), true)
+    _box_child(root, "RearBumper", Vector3(0, 0.43, 2.02), Vector3(1.92, 0.19, 0.16), Color(0.10, 0.11, 0.105), true)
+    _box_child(root, "FrontGrille", Vector3(0, 0.69, -2.025), Vector3(0.64, 0.25, 0.045), Color(0.035, 0.04, 0.038), false)
+    for grille_bar in range(5):
+        _box_child(root, "GrilleBar_%02d" % grille_bar, Vector3(-0.25 + float(grille_bar) * 0.125, 0.69, -2.055), Vector3(0.035, 0.22, 0.025), Color(0.24, 0.25, 0.22), false)
+
+    var headlight_material := StandardMaterial3D.new()
+    headlight_material.albedo_color = Color(0.72, 0.61, 0.42)
+    headlight_material.emission_enabled = true
+    headlight_material.emission = Color(0.35, 0.22, 0.09)
+    for side in [-1.0, 1.0]:
+        _box_child(root, "Headlight", Vector3(side * 0.69, 0.78, -2.04), Vector3(0.34, 0.18, 0.05), headlight_material.albedo_color, false)
+        _box_child(root, "TailLight", Vector3(side * 0.70, 0.78, 2.025), Vector3(0.30, 0.17, 0.055), Color(0.34, 0.075, 0.045), false)
+        var wheel_body := StaticBody3D.new()
+        wheel_body.name = "VehicleWheel"
+        wheel_body.position = Vector3(side * 0.91, 0.31, 0.0)
+        wheel_body.rotation.z = PI * 0.5
+        wheel_body.add_to_group("vehicle_collision")
+        root.add_child(wheel_body)
+        var wheel_mesh := MeshInstance3D.new()
+        var tire := CylinderMesh.new()
+        tire.top_radius = 0.32
+        tire.bottom_radius = 0.32
+        tire.height = 0.24
+        wheel_mesh.mesh = tire
+        wheel_mesh.material_override = _material(Color(0.035, 0.038, 0.036))
+        wheel_body.add_child(wheel_mesh)
+        var wheel_collision := CollisionShape3D.new()
+        var wheel_shape := CylinderShape3D.new()
+        wheel_shape.radius = 0.31
+        wheel_shape.height = 0.26
+        wheel_collision.shape = wheel_shape
+        wheel_body.add_child(wheel_collision)
+        var rim := MeshInstance3D.new()
+        var rim_mesh := CylinderMesh.new()
+        rim_mesh.top_radius = 0.16
+        rim_mesh.bottom_radius = 0.16
+        rim_mesh.height = 0.255
+        rim.mesh = rim_mesh
+        rim.material_override = _material(Color(0.24, 0.25, 0.23))
+        wheel_body.add_child(rim)
+        for spoke_index in range(5):
+            var spoke := MeshInstance3D.new()
+            var spoke_mesh := BoxMesh.new()
+            spoke_mesh.size = Vector3(0.045, 0.035, 0.018)
+            spoke.mesh = spoke_mesh
+            spoke.position = Vector3(0.0, cos(float(spoke_index) * TAU / 5.0) * 0.095, sin(float(spoke_index) * TAU / 5.0) * 0.095)
+            spoke.rotation.y = float(spoke_index) * TAU / 5.0
+            spoke.material_override = _material(Color(0.35, 0.36, 0.33))
+            wheel_body.add_child(spoke)
+    for side in [-1.0, 1.0]:
+        _box_child(root, "HoodDamageSeam", Vector3(side * 0.62, 1.11, -1.20), Vector3(0.035, 0.018, 1.15), Color(0.075, 0.085, 0.08), false)
+    _box_child(root, "CrackedTailgatePanel", Vector3(0, 1.105, 1.86), Vector3(1.2, 0.025, 0.04), Color(0.075, 0.085, 0.08), false)
 
 func _box(name: String, pos: Vector3, size: Vector3, color: Color, collision: bool) -> Node3D:
     var root: Node3D = StaticBody3D.new() if collision else Node3D.new()
