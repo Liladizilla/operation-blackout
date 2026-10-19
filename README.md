@@ -8,9 +8,9 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 - First-person mouse look, WASD movement, sprint, jump, crouch, prone
 - Aim-down-sights field-of-view change, breathing/strafe sway, recoil, and brief muzzle illumination
 - Assault rifle firing, raycast hit detection, ammunition and reloads
-- Basic hostile AI: line-of-sight detection, pursuit/strafe, last-known-position investigation, cover repositioning, and hitscan return fire
+- Hostile AI: line-of-sight detection, pursuit/strafe, last-known-position investigation, cover-aware repositioning, and hitscan return fire; taking damage triggers a suppression/reposition response
 - Health and directional damage feedback, headshot-aware hit confirmation, hold-to-recover intel objective gated behind enemy clearance, pause menu, and mission-complete/replay screen
-- Layered window bays, facade trim, side-wall details, service doors, and lightweight drifting battlefield smoke
+- Layered window bays, facade trim, side-wall details, service doors, battered street lamps, road gutters, damaged asphalt patches, scattered debris, and lightweight battlefield smoke
 - Godot Compatibility renderer for integrated graphics
 
 ## Requirements
@@ -42,14 +42,15 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 
 ## Current limits
 
-This is a foundation, not the finished game. Combatants use procedural meshes and inexpensive logic. The vertical slice still needs authored high-detail assets, proper skeletal animations, spatial weapon/ambience audio, robust navigation and cover tactics, destructible environments, vehicles, additional missions, co-op, and multiplayer. Current geometry and enemy logic are intentionally lightweight placeholders for gameplay iteration.
+This is a foundation, not the finished game. Combatants use procedural meshes and inexpensive logic. The vertical slice still needs authored high-detail environment/character assets, proper skeletal animations, spatial weapon/ambience audio, robust navigation and cover tactics, destructible environments, vehicles, additional missions, co-op, and multiplayer. Current geometry and enemy logic remain lightweight while the gameplay loop is being verified.
 
 ## Performance
 
-The project uses the Compatibility renderer, modest geometry, no imported textures, and no real-time global illumination. It is intended to be approachable on older integrated GPUs while the core gameplay loop is being proven.
+The project uses the Compatibility renderer, shared repeated materials, modest geometry, reduced CPU smoke counts, no imported textures, and no real-time global illumination. A headless scene-budget check tracks total nodes and mesh instances; interactive FPS and GPU load still need to be measured on target hardware.
 
 ## Verification
 
-- **Headless smoke test:** passed in Godot 4.7.2, including project import and a 300-frame scene run with no script/parse errors.
-- **Not yet visually verified:** rendered appearance, mouse capture, pause-menu interaction, and gameplay feel still need an interactive run.
-- GitHub Actions repeats the headless smoke test on pushes and pull requests.
+- **Automated gameplay checks:** test firing/hitscan damage, player damage and respawn, reload ammunition transfer, enemy damage/death, suppression response, enemy-count updates, the intel gate, and mission-complete HUD state.
+- **Headless smoke test:** passed in Godot 4.4.1 with a 300-frame main-scene run and no script/parse errors.
+- **Still requires local verification:** visual quality, enemy behaviour in a live fight, mouse capture, pause-menu interaction, actual FPS, and GPU load.
+- GitHub Actions runs the headless scene test and gameplay regression suite on pushes and pull requests.
