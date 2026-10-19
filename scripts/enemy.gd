@@ -234,6 +234,25 @@ func _should_take_flank_route() -> bool:
         return not _squad_has_live_flanker()
     return false
 
+func _squad_has_supporting_fire() -> bool:
+    # A live support unit signals a brief maneuver window while actively firing a burst.
+    for node in get_tree().get_nodes_in_group("enemies"):
+        if node == self or not is_instance_valid(node) or not node is Node3D:
+            continue
+        if str(node.get("combat_role")) != "SUPPORT" or float(node.get("health")) <= 0.0:
+            continue
+        if global_position.distance_to((node as Node3D).global_position) > 36.0:
+            continue
+        if str(node.get("state")) == "COMBAT" and (int(node.get("burst_shots_remaining")) > 0 or float(node.get("muzzle_flash_timer")) > 0.0):
+            return true
+    return false
+
+func _combat_movement_speed() -> float:
+    # Flankers exploit active supporting fire; otherwise retain the baseline combat pace.
+    if state == "COMBAT" and _should_take_flank_route() and _squad_has_supporting_fire():
+        return 2.65
+    return 2.1
+
 func _combat_suppression_weight() -> float:
     # Support units sustain pressure while maneuver elements use shorter, faster bursts.
     match combat_role:
@@ -642,8 +661,9 @@ func _physics_process(delta: float) -> void:
     target_dir = _avoid_obstacles(target_dir)
     if not is_on_floor():
         velocity.y -= 9.8 * delta
-    velocity.x = move_toward(velocity.x, target_dir.x * 2.1, delta * 4.0)
-    velocity.z = move_toward(velocity.z, target_dir.z * 2.1, delta * 4.0)
+    var movement_speed := _combat_movement_speed()
+    velocity.x = move_toward(velocity.x, target_dir.x * movement_speed, delta * 4.0)
+    velocity.z = move_toward(velocity.z, target_dir.z * movement_speed, delta * 4.0)
     move_and_slide()
     _animate_visuals(delta)
 
