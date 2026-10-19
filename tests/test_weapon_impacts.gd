@@ -55,6 +55,12 @@ func _run_tests() -> void:
     await physics_frame
 
     _check(player.ammo == 29, "firing still consumes exactly one round")
+    var spark_bursts: Array = get_nodes_in_group("impact_spark_bursts")
+    _check(spark_bursts.size() == 1, "bullet impacts create a bounded directional spark particle burst")
+    if not spark_bursts.is_empty():
+        var spark_burst := spark_bursts[0] as GPUParticles3D
+        _check(spark_burst.one_shot and spark_burst.amount == 10, "impact sparks use a short ten-particle one-shot burst")
+        _check(spark_burst.draw_pass_1 is SphereMesh and spark_burst.process_material is ParticleProcessMaterial, "impact sparks have visible particle geometry and ballistic motion")
     var casings: Array = get_nodes_in_group("spent_casings")
     var impacts: Array = get_nodes_in_group("bullet_impacts")
     var impact_audio: Array = get_nodes_in_group("impact_audio")
