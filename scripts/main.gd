@@ -284,6 +284,39 @@ func _add_road_markings() -> void:
         alley_mark.add_to_group("road_markings")
         alley_mark.add_to_group("service_lane_markings")
 
+    # Street drainage and tire scarring add small-scale evidence of a lived-in road.
+    for cover_pos in [Vector3(-4.8, 0.055, -19.0), Vector3(4.7, 0.055, 1.0), Vector3(-4.6, 0.055, 27.0)]:
+        var manhole := MeshInstance3D.new()
+        manhole.name = "RoadManholeCover"
+        var cover_mesh := CylinderMesh.new()
+        cover_mesh.top_radius = 0.42
+        cover_mesh.bottom_radius = 0.42
+        cover_mesh.height = 0.035
+        manhole.mesh = cover_mesh
+        manhole.position = cover_pos
+        manhole.material_override = _material(Color(0.17, 0.18, 0.16))
+        manhole.add_to_group("street_drainage")
+        add_child(manhole)
+        for slot_index in range(4):
+            var slot := _box("ManholeGripSlot", cover_pos + Vector3(-0.21 + float(slot_index) * 0.14, 0.022, 0.0), Vector3(0.055, 0.008, 0.22), Color(0.065, 0.07, 0.065), false)
+            slot.add_to_group("street_drainage")
+
+    for grate_index in range(4):
+        var grate_x := -6.75 if grate_index % 2 == 0 else 6.75
+        var grate_z := -24.0 + float(grate_index) * 17.0
+        var drain := _box("StormDrainRecess", Vector3(grate_x, 0.052, grate_z), Vector3(0.34, 0.025, 1.05), Color(0.045, 0.05, 0.047), false)
+        drain.add_to_group("street_drainage")
+        for bar_index in range(5):
+            var bar := _box("StormDrainBar", Vector3(grate_x, 0.069, grate_z - 0.42 + float(bar_index) * 0.21), Vector3(0.31, 0.012, 0.045), Color(0.22, 0.23, 0.21), false)
+            bar.add_to_group("street_drainage")
+
+    for skid_index in range(6):
+        var skid_x := -1.0 if skid_index % 2 == 0 else 1.0
+        var skid_z := -30.0 + float(skid_index) * 10.0
+        var skid := _box("TireSkidScarring", Vector3(skid_x + float(skid_index % 3) * 0.22, 0.052, skid_z), Vector3(0.085, 0.009, 2.8 + float(skid_index % 2) * 0.9), Color(0.065, 0.07, 0.065), false)
+        skid.rotation_degrees.y = float((skid_index % 3) - 1) * 3.5
+        skid.add_to_group("road_wear")
+
 func _street_furniture() -> void:
     # Roadside infrastructure now has collision bodies separate from its visible meshes.
     for side in [-1.0, 1.0]:
