@@ -15,6 +15,7 @@ var shots_hit := 0
 var grenades_used := 0
 var ammo_caches_used := 0
 var hostiles_eliminated := 0
+var hostile_contact_reported := false
 var difficulty := "STANDARD"
 var world_environment: WorldEnvironment
 var material_cache: Dictionary = {}
@@ -806,6 +807,14 @@ func enemy_killed(enemy: Node) -> void:
     if enemies.is_empty():
         if is_instance_valid(hud):
             hud.call("set_mission_state", "AREA SECURE. RECOVER THE INTEL.")
+
+func report_hostile_contact(_enemy: Node) -> void:
+    # Only announce the first visual acquisition; later contacts shouldn't spam over combat feedback.
+    if hostile_contact_reported or mission_complete:
+        return
+    hostile_contact_reported = true
+    if is_instance_valid(hud):
+        hud.call("notify_hostile_contact")
 
 func get_remaining_enemies() -> int:
     return enemies.size()
