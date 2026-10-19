@@ -50,8 +50,8 @@ func _run_tests() -> void:
     _check(scene.get_remaining_enemies() == 5, "five hostiles spawn")
     _check(scene.get_node_or_null("IntelObjective") != null, "intel objective spawns")
     _check(scene.get_node_or_null("EnvironmentDetails") != null, "outer district dressing is attached")
-    _check(_count_named_nodes(scene, "OuterDistrictBuilding") == 8, "eight perimeter buildings are generated")
-    _check(_count_named_nodes(scene, "UtilityCrate") == 5, "service alley utility crates are generated")
+    _check(scene.get_tree().get_nodes_in_group("district_buildings").size() == 8, "eight perimeter buildings are generated")
+    _check(scene.get_tree().get_nodes_in_group("service_alley_crates").size() == 5, "service alley utility crates are generated")
 
     var node_count := _count_nodes(scene)
     var mesh_count := _count_meshes(scene)
