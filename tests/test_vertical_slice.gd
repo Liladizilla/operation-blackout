@@ -104,6 +104,9 @@ func _run_tests() -> void:
     scene.hostile_contact_reported = false
     scene.report_hostile_contact(scene.enemies[0])
     _check(scene.hostile_contact_reported and scene.hud.status_label.text == "CONTACT  //  HOSTILES HAVE VISUAL", "first hostile visual acquisition raises a combat contact cue")
+    _check(scene.hud.status_label.has_theme_color_override("font_color"), "hostile contact uses its dedicated alert color")
+    scene.hud.set_mission_state("INTEL SECURED. MOVE TO EXFIL.")
+    _check(not scene.hud.status_label.has_theme_color_override("font_color"), "mission updates restore the neutral HUD status color")
     scene.hud.set_status("KEEP THIS UPDATE")
     scene.report_hostile_contact(scene.enemies[1])
     _check(scene.hud.status_label.text == "KEEP THIS UPDATE", "repeat hostile contacts do not spam or overwrite later combat feedback")
