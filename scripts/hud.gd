@@ -21,6 +21,7 @@ var damage_direction_timer := 0.0
 var mission_panel: PanelContainer
 var stamina_label: Label
 var navigation_label: Label
+var tactical_minimap: Control
 var navigation_update_timer := 0.0
 
 func initialize(scene: Node, player: Node) -> void:
@@ -82,6 +83,16 @@ func _build() -> void:
     navigation_label.offset_bottom = 50
     navigation_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
     root.add_child(navigation_label)
+    tactical_minimap = Control.new()
+    tactical_minimap.name = "TacticalMinimap"
+    tactical_minimap.set_script(load("res://scripts/tactical_minimap.gd"))
+    tactical_minimap.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+    tactical_minimap.offset_left = -218.0
+    tactical_minimap.offset_right = -28.0
+    tactical_minimap.offset_top = 64.0
+    tactical_minimap.offset_bottom = 254.0
+    tactical_minimap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    root.add_child(tactical_minimap)
     ammo_label = _label("30 / 120", 28, Color(0.92,0.90,0.82))
     ammo_label.anchor_left = 1
     ammo_label.anchor_right = 1
