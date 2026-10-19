@@ -88,6 +88,17 @@ func _run_tests() -> void:
         all_investigating = all_investigating and enemy.alert_memory_timer >= 5.0 and enemy.state == "INVESTIGATE"
     _check(all_investigating, "gunshot creates persistent enemy investigation memory")
 
+    # Hostile gunfire is also audible to nearby members of the opposing squad.
+    for index in range(enemies.size()):
+        enemies[index].state = "SEARCH"
+        enemies[index].alert_memory_timer = 0.0
+        enemies[index].global_position = Vector3(100.0 + float(index) * 10.0, 0.95, 100.0)
+    enemies[0].global_position = Vector3(0.0, 0.95, 0.0)
+    enemies[1].global_position = Vector3(3.0, 0.95, 0.0)
+    var heard_hostile_shot: int = scene.call("report_noise", enemies[0].global_position, 42.0, "GUNSHOT", enemies[0])
+    _check(heard_hostile_shot >= 1, "hostile gunfire alerts nearby guards other than the shooter")
+    _check(enemies[1].state == "INVESTIGATE" and enemies[1].alert_memory_timer >= 5.0, "nearby guards investigate the hostile firing position")
+
     # The actual grenade explosion reports its own noise, even when enemies
     # are outside the blast damage radius.
     for index in range(enemies.size()):
