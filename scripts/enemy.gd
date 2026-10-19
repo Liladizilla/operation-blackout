@@ -1,5 +1,7 @@
 extends CharacterBody3D
 
+const SHOT_TRACER_SCRIPT = preload("res://scripts/shot_tracer.gd")
+
 var health := 100.0
 var shot_damage := 7.0
 var detection_range := 30.0
@@ -484,9 +486,22 @@ func _try_shoot_player() -> void:
     var query := PhysicsRayQueryParameters3D.create(from, to)
     query.exclude = [get_rid()]
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
+    var tracer_end: Vector3 = hit.get("position", to) if not hit.is_empty() else to
+    var tracer_tint := Color(1.0, 0.43, 0.16, 0.9)
     if not hit.is_empty() and hit.get("collider") == player:
+        tracer_tint = Color(1.0, 0.70, 0.30, 0.95)
         if player.has_method("apply_damage"):
             player.apply_damage(shot_damage, global_position)
+    _spawn_shot_tracer(from, tracer_end, tracer_tint)
+
+func _spawn_shot_tracer(start_position: Vector3, end_position: Vector3, tint: Color) -> void:
+    var active_scene := get_tree().current_scene
+    if not is_instance_valid(active_scene):
+        return
+    var tracer := MeshInstance3D.new()
+    tracer.set_script(SHOT_TRACER_SCRIPT)
+    active_scene.add_child(tracer)
+    tracer.call("configure", start_position, end_position, tint)
 
 func _show_muzzle_flash() -> void:
     enemy_muzzle_flash.visible = true
