@@ -21,6 +21,7 @@ var hitmarker_timer := 0.0
 var damage_direction_label: Label
 var damage_direction_timer := 0.0
 var mission_panel: PanelContainer
+var mission_stats_label: Label
 var stamina_label: Label
 var navigation_label: Label
 var tactical_minimap: Control
@@ -280,10 +281,10 @@ func _show_mission_complete() -> void:
         return
     mission_panel = PanelContainer.new()
     mission_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-    mission_panel.offset_left = -230
-    mission_panel.offset_right = 230
-    mission_panel.offset_top = -125
-    mission_panel.offset_bottom = 125
+    mission_panel.offset_left = -270
+    mission_panel.offset_right = 270
+    mission_panel.offset_top = -170
+    mission_panel.offset_bottom = 170
     var box := VBoxContainer.new()
     box.add_theme_constant_override("separation", 14)
     mission_panel.add_child(box)
@@ -293,6 +294,24 @@ func _show_mission_complete() -> void:
     var detail := _label("INTEL SECURED  /  TALON ACTUAL, OUT", 14, Color(0.82,0.83,0.78))
     detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     box.add_child(detail)
+    var summary: Dictionary = {}
+    if is_instance_valid(owner_scene) and owner_scene.has_method("get_mission_summary"):
+        summary = owner_scene.call("get_mission_summary")
+    var total_seconds := int(round(float(summary.get("mission_seconds", 0.0))))
+    var minutes := int(total_seconds / 60)
+    var seconds := total_seconds % 60
+    var hostiles := int(summary.get("hostiles_eliminated", 0))
+    var fired := int(summary.get("shots_fired", 0))
+    var hits := int(summary.get("shots_hit", 0))
+    var accuracy := int(round(float(summary.get("accuracy", 0.0))))
+    var frags := int(summary.get("grenades_used", 0))
+    var caches := int(summary.get("ammo_caches_used", 0))
+    mission_stats_label = _label("HOSTILES NEUTRALIZED %d  /  ACCURACY %d%%\nROUNDS FIRED %d  /  HITS %d\nFRAGS %d  /  AMMO CACHES %d  /  TIME %02d:%02d" % [hostiles, accuracy, fired, hits, frags, caches, minutes, seconds], 13, Color(0.77,0.81,0.74))
+    mission_stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    mission_stats_label.custom_minimum_size = Vector2(490, 70)
+    box.add_child(mission_stats_label)
+    get_tree().paused = true
+    Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
     var redeploy := Button.new()
     redeploy.text = "REDEPLOY  /  REPLAY MISSION"
     redeploy.custom_minimum_size = Vector2(250, 42)
@@ -386,6 +405,8 @@ func dismiss_briefing() -> void:
     briefing_backdrop = null
     get_tree().paused = false
     Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+    if is_instance_valid(owner_scene) and owner_scene.has_method("begin_mission"):
+        owner_scene.call("begin_mission")
 
 func _input(event: InputEvent) -> void:
     if not is_briefing_open():

@@ -292,6 +292,7 @@ func _fire() -> void:
     query.collide_with_areas = true
     query.collision_mask = 3
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
+    var confirmed_hit := false
     if not hit.is_empty():
         var collider = hit.get("collider")
         var damage_target: Node = collider
@@ -299,11 +300,15 @@ func _fire() -> void:
         if collider is Area3D and collider.has_meta("headshot"):
             damage_target = collider.get_parent()
             headshot = true
+        confirmed_hit = is_instance_valid(damage_target) and damage_target.is_in_group("enemies")
         if damage_target and damage_target.has_method("take_damage"):
             var killed: bool = damage_target.take_damage(34.0, hit.get("position", to), headshot)
             if hud and hud.has_method("flash_hitmarker"):
                 hud.flash_hitmarker(killed, headshot)
         _impact_spark(hit.get("position", to), hit.get("normal", Vector3.UP))
+    var scene := get_tree().current_scene
+    if is_instance_valid(scene) and scene.has_method("register_shot"):
+        scene.register_shot(confirmed_hit)
     if hud and hud.has_method("set_ammo"):
         hud.set_ammo(ammo, reserve)
     muzzle_light.light_energy = randf_range(1.4, 2.2)
@@ -353,6 +358,8 @@ func _throw_grenade() -> void:
     grenade.linear_velocity = direction * 12.0 + Vector3.UP * 4.2
     grenade.angular_velocity = Vector3(randf_range(-5.0, 5.0), randf_range(-7.0, 7.0), randf_range(-5.0, 5.0))
     grenades -= 1
+    if is_instance_valid(scene) and scene.has_method("register_grenade_used"):
+        scene.register_grenade_used()
     if hud and hud.has_method("set_grenades"):
         hud.set_grenades(grenades)
     if hud and hud.has_method("set_status"):

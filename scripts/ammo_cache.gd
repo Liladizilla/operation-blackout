@@ -82,6 +82,8 @@ func _process(_delta: float) -> void:
     var added := mini(RESUPPLY_AMOUNT, available)
     player.set("reserve", reserve + added)
     used = true
+    if scene.has_method("register_ammo_cache_used"):
+        scene.register_ammo_cache_used()
     crate_body.queue_free()
     ammo_visuals.queue_free()
     var hud_node := scene.get("hud") as Node

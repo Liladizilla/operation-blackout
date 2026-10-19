@@ -8,6 +8,13 @@ var player: CharacterBody3D
 var hud: CanvasLayer
 var enemies: Array[Node] = []
 var mission_complete := false
+var mission_started := false
+var mission_elapsed := 0.0
+var shots_fired := 0
+var shots_hit := 0
+var grenades_used := 0
+var ammo_caches_used := 0
+var hostiles_eliminated := 0
 var world_environment: WorldEnvironment
 var material_cache: Dictionary = {}
 
@@ -23,6 +30,39 @@ func _ready() -> void:
     _spawn_objective()
     _spawn_hud()
     Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func _process(delta: float) -> void:
+    if mission_started and not mission_complete and not get_tree().paused:
+        mission_elapsed += delta
+
+func begin_mission() -> void:
+    mission_started = true
+    mission_elapsed = 0.0
+
+func register_shot(confirmed_hit: bool) -> void:
+    shots_fired += 1
+    if confirmed_hit:
+        shots_hit += 1
+
+func register_grenade_used() -> void:
+    grenades_used += 1
+
+func register_ammo_cache_used() -> void:
+    ammo_caches_used += 1
+
+func get_mission_summary() -> Dictionary:
+    var accuracy := 0.0
+    if shots_fired > 0:
+        accuracy = float(shots_hit) / float(shots_fired) * 100.0
+    return {
+        "mission_seconds": mission_elapsed,
+        "hostiles_eliminated": hostiles_eliminated,
+        "shots_fired": shots_fired,
+        "shots_hit": shots_hit,
+        "accuracy": accuracy,
+        "grenades_used": grenades_used,
+        "ammo_caches_used": ammo_caches_used
+    }
 
 func _setup_input() -> void:
     _key_action("move_forward", KEY_W)
@@ -47,6 +87,8 @@ func _key_action(action: String, keycode: int) -> void:
         InputMap.action_add_event(action, event)
 
 func _input(event: InputEvent) -> void:
+    if mission_complete:
+        return
     if is_instance_valid(hud) and hud.has_method("is_briefing_open") and hud.call("is_briefing_open"):
         return
     if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
@@ -387,6 +429,7 @@ func _show_pause() -> void:
 func enemy_killed(enemy: Node) -> void:
     if enemies.has(enemy):
         enemies.erase(enemy)
+        hostiles_eliminated += 1
     if is_instance_valid(hud):
         hud.call("set_enemy_count", enemies.size())
     if enemies.is_empty():
