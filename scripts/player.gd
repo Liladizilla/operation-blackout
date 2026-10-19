@@ -256,6 +256,7 @@ func _fire() -> void:
         _start_reload()
         return
     if is_instance_valid(weapon_audio):
+        weapon_audio.pitch_scale = randf_range(0.96, 1.04)
         weapon_audio.play()
     ammo -= 1
     fire_cooldown = 0.095
