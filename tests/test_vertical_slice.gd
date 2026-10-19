@@ -196,6 +196,8 @@ func _run_tests() -> void:
     _check(first_enemy.state == "REPOSITION" and first_enemy.suppression_timer > 0.0, "incoming fire triggers suppression reposition")
     survived = first_enemy.take_damage(100.0)
     _check(survived, "enemy death is reported")
+    _check(first_enemy.is_dead and not first_enemy.is_in_group("enemies") and is_instance_valid(first_enemy), "dead hostile leaves active tracking but remains briefly as a body")
+    _check(first_enemy.collision_mask == 0, "corpse stops participating in active enemy movement collisions")
     await process_frame
     _check(scene.get_remaining_enemies() == 4, "enemy death updates remaining-hostile count")
 
