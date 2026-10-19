@@ -377,5 +377,8 @@ func exfiltration_complete() -> void:
         return
     mission_complete = true
     mission_phase = "COMPLETE"
+    # Stop combat simulation and return mouse control to the completion panel.
+    get_tree().paused = true
+    Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
     if is_instance_valid(hud):
         hud.call("set_mission_state", "INTEL RECOVERED. EXFILTRATION COMPLETE.")
