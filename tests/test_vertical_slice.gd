@@ -84,6 +84,7 @@ func _run_tests() -> void:
         test_grenade.set_process(false)
         test_grenade.set_physics_process(false)
         test_grenade.queue_free()
+    await process_frame
     player.grenades = 0
     player._throw_grenade()
     _check(scene.get_node_or_null("FragGrenade") == null, "player cannot throw grenades after inventory is depleted")
