@@ -482,43 +482,45 @@ func _car(pos: Vector3, yaw: float) -> void:
     for side in [-1.0, 1.0]:
         _box_child(root, "Headlight", Vector3(side * 0.69, 0.78, -2.04), Vector3(0.34, 0.18, 0.05), headlight_material.albedo_color, false)
         _box_child(root, "TailLight", Vector3(side * 0.70, 0.78, 2.025), Vector3(0.30, 0.17, 0.055), Color(0.34, 0.075, 0.045), false)
-        var wheel_body := StaticBody3D.new()
-        wheel_body.name = "VehicleWheel"
-        wheel_body.position = Vector3(side * 0.91, 0.31, 0.0)
-        wheel_body.rotation.z = PI * 0.5
-        wheel_body.add_to_group("vehicle_collision")
-        root.add_child(wheel_body)
-        var wheel_mesh := MeshInstance3D.new()
-        var tire := CylinderMesh.new()
-        tire.top_radius = 0.32
-        tire.bottom_radius = 0.32
-        tire.height = 0.24
-        wheel_mesh.mesh = tire
-        wheel_mesh.material_override = _material(Color(0.035, 0.038, 0.036))
-        wheel_body.add_child(wheel_mesh)
-        var wheel_collision := CollisionShape3D.new()
-        var wheel_shape := CylinderShape3D.new()
-        wheel_shape.radius = 0.31
-        wheel_shape.height = 0.26
-        wheel_collision.shape = wheel_shape
-        wheel_body.add_child(wheel_collision)
-        var rim := MeshInstance3D.new()
-        var rim_mesh := CylinderMesh.new()
-        rim_mesh.top_radius = 0.16
-        rim_mesh.bottom_radius = 0.16
-        rim_mesh.height = 0.255
-        rim.mesh = rim_mesh
-        rim.material_override = _material(Color(0.24, 0.25, 0.23))
-        wheel_body.add_child(rim)
-        for spoke_index in range(5):
-            var spoke := MeshInstance3D.new()
-            var spoke_mesh := BoxMesh.new()
-            spoke_mesh.size = Vector3(0.045, 0.035, 0.018)
-            spoke.mesh = spoke_mesh
-            spoke.position = Vector3(0.0, cos(float(spoke_index) * TAU / 5.0) * 0.095, sin(float(spoke_index) * TAU / 5.0) * 0.095)
-            spoke.rotation.y = float(spoke_index) * TAU / 5.0
-            spoke.material_override = _material(Color(0.35, 0.36, 0.33))
-            wheel_body.add_child(spoke)
+    for side in [-1.0, 1.0]:
+        for axle in [-1.0, 1.0]:
+            var wheel_body := StaticBody3D.new()
+            wheel_body.name = "VehicleWheel"
+            wheel_body.position = Vector3(side * 0.91, 0.31, axle * 1.28)
+            wheel_body.rotation.z = PI * 0.5
+            wheel_body.add_to_group("vehicle_collision")
+            root.add_child(wheel_body)
+            var wheel_mesh := MeshInstance3D.new()
+            var tire := CylinderMesh.new()
+            tire.top_radius = 0.32
+            tire.bottom_radius = 0.32
+            tire.height = 0.24
+            wheel_mesh.mesh = tire
+            wheel_mesh.material_override = _material(Color(0.035, 0.038, 0.036))
+            wheel_body.add_child(wheel_mesh)
+            var wheel_collision := CollisionShape3D.new()
+            var wheel_shape := CylinderShape3D.new()
+            wheel_shape.radius = 0.31
+            wheel_shape.height = 0.26
+            wheel_collision.shape = wheel_shape
+            wheel_body.add_child(wheel_collision)
+            var rim := MeshInstance3D.new()
+            var rim_mesh := CylinderMesh.new()
+            rim_mesh.top_radius = 0.16
+            rim_mesh.bottom_radius = 0.16
+            rim_mesh.height = 0.255
+            rim.mesh = rim_mesh
+            rim.material_override = _material(Color(0.24, 0.25, 0.23))
+            wheel_body.add_child(rim)
+            for spoke_index in range(5):
+                var spoke := MeshInstance3D.new()
+                var spoke_mesh := BoxMesh.new()
+                spoke_mesh.size = Vector3(0.045, 0.035, 0.018)
+                spoke.mesh = spoke_mesh
+                spoke.position = Vector3(0.0, cos(float(spoke_index) * TAU / 5.0) * 0.095, sin(float(spoke_index) * TAU / 5.0) * 0.095)
+                spoke.rotation.y = float(spoke_index) * TAU / 5.0
+                spoke.material_override = _material(Color(0.35, 0.36, 0.33))
+                wheel_body.add_child(spoke)
     for side in [-1.0, 1.0]:
         _box_child(root, "HoodDamageSeam", Vector3(side * 0.62, 1.11, -1.20), Vector3(0.035, 0.018, 1.15), Color(0.075, 0.085, 0.08), false)
     _box_child(root, "CrackedTailgatePanel", Vector3(0, 1.105, 1.86), Vector3(1.2, 0.025, 0.04), Color(0.075, 0.085, 0.08), false)
