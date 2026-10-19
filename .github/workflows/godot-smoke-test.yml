@@ -79,3 +79,6 @@ jobs:
 
       - name: Run gamepad support regression checks
         run: godot --headless --path . --script res://tests/test_gamepad_support.gd
+
+      - name: Run battlefield atmosphere regression checks
+        run: godot --headless --path . --script res://tests/test_battlefield_atmosphere.gd

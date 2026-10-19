@@ -219,6 +219,10 @@ func _build_patrol_points() -> void:
         route_root.add_child(marker)
 
 func _spawn_atmosphere() -> void:
+    var battlefield := Node3D.new()
+    battlefield.name = "BattlefieldAtmosphere"
+    battlefield.set_script(load("res://scripts/battlefield_atmosphere.gd"))
+    add_child(battlefield)
     _smoke_plume(Vector3(-12.0, 1.0, -18.0), 12)
     _smoke_plume(Vector3(15.0, 0.5, 7.0), 10)
     _smoke_plume(Vector3(3.0, 0.8, -35.0), 12)
