@@ -5,10 +5,10 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 ## Current milestone
 
 - Procedurally assembled 3D ruined-town arena and cover
-- First-person mouse look, WASD movement, sprint, jump, crouch, prone
+- First-person mouse look, WASD movement, sprint, jump, crouch, prone, and delayed stamina recovery after sprinting
 - Aim-down-sights field-of-view change, breathing/strafe sway, recoil, and brief muzzle illumination
 - Assault rifle firing, raycast hit detection, ammunition and reloads
-- Hostile AI: line-of-sight detection, pursuit/strafe, last-known-position investigation, cover-aware repositioning to clear positions beside barriers and service-alley crates, short-range obstacle steering around concrete barriers, visible muzzle flashes during return fire, and hitscan return fire; taking damage triggers a brief hit reaction and suppression/reposition response
+- Hostile AI: line-of-sight detection, pursuit/strafe, last-known-position investigation, teammate alert sharing, a short-lived alert memory, cover-aware repositioning beside barriers, ammo caches, and service-alley crates, short-range obstacle steering around concrete barriers, visible muzzle flashes during return fire, and hitscan return fire; taking damage triggers a brief hit reaction and suppression/reposition response
 - Health and directional damage feedback, brief respawn protection, headshot-aware hit confirmation, hold-to-recover intel objective gated behind enemy clearance, a marked extraction zone that requires a second hold interaction, pause menu, and mission-complete/replay screen
 - Combat HUD feedback with low-ammo warning colors, stamina percentage, a live intel distance/bearing indicator, and viewport-anchored layout; weapon view shifts into a tighter aim-down-sights position
 - Three interactable ammo caches let players resupply reserve ammunition, with one-time pickup behaviour and a hard reserve cap
@@ -53,7 +53,7 @@ The project uses the Compatibility renderer, shared repeated materials, modest g
 
 ## Verification
 
-- **Automated gameplay checks:** test firing/hitscan damage, player damage and respawn, reload ammunition transfer, enemy damage/death, suppression response, enemy-count updates, the intel gate, mission-complete HUD state, the separate intel-to-exfil mission flow, respawn-protection checks, ammo-cache pickup/cap/HUD updates, stamina and ammunition HUD updates, intel rangefinder presence, hostile obstacle steering and cover-goal checks, facade rubble distribution, enemy muzzle-flash/hit-reaction feedback, viewport-anchored HUD layout, and expected outer-district environment props.
+- **Automated gameplay checks:** test firing/hitscan damage, player damage and respawn, reload ammunition transfer, enemy damage/death, suppression response, enemy-count updates, the intel gate, mission-complete HUD state, the separate intel-to-exfil mission flow, respawn-protection checks, ammo-cache pickup/cap/HUD updates, stamina and ammunition HUD updates, intel rangefinder presence, hostile obstacle steering and cover-goal checks, district cover candidates around resupply caches and service-alley crates, coordinated enemy alert propagation, delayed stamina recovery, facade rubble distribution, enemy muzzle-flash/hit-reaction feedback, viewport-anchored HUD layout, and expected outer-district environment props.
 - **Headless smoke test:** GitHub Actions imports the project and runs the main scene for 300 frames on Godot 4.7.2 before executing gameplay regressions.
 - **Still requires local verification:** visual quality, enemy behaviour in a live fight, mouse capture, pause-menu interaction, actual FPS, and GPU load.
 - GitHub Actions runs the headless scene test and gameplay regression suite on pushes and pull requests.
