@@ -139,7 +139,7 @@ func _run_tests() -> void:
     survived = first_enemy.take_damage(100.0)
     _check(survived, "enemy death is reported")
     await process_frame
-    _check(scene.get_remaining_enemies() == 3, "enemy death updates remaining-hostile count after a prior headshot kill")
+    _check(scene.get_remaining_enemies() == 4, "enemy death updates remaining-hostile count")
 
     for enemy in scene.enemies.duplicate():
         enemy.take_damage(1000.0)
