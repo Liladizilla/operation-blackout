@@ -78,6 +78,10 @@ func _material(color: Color) -> StandardMaterial3D:
 func _box(label: String, pos: Vector3, size: Vector3, color: Color, collision: bool) -> Node3D:
 	var node: Node3D = StaticBody3D.new() if collision else Node3D.new()
 	node.name = label
+	if label == "OuterDistrictBuilding":
+		node.add_to_group("district_buildings")
+	elif label == "UtilityCrate":
+		node.add_to_group("service_alley_crates")
 	node.position = pos
 	var mesh_instance := MeshInstance3D.new()
 	var mesh := BoxMesh.new()
