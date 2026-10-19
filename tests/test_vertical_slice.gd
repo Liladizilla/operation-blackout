@@ -243,6 +243,8 @@ func _run_tests() -> void:
     _check(scene.get_node_or_null("ExfilZone") == null, "holding interact completes extraction and removes the zone")
     _check(scene.mission_complete and scene.hud.objective_label.text.contains("EXFILTRATION COMPLETE"), "extraction completes the mission and updates HUD")
     _check(scene.mission_phase == "COMPLETE", "successful extraction closes the mission state machine")
+    _check(scene.get_tree().paused and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE, "mission completion freezes combat and releases the mouse for the results panel")
+    _check(is_instance_valid(scene.hud.mission_panel), "mission completion presents replay and quit controls")
     scene.exfiltration_complete()
     _check(scene.mission_complete and scene.mission_phase == "COMPLETE", "duplicate extraction completion remains harmless")
 
