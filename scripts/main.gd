@@ -8,6 +8,7 @@ var player: CharacterBody3D
 var hud: CanvasLayer
 var enemies: Array[Node] = []
 var mission_complete := false
+var mission_phase := "ASSAULT"
 var world_environment: WorldEnvironment
 var material_cache: Dictionary = {}
 
@@ -346,7 +347,8 @@ func enemy_killed(enemy: Node) -> void:
         enemies.erase(enemy)
     if is_instance_valid(hud):
         hud.call("set_enemy_count", enemies.size())
-    if enemies.is_empty():
+    if enemies.is_empty() and mission_phase == "ASSAULT":
+        mission_phase = "RECOVER_INTEL"
         if is_instance_valid(hud):
             hud.call("set_mission_state", "AREA SECURE. RECOVER THE INTEL.")
 
@@ -354,6 +356,9 @@ func get_remaining_enemies() -> int:
     return enemies.size()
 
 func objective_complete() -> void:
+    if mission_complete or not enemies.is_empty() or mission_phase == "EXFIL":
+        return
+    mission_phase = "EXFIL"
     _spawn_exfil_zone()
     if is_instance_valid(hud):
         hud.call("set_mission_state", "INTEL SECURED. MOVE TO EXFIL.")
@@ -368,6 +373,9 @@ func _spawn_exfil_zone() -> void:
     add_child(zone)
 
 func exfiltration_complete() -> void:
+    if mission_complete or mission_phase != "EXFIL":
+        return
     mission_complete = true
+    mission_phase = "COMPLETE"
     if is_instance_valid(hud):
         hud.call("set_mission_state", "INTEL RECOVERED. EXFILTRATION COMPLETE.")
