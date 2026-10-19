@@ -318,11 +318,15 @@ func _build_limb_meshes() -> void:
     right_arm_pivot.rotation.z = 0.24
     _add_limb_end(left_arm_pivot, "LeftGlove", Vector3(0.0, -0.54, -0.04), Vector3(0.14, 0.10, 0.13), glove_material)
     _add_limb_end(right_arm_pivot, "RightGlove", Vector3(0.0, -0.54, -0.04), Vector3(0.14, 0.10, 0.13), glove_material)
+    _add_limb_end(left_arm_pivot, "LeftElbowPad", Vector3(0.0, -0.30, -0.095), Vector3(0.18, 0.14, 0.105), boot_material)
+    _add_limb_end(right_arm_pivot, "RightElbowPad", Vector3(0.0, -0.30, -0.095), Vector3(0.18, 0.14, 0.105), boot_material)
 
     left_leg_pivot = _make_limb_pivot("LeftLegPivot", Vector3(-0.18, 0.66, 0.015), 0.76, 0.135, trouser_material)
     right_leg_pivot = _make_limb_pivot("RightLegPivot", Vector3(0.18, 0.66, 0.015), 0.76, 0.135, trouser_material)
     _add_limb_end(left_leg_pivot, "LeftBoot", Vector3(0.0, -0.69, -0.075), Vector3(0.24, 0.13, 0.34), boot_material)
     _add_limb_end(right_leg_pivot, "RightBoot", Vector3(0.0, -0.69, -0.075), Vector3(0.24, 0.13, 0.34), boot_material)
+    _add_limb_end(left_leg_pivot, "LeftThighUtilityStrap", Vector3(0.0, -0.16, -0.005), Vector3(0.255, 0.075, 0.255), glove_material)
+    _add_limb_end(right_leg_pivot, "RightThighUtilityStrap", Vector3(0.0, -0.16, -0.005), Vector3(0.255, 0.075, 0.255), glove_material)
 
 func _make_limb_pivot(label: String, pivot_position: Vector3, length: float, radius: float, material: StandardMaterial3D) -> Node3D:
     var pivot := Node3D.new()
