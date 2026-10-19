@@ -35,6 +35,7 @@ func _setup_input() -> void:
     _key_action("jump", KEY_SPACE)
     _key_action("reload", KEY_R)
     _key_action("interact", KEY_F)
+    _key_action("throw_grenade", KEY_G)
     _key_action("pause", KEY_ESCAPE)
 
 func _key_action(action: String, keycode: int) -> void:
