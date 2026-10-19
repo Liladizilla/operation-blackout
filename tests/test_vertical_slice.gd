@@ -87,6 +87,12 @@ func _run_tests() -> void:
     _check(objective_script.beacon_light.light_energy > 1.0, "intel beacon light intensifies while data is being recovered")
     var objective_beam_material := objective_script.beacon_beam.material_override as StandardMaterial3D
     _check(objective_beam_material.albedo_color.a > 0.28, "intel beacon beam brightens during collection")
+    objective_script.progress = 0.8
+    objective_script._on_exit(scene.player)
+    _check(not objective_script.player_inside and objective_script.progress == 0.0, "leaving the intel radius cancels recovery progress")
+    _check(scene.hud.status_label.text.contains("INTEL RECOVERY INTERRUPTED"), "leaving during recovery displays an interruption warning")
+    objective_script.player_inside = true
+    objective_script.progress = 1.0
     Input.action_release("interact")
     scene.enemies.assign(saved_enemy_list)
     objective_script.player_inside = false
