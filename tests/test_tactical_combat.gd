@@ -88,6 +88,14 @@ func _run_tests() -> void:
     _check(alert_receiver.suppression_timer >= 0.85, "near-miss suppression creates a short tactical reaction window")
     _check(alert_receiver.state == "REPOSITION", "suppressed hostiles break from their current firing lane")
     _check(alert_receiver.last_known_position.is_equal_approx(suppression_source), "suppressed hostiles remember the source of incoming fire")
+    alert_receiver.cover_goal = Vector3(8.0, 0.0, 19.0)
+    alert_receiver.cover_timer = 1.4
+    var repeat_suppression_source := suppression_source + Vector3(1.0, 0.0, -1.0)
+    alert_receiver.apply_suppression(repeat_suppression_source)
+    _check(is_equal_approx(alert_receiver.cover_timer, 1.4), "repeated suppression preserves an active cover commitment")
+    _check(alert_receiver.last_known_position.is_equal_approx(repeat_suppression_source), "repeated suppression updates the remembered firing source")
+    alert_receiver.cover_timer = 0.0
+    alert_receiver.cover_goal = Vector3.ZERO
 
     _check(is_equal_approx(alert_receiver._cover_approach_scale(1.5), 0.5), "hostile slows to half approach speed near cover")
     _check(is_equal_approx(alert_receiver._cover_approach_scale(0.5), 1.0 / 6.0), "hostile makes a controlled final approach to cover")
