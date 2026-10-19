@@ -49,3 +49,6 @@ jobs:
 
       - name: Run grenade evasion regression checks
         run: godot --headless --path . --script res://tests/test_grenade_evasion.gd
+
+      - name: Run enemy patrol regression checks
+        run: godot --headless --path . --script res://tests/test_enemy_patrol.gd
