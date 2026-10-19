@@ -156,10 +156,7 @@ func _input(event: InputEvent) -> void:
         return
     if is_instance_valid(hud) and hud.has_method("is_briefing_open") and hud.call("is_briefing_open"):
         return
-    var pause_pressed := event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE
-    if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START:
-        pause_pressed = true
-    if pause_pressed:
+    if event.is_action_pressed("pause") and not (event is InputEventKey and event.echo):
         if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
             Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
             get_tree().paused = true
