@@ -34,3 +34,6 @@ jobs:
 
       - name: Run vertical-slice gameplay checks
         run: godot --headless --path . --script res://tests/test_vertical_slice.gd
+
+      - name: Run tactical combat regression checks
+        run: godot --headless --path . --script res://tests/test_tactical_combat.gd
