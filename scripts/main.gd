@@ -326,8 +326,8 @@ func _spawn_objective() -> void:
     var marker := Node3D.new()
     marker.name = "IntelObjective"
     marker.position = Vector3(0, 0.05, -31)
-    add_child(marker)
     var ring := MeshInstance3D.new()
+    ring.name = "IntelBeaconRing"
     var mesh := CylinderMesh.new()
     mesh.top_radius = 0.55
     mesh.bottom_radius = 0.55
@@ -339,7 +339,35 @@ func _spawn_objective() -> void:
     mat.emission = Color(0.65,0.25,0.04)
     ring.material_override = mat
     marker.add_child(ring)
+
+    var beam := MeshInstance3D.new()
+    beam.name = "IntelBeaconBeam"
+    var beam_mesh := CylinderMesh.new()
+    beam_mesh.top_radius = 0.035
+    beam_mesh.bottom_radius = 0.035
+    beam_mesh.height = 2.2
+    beam.mesh = beam_mesh
+    beam.position.y = 1.1
+    var beam_material := StandardMaterial3D.new()
+    beam_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    beam_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    beam_material.albedo_color = Color(1.0, 0.55, 0.16, 0.28)
+    beam_material.emission_enabled = true
+    beam_material.emission = Color(0.55, 0.16, 0.025)
+    beam.material_override = beam_material
+    marker.add_child(beam)
+
+    var beacon_light := OmniLight3D.new()
+    beacon_light.name = "IntelBeaconLight"
+    beacon_light.position = Vector3(0.0, 1.2, 0.0)
+    beacon_light.light_color = Color(1.0, 0.48, 0.14)
+    beacon_light.light_energy = 0.8
+    beacon_light.omni_range = 5.0
+    beacon_light.shadow_enabled = false
+    marker.add_child(beacon_light)
+
     marker.set_script(load("res://scripts/objective.gd"))
+    add_child(marker)
 
 func _spawn_hud() -> void:
     hud = CanvasLayer.new()

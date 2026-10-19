@@ -4,8 +4,13 @@ var player_inside := false
 var progress := 0.0
 var completed := false
 var area: Area3D
+var beacon_ring: MeshInstance3D
+var beacon_light: OmniLight3D
+var pulse_time := 0.0
 
 func _ready() -> void:
+    beacon_ring = get_node_or_null("IntelBeaconRing") as MeshInstance3D
+    beacon_light = get_node_or_null("IntelBeaconLight") as OmniLight3D
     area = Area3D.new()
     area.name = "IntelInteractionArea"
     area.collision_layer = 0
@@ -22,6 +27,12 @@ func _ready() -> void:
 func _process(delta: float) -> void:
     if completed:
         return
+    pulse_time += delta
+    if is_instance_valid(beacon_ring):
+        var pulse := 1.0 + sin(pulse_time * 2.4) * 0.08
+        beacon_ring.scale = Vector3.ONE * pulse
+    if is_instance_valid(beacon_light):
+        beacon_light.light_energy = 0.58 + (sin(pulse_time * 2.1) + 1.0) * 0.22
     if not player_inside:
         progress = 0.0
         return
