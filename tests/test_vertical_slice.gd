@@ -77,6 +77,8 @@ func _run_tests() -> void:
     var first_cache: Node = ammo_caches[0]
     player.reserve = 0
     first_cache.player_inside = true
+    first_cache._process(0.016)
+    _check(not first_cache.used, "ammo cache does not resupply without interaction")
     Input.action_press("interact")
     first_cache._process(0.016)
     Input.action_release("interact")
