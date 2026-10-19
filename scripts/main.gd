@@ -9,6 +9,7 @@ var hud: CanvasLayer
 var enemies: Array[Node] = []
 var mission_complete := false
 var world_environment: WorldEnvironment
+var material_cache: Dictionary = {}
 
 func _ready() -> void:
     process_mode = Node.PROCESS_MODE_ALWAYS
@@ -92,9 +93,9 @@ func _build_environment() -> void:
 
 
 func _spawn_atmosphere() -> void:
-    _smoke_plume(Vector3(-12.0, 1.0, -18.0), 22)
-    _smoke_plume(Vector3(15.0, 0.5, 7.0), 18)
-    _smoke_plume(Vector3(3.0, 0.8, -35.0), 20)
+    _smoke_plume(Vector3(-12.0, 1.0, -18.0), 12)
+    _smoke_plume(Vector3(15.0, 0.5, 7.0), 10)
+    _smoke_plume(Vector3(3.0, 0.8, -35.0), 12)
 
 func _smoke_plume(pos: Vector3, particle_count: int) -> void:
     var particles := CPUParticles3D.new()
@@ -102,7 +103,7 @@ func _smoke_plume(pos: Vector3, particle_count: int) -> void:
     particles.position = pos
     particles.amount = particle_count
     particles.lifetime = 5.5
-    particles.preprocess = 2.0
+    particles.preprocess = 1.0
     particles.emitting = true
     particles.direction = Vector3(0.0, 1.0, 0.0)
     particles.spread = 24.0
@@ -150,6 +151,60 @@ func _build_arena() -> void:
     for i in range(5):
         _box("Sandbag", Vector3(-2.5 + i * 1.15, 0.35, -29), Vector3(1.05, 0.7, 0.55), Color(0.40,0.35,0.25), true)
     _box("ObjectiveLight", Vector3(0, 2.4, -30.5), Vector3(0.25, 0.25, 0.25), Color(0.85,0.58,0.18), false)
+    _street_furniture()
+
+func _street_furniture() -> void:
+    # Reusable, low-cost street details: gutters, damaged asphalt, and battered lamps.
+    for side in [-1.0, 1.0]:
+        _box("RoadGutter", Vector3(side * 7.25, 0.035, -3.0), Vector3(0.28, 0.07, 76.0), Color(0.075, 0.08, 0.075), false)
+        var pole := Node3D.new()
+        pole.name = "DamagedStreetLamp"
+        pole.position = Vector3(side * 8.4, 0.0, -12.0 if side < 0.0 else 15.0)
+        add_child(pole)
+        var shaft := MeshInstance3D.new()
+        var shaft_mesh := CylinderMesh.new()
+        shaft_mesh.top_radius = 0.075
+        shaft_mesh.bottom_radius = 0.12
+        shaft_mesh.height = 5.4
+        shaft.mesh = shaft_mesh
+        shaft.position.y = 2.7
+        shaft.material_override = _material(Color(0.12, 0.13, 0.12))
+        pole.add_child(shaft)
+        var arm := MeshInstance3D.new()
+        var arm_mesh := BoxMesh.new()
+        arm_mesh.size = Vector3(1.2, 0.08, 0.08)
+        arm.mesh = arm_mesh
+        arm.position = Vector3(-side * 0.48, 5.25, 0.0)
+        arm.material_override = _material(Color(0.12, 0.13, 0.12))
+        pole.add_child(arm)
+        var fixture := MeshInstance3D.new()
+        var fixture_mesh := BoxMesh.new()
+        fixture_mesh.size = Vector3(0.34, 0.12, 0.22)
+        fixture.mesh = fixture_mesh
+        fixture.position = Vector3(-side * 0.95, 5.18, 0.0)
+        var fixture_mat := _material(Color(0.48, 0.34, 0.18))
+        fixture_mat.emission_enabled = true
+        fixture_mat.emission = Color(0.22, 0.10, 0.035)
+        fixture.material_override = fixture_mat
+        pole.add_child(fixture)
+    for patch in [Vector3(-4.8, 0.035, -21.0), Vector3(4.2, 0.035, -5.5), Vector3(-3.1, 0.035, 12.0), Vector3(4.8, 0.035, 29.0)]:
+        var asphalt := _box("BrokenAsphalt", patch, Vector3(1.8, 0.025, 2.4), Color(0.14, 0.145, 0.135), false)
+        asphalt.rotation_degrees.y = randf_range(-18.0, 18.0)
+    for i in range(8):
+        var x := -6.2 + float((i * 13) % 12)
+        var z := -34.0 + float((i * 19) % 68)
+        var debris := _box("StreetDebris", Vector3(x, 0.12, z), Vector3(0.25 + float(i % 3) * 0.12, 0.18, 0.22 + float(i % 2) * 0.14), Color(0.25, 0.24, 0.21), false)
+        debris.rotation_degrees.y = float((i * 37) % 90)
+
+func _material(color: Color) -> StandardMaterial3D:
+    var key := color.to_html(true)
+    if material_cache.has(key):
+        return material_cache[key] as StandardMaterial3D
+    var mat := StandardMaterial3D.new()
+    mat.albedo_color = color
+    mat.roughness = 0.92
+    material_cache[key] = mat
+    return mat
 
 func _building(pos: Vector3, size: Vector3, color: Color) -> void:
     _box("Building", pos + Vector3(0,size.y/2,0), size, color, true)
@@ -236,15 +291,13 @@ func _mesh_box(size: Vector3, color: Color) -> MeshInstance3D:
     var mesh := BoxMesh.new()
     mesh.size = size
     mi.mesh = mesh
-    var mat := StandardMaterial3D.new()
-    mat.albedo_color = color
-    mat.roughness = 0.92
-    mi.material_override = mat
+    mi.material_override = _material(color)
     return mi
 
 func _spawn_player() -> void:
     player = CharacterBody3D.new()
     player.name = "Player"
+    player.add_to_group("player")
     player.set_script(PLAYER_SCRIPT)
     player.position = Vector3(0, 1.2, 25)
     add_child(player)
