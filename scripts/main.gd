@@ -117,9 +117,35 @@ func _build_arena() -> void:
 func _building(pos: Vector3, size: Vector3, color: Color) -> void:
     _box("Building", pos + Vector3(0,size.y/2,0), size, color, true)
     _box("RoofRubble", pos + Vector3(0,size.y + 0.3,0), Vector3(size.x*0.45,0.6,size.z*0.5), color.darkened(0.18), true)
-    for i in range(3):
-        var wx := pos.x - size.x*0.28 + float(i)*size.x*0.28
-        _box("DarkWindow", Vector3(wx, pos.y + size.y*0.63, pos.z - size.z/2 - 0.025), Vector3(1.2,1.4,0.06), Color(0.07,0.09,0.09), false)
+    # Repeated window bays with recessed glass, chipped concrete surrounds, and sill lines.
+    var columns := maxi(2, int(size.x / 3.0))
+    var rows := maxi(1, int(size.y / 3.2))
+    for row in range(rows):
+        var wy := pos.y + 1.9 + float(row) * 2.65
+        if wy > pos.y + size.y - 1.0:
+            continue
+        for col in range(columns):
+            var wx := pos.x - size.x * 0.5 + size.x * (float(col) + 0.5) / float(columns)
+            var ww := minf(1.15, size.x / float(columns) * 0.48)
+            var glass := Color(0.055, 0.07, 0.07) if (row + col) % 3 != 0 else Color(0.12, 0.13, 0.12)
+            _box("WindowRecess", Vector3(wx, wy, pos.z - size.z * 0.5 - 0.035), Vector3(ww, 1.15, 0.07), glass, false)
+            _box("WindowLintel", Vector3(wx, wy + 0.64, pos.z - size.z * 0.5 - 0.08), Vector3(ww + 0.22, 0.12, 0.16), color.lightened(0.08), false)
+            _box("WindowSill", Vector3(wx, wy - 0.64, pos.z - size.z * 0.5 - 0.08), Vector3(ww + 0.28, 0.13, 0.18), color.darkened(0.12), false)
+            if (row + col) % 4 == 1:
+                _box("BrokenShutter", Vector3(wx + ww * 0.25, wy, pos.z - size.z * 0.5 - 0.13), Vector3(0.08, 0.95, 0.08), Color(0.16, 0.15, 0.12), false)
+    # Side-wall vents and a service entrance break up the large silhouette.
+    for side in [-1.0, 1.0]:
+        for row in range(rows):
+            var wy := pos.y + 2.0 + float(row) * 2.7
+            if wy > pos.y + size.y - 0.8:
+                continue
+            var wz := pos.z + side * size.z * 0.5 + side * 0.045
+            for col in range(2):
+                var wx := pos.x - size.x * 0.22 + float(col) * size.x * 0.44
+                _box("SideWindow", Vector3(wx, wy, wz), Vector3(0.06, 0.9, 1.0), Color(0.055, 0.065, 0.06), false)
+        _box("FacadePipe", Vector3(pos.x + side * (size.x * 0.5 - 0.28), pos.y + size.y * 0.5, pos.z - size.z * 0.5 - 0.1), Vector3(0.09, size.y, 0.09), Color(0.20, 0.20, 0.18), false)
+    _box("ServiceDoor", Vector3(pos.x - size.x * 0.28, pos.y + 1.0, pos.z - size.z * 0.5 - 0.06), Vector3(1.0, 2.0, 0.1), Color(0.12, 0.13, 0.12), false)
+    _box("FacadeBand", Vector3(pos.x, pos.y + size.y - 0.25, pos.z - size.z * 0.5 - 0.08), Vector3(size.x + 0.25, 0.18, 0.18), color.darkened(0.16), false)
 
 func _car(pos: Vector3, yaw: float) -> void:
     var root := Node3D.new()
