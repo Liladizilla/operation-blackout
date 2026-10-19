@@ -188,13 +188,15 @@ func _run_tests() -> void:
     var blast_target := CharacterBody3D.new()
     blast_target.set_script(load("res://scripts/enemy.gd"))
     blast_target.position = Vector3(0.0, 0.95, 0.0)
-    scene.add_child(blast_target)
-    await process_frame
     blast_target.set_physics_process(false)
+    scene.add_child(blast_target)
+    await physics_frame
+    blast_target.global_position = Vector3(0.0, 0.95, 0.0)
     var blast := RigidBody3D.new()
     blast.set_script(load("res://scripts/grenade.gd"))
     scene.add_child(blast)
     blast.global_position = blast_target.global_position
+    await physics_frame
     blast._explode()
     _check(blast_target.health < 100.0, "grenade explosion damages a hostile inside the blast radius")
     _check(blast_target.velocity.length() > 0.0, "grenade blast applies physical knockback")
