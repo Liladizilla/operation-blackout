@@ -10,6 +10,7 @@ var body_mesh: MeshInstance3D
 var body_material: StandardMaterial3D
 var enemy_muzzle_flash: MeshInstance3D
 var enemy_muzzle_light: OmniLight3D
+var enemy_fire_audio: AudioStreamPlayer3D
 var muzzle_flash_timer := 0.0
 var hit_flash_timer := 0.0
 var last_known_position := Vector3.ZERO
@@ -111,6 +112,14 @@ func _ready() -> void:
     player = get_tree().get_first_node_in_group("player")
     if not player:
         player = get_tree().current_scene.get_node_or_null("Player") as Node3D
+    enemy_fire_audio = AudioStreamPlayer3D.new()
+    enemy_fire_audio.name = "EnemyFireAudio"
+    var audio_fx = load("res://scripts/audio_fx.gd")
+    enemy_fire_audio.stream = audio_fx.create_gunshot()
+    enemy_fire_audio.volume_db = -11.0
+    enemy_fire_audio.unit_size = 4.0
+    enemy_fire_audio.max_distance = 65.0
+    add_child(enemy_fire_audio)
     add_to_group("enemies")
 
 func _physics_process(delta: float) -> void:
@@ -313,6 +322,9 @@ func _choose_cover(threat_position: Vector3) -> Vector3:
 
 func _try_shoot_player() -> void:
     _show_muzzle_flash()
+    if is_instance_valid(enemy_fire_audio):
+        enemy_fire_audio.pitch_scale = randf_range(0.94, 1.06)
+        enemy_fire_audio.play()
     var from := global_position + Vector3.UP*1.35
     var to := player.global_position + Vector3.UP*1.2
     var query := PhysicsRayQueryParameters3D.create(from, to)

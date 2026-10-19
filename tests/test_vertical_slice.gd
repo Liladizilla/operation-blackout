@@ -77,6 +77,11 @@ func _run_tests() -> void:
     _check(mesh_count < 650, "procedural scene stays within mesh budget")
 
     var player := scene.get_node("Player")
+    var audio_fx = load("res://scripts/audio_fx.gd")
+    var generated_gunshot: AudioStreamWAV = audio_fx.create_gunshot()
+    var generated_explosion: AudioStreamWAV = audio_fx.create_explosion()
+    _check(generated_gunshot.data.size() > 0 and generated_explosion.data.size() > 0, "procedural gunshot and explosion audio streams are generated")
+    _check(player.get_node_or_null("WeaponFireAudio") != null and scene.enemies[0].get_node_or_null("EnemyFireAudio") != null, "player and hostiles have positional weapon audio")
     var original_sensitivity: float = player.mouse_sensitivity
     scene.hud.show_pause()
     _check(scene.hud.sensitivity_slider != null, "pause menu exposes mouse sensitivity control")
