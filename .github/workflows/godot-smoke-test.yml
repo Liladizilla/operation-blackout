@@ -40,3 +40,6 @@ jobs:
 
       - name: Run tactical minimap regression checks
         run: godot --headless --path . --script res://tests/test_tactical_minimap.gd
+
+      - name: Run sound-awareness regression checks
+        run: godot --headless --path . --script res://tests/test_sound_awareness.gd

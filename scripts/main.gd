@@ -426,6 +426,38 @@ func _show_pause() -> void:
     if is_instance_valid(hud):
         hud.call("show_pause")
 
+func report_noise(source_position: Vector3, radius: float, noise_type: String = "GUNSHOT", source_node: Node3D = null) -> int:
+    if radius <= 0.0:
+        return 0
+    var heard_count := 0
+    var space := get_world_3d().direct_space_state
+    for enemy in enemies:
+        var enemy_body := enemy as CharacterBody3D
+        if not is_instance_valid(enemy_body) or float(enemy_body.get("health")) <= 0.0:
+            continue
+        var distance := enemy_body.global_position.distance_to(source_position)
+        if distance > radius:
+            continue
+        var query := PhysicsRayQueryParameters3D.create(source_position + Vector3.UP * 1.1, enemy_body.global_position + Vector3.UP * 1.1)
+        var exclusions: Array[RID] = [enemy_body.get_rid()]
+        if is_instance_valid(player):
+            exclusions.append(player.get_rid())
+        var source_body := source_node as CollisionObject3D
+        if is_instance_valid(source_body):
+            exclusions.append(source_body.get_rid())
+        query.exclude = exclusions
+        query.collision_mask = 1
+        var obstruction := space.intersect_ray(query)
+        var effective_radius := radius
+        if not obstruction.is_empty():
+            effective_radius *= 0.45 if noise_type == "FOOTSTEP" else 0.72
+        if distance > effective_radius:
+            continue
+        if enemy_body.has_method("hear_noise"):
+            enemy_body.call("hear_noise", source_position, noise_type)
+            heard_count += 1
+    return heard_count
+
 func enemy_killed(enemy: Node) -> void:
     if enemies.has(enemy):
         enemies.erase(enemy)

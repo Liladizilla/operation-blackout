@@ -201,13 +201,17 @@ func _physics_process(delta: float) -> void:
             target_dir = retreat.normalized()
         look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
     elif state == "INVESTIGATE":
-        var to_cover := cover_goal - global_position
-        to_cover.y = 0.0
-        if to_cover.length() > 1.0:
-            target_dir = to_cover.normalized() * 0.72
-            look_at(Vector3(last_known_position.x, global_position.y, last_known_position.z), Vector3.UP)
+        var investigate_target := cover_goal
+        if alert_memory_timer > 0.0 and last_known_position != Vector3.ZERO:
+            investigate_target = last_known_position
+        var to_target := investigate_target - global_position
+        to_target.y = 0.0
+        if to_target.length() > 1.4:
+            target_dir = to_target.normalized() * 0.72
+            look_at(Vector3(investigate_target.x, global_position.y, investigate_target.z), Vector3.UP)
         else:
             state = "SEARCH"
+            alert_memory_timer = 0.0
     target_dir = _avoid_obstacles(target_dir)
     if not is_on_floor():
         velocity.y -= 9.8 * delta
@@ -251,6 +255,26 @@ func _steering_ray(space: PhysicsDirectSpaceState3D, origin: Vector3, direction:
     query.exclude = [get_rid()]
     query.collision_mask = 1
     return space.intersect_ray(query)
+
+func hear_noise(source_position: Vector3, noise_type: String) -> void:
+    if health <= 0.0:
+        return
+    var memory_duration := 3.0
+    match noise_type:
+        "FOOTSTEP":
+            memory_duration = 2.0
+        "GUNSHOT":
+            memory_duration = 5.0
+        "GRENADE":
+            memory_duration = 6.0
+    last_known_position = source_position
+    alert_memory_timer = maxf(alert_memory_timer, memory_duration)
+    if state != "COMBAT":
+        state = "INVESTIGATE"
+        if cover_timer <= 0.0 or noise_type != "FOOTSTEP":
+            cover_goal = _choose_cover(source_position)
+            cover_timer = 1.2 if noise_type == "FOOTSTEP" else 1.6
+    think_timer = minf(think_timer, 0.1)
 
 func _broadcast_alert(threat_position: Vector3) -> void:
     if alert_broadcast_timer > 0.0:
