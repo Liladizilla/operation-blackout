@@ -77,6 +77,10 @@ func _run_tests() -> void:
     player.health = 1.0
     player.apply_damage(10.0)
     _check(is_equal_approx(player.health, 100.0), "player respawn restores health")
+    _check(player.respawn_invulnerability > 0.0, "respawn grants brief damage protection")
+    player.apply_damage(20.0)
+    _check(is_equal_approx(player.health, 100.0), "respawn protection blocks immediate follow-up damage")
+    player.respawn_invulnerability = 0.0
 
     player.ammo = 5
     player.reserve = 30
