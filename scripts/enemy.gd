@@ -502,12 +502,11 @@ func _physics_process(delta: float) -> void:
         var to_cover := cover_goal - global_position
         to_cover.y = 0.0
         if to_cover.length() > 1.1:
-            target_dir = to_cover.normalized()
+            # Bleed off speed as the hostile reaches cover instead of overshooting it.
+            target_dir = to_cover.normalized() * _cover_approach_scale(to_cover.length())
         else:
-            # If no nearby cover is reachable, at least break the player's firing line.
-            var retreat := global_position - player.global_position
-            retreat.y = 0.0
-            target_dir = retreat.normalized()
+            # Hold the selected cover position while suppression or a grenade threat persists.
+            target_dir = Vector3.ZERO
         look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
     elif state == "INVESTIGATE":
         var investigate_target := cover_goal
@@ -832,6 +831,9 @@ func _cover_ally_spacing_penalty(candidate: Vector3) -> float:
         if body_distance < 2.6:
             penalty += (2.6 - body_distance) * 1.2
     return penalty
+
+func _cover_approach_scale(distance: float) -> float:
+    return clampf(distance / 3.0, 0.0, 1.0)
 
 func _choose_cover(threat_position: Vector3) -> Vector3:
     # Candidate positions sit near concrete barriers and wreckage in the arena.
