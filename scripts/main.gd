@@ -26,6 +26,8 @@ func _setup_input() -> void:
     _key_action("move_back", KEY_S)
     _key_action("move_left", KEY_A)
     _key_action("move_right", KEY_D)
+    _key_action("move_left", KEY_A)
+    _key_action("move_right", KEY_D)
     _key_action("sprint", KEY_SHIFT)
     _key_action("crouch", KEY_CTRL)
     _key_action("prone", KEY_Z)
