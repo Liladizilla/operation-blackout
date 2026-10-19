@@ -1,0 +1,77 @@
+extends SceneTree
+
+var failed := false
+var passed := 0
+
+func _initialize() -> void:
+    call_deferred("_run_tests")
+
+func _check(condition: bool, message: String) -> void:
+    if condition:
+        passed += 1
+        print("PASS: ", message)
+    else:
+        failed = true
+        push_error("FAIL: " + message)
+
+func _run_tests() -> void:
+    var packed := load("res://scenes/main.tscn") as PackedScene
+    _check(packed != null, "main scene loads for destructible cover tests")
+    if packed == null:
+        quit(1)
+        return
+
+    var scene := packed.instantiate()
+    root.add_child(scene)
+    current_scene = scene
+    await process_frame
+    if scene.hud.is_briefing_open():
+        scene.hud.dismiss_briefing()
+    await physics_frame
+
+    var covers: Array = get_nodes_in_group("destructible_cover")
+    _check(covers.size() == 3, "three destructible field-cover panels spawn")
+    if covers.size() != 3:
+        quit(1)
+        return
+
+    var cover: Node = covers[0]
+    _check(cover is StaticBody3D, "destructible cover retains solid world collision")
+    _check(cover.get_node_or_null("CoverMesh") is MeshInstance3D, "cover has a visible panel mesh")
+    _check(cover.get_node_or_null("CollisionShape3D") is CollisionShape3D, "cover has a matching collision shape")
+    _check(cover.is_in_group("arena_cover"), "intact destructible panels are valid tactical cover")
+    _check(is_equal_approx(cover.health, cover.max_health), "cover begins at full structural health")
+
+    var player: Node = scene.get_node("Player")
+    player.set_physics_process(false)
+    player.rotation.y = 0.0
+    player.pitch = 0.0
+    player.camera_pivot.rotation = Vector3.ZERO
+    player.camera_pivot.position.y = 0.72
+    player.ammo = 30
+    player.fire_cooldown = 0.0
+    player.is_reloading = false
+    cover.position = Vector3(0.0, 1.1, 22.0)
+    await physics_frame
+    player._fire()
+    await physics_frame
+    _check(player.ammo == 29, "firing at cover still consumes one rifle round")
+    _check(not cover.is_destroyed and is_equal_approx(cover.health, 102.0), "player hitscan damage reaches cover without destroying it")
+    _check(cover.get_node_or_null("DamageCrack_01").visible, "damaged cover reveals visible fracture marks")
+    _check(not cover.get_node("CollisionShape3D").disabled, "partially damaged cover remains solid")
+
+    var survived: bool = cover.take_damage(200.0, Vector3.ZERO, false)
+    _check(survived and cover.is_destroyed, "lethal damage destroys the cover")
+    await physics_frame
+    _check(cover.get_node("CollisionShape3D").disabled, "destroyed cover disables its collision")
+    _check(not cover.get_node("CoverMesh").visible, "destroyed panel mesh disappears")
+    _check(not cover.is_in_group("arena_cover"), "destroyed cover stops being offered to hostile cover selection")
+    _check(get_nodes_in_group("destructible_debris_effects").size() == 1, "destruction emits a bounded debris burst")
+    _check(get_nodes_in_group("destructible_cover").size() == 3, "cover remains tracked until its short cleanup delay")
+
+    await create_timer(1.1).timeout
+    _check(not is_instance_valid(cover), "destroyed cover cleans up after the collision and debris transition")
+    _check(get_nodes_in_group("destructible_debris_effects").is_empty(), "debris effect cleans up automatically")
+
+    print("DESTRUCTIBLE COVER RESULT: ", passed, " checks passed; failed=", failed)
+    quit(1 if failed else 0)

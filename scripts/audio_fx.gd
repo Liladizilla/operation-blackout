@@ -8,6 +8,43 @@ static func create_gunshot() -> AudioStreamWAV:
 static func create_explosion() -> AudioStreamWAV:
     return _make_burst(0.78, true)
 
+static func create_wind_loop(duration: float = 8.0) -> AudioStreamWAV:
+    var sample_count := int(SAMPLE_RATE * duration)
+    var samples := PackedFloat32Array()
+    samples.resize(sample_count)
+    var rng := RandomNumberGenerator.new()
+    rng.seed = 731942
+    var low_noise := 0.0
+    for index in range(sample_count):
+        var time := float(index) / float(SAMPLE_RATE)
+        var noise := rng.randf_range(-1.0, 1.0)
+        low_noise = lerpf(low_noise, noise, 0.012)
+        var wind := low_noise * 0.34 + noise * 0.035
+        wind += sin(TAU * 0.31 * time) * 0.08
+        wind += sin(TAU * 0.17 * time + 0.7) * 0.06
+        samples[index] = clampf(wind, -0.8, 0.8)
+
+    # Blend the tail toward the opening samples so the loop seam is less obvious.
+    var blend_samples := mini(int(SAMPLE_RATE * 0.18), int(sample_count / 4))
+    for index in range(blend_samples):
+        var weight := float(index) / float(maxi(1, blend_samples - 1))
+        var tail_index := sample_count - blend_samples + index
+        samples[tail_index] = lerpf(samples[tail_index], samples[index], weight)
+
+    var pcm := PackedByteArray()
+    pcm.resize(sample_count * 2)
+    for index in range(sample_count):
+        pcm.encode_s16(index * 2, int(round(samples[index] * 32767.0)))
+    var stream := AudioStreamWAV.new()
+    stream.format = AudioStreamWAV.FORMAT_16_BITS
+    stream.mix_rate = SAMPLE_RATE
+    stream.stereo = false
+    stream.data = pcm
+    stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+    stream.loop_begin = 0
+    stream.loop_end = sample_count
+    return stream
+
 static func create_footstep() -> AudioStreamWAV:
     var duration := 0.13
     var sample_count := int(SAMPLE_RATE * duration)

@@ -50,7 +50,7 @@ func _run_tests() -> void:
     _check(contacts.size() == 2, "shared threat memory adds hostile contacts to the minimap")
 
     _check(scene.get_tree().get_nodes_in_group("arena_buildings").size() == 6, "central buildings are tagged for tactical map geometry")
-    _check(scene.get_tree().get_nodes_in_group("arena_cover").size() == 6, "concrete cover positions are tagged for tactical map geometry")
+    _check(scene.get_tree().get_nodes_in_group("arena_cover").size() == 9, "concrete barriers and destructible panels are tagged for tactical map geometry")
 
     print("TACTICAL MAP RESULT: ", passed, " checks passed; failed=", failed)
     quit(1 if failed else 0)
