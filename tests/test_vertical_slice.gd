@@ -81,7 +81,7 @@ func _run_tests() -> void:
     _check(is_equal_approx(player.stamina, 3.5) and is_equal_approx(player.stamina_regen_delay, 0.25), "stamina recovery waits for the full delay")
     player._update_stamina(0.5, false)
     _check(is_equal_approx(player.stamina, 3.85), "stamina recovery begins only after the delay expires")
-    player.stamina = player.MAX_STAMINA
+    player.stamina = 8.0
     player.stamina_regen_delay = 0.0
     var ammo_caches: Array = scene.get_tree().get_nodes_in_group("ammo_caches")
     var first_cache: Node = ammo_caches[0]
@@ -133,9 +133,14 @@ func _run_tests() -> void:
     avoidance_enemy.global_position = saved_enemy_position
     avoidance_enemy.set_physics_process(true)
 
+    var district_cover_candidates: Array[Vector3] = avoidance_enemy._get_district_cover_candidates()
+    _check(district_cover_candidates.size() == 32, "ammo caches and service crates expose 32 tactical cover positions")
+
     var alert_source: Node = scene.enemies[0]
     var alert_receiver: Node = scene.enemies[1]
+    var receiver_saved_position: Vector3 = alert_receiver.global_position
     alert_receiver.set_physics_process(false)
+    alert_receiver.global_position = alert_source.global_position + Vector3(3.0, 0.0, 0.0)
     alert_receiver.state = "SEARCH"
     alert_receiver.alert_memory_timer = 0.0
     var first_alert_position := Vector3(2.0, 0.0, 4.0)
@@ -146,6 +151,7 @@ func _run_tests() -> void:
     var second_alert_position := Vector3(4.0, 0.0, 6.0)
     alert_source._broadcast_alert(second_alert_position)
     _check(alert_receiver.last_known_position.is_equal_approx(second_alert_position), "enemy alert broadcasts update nearby allies")
+    alert_receiver.global_position = receiver_saved_position
     alert_receiver.set_physics_process(true)
 
     # Place a target in the camera's forward line and exercise the actual hitscan path.
