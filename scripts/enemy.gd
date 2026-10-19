@@ -422,6 +422,7 @@ func _physics_process(delta: float) -> void:
             else:
                 target_dir = to_patrol.normalized() * 0.48
                 look_at(Vector3(patrol_goal.x, global_position.y, patrol_goal.z), Vector3.UP)
+    target_dir = _apply_ally_separation(target_dir)
     target_dir = _avoid_obstacles(target_dir)
     if not is_on_floor():
         velocity.y -= 9.8 * delta
@@ -463,9 +464,42 @@ func _avoid_obstacles(direction: Vector3) -> Vector3:
 
 func _steering_ray(space: PhysicsDirectSpaceState3D, origin: Vector3, direction: Vector3) -> Dictionary:
     var query := PhysicsRayQueryParameters3D.create(origin, origin + direction * 2.0)
-    query.exclude = [get_rid()]
+    var exclusions: Array[RID] = [get_rid()]
+    if is_instance_valid(player):
+        exclusions.append(player.get_rid())
+    # Squadmates are handled by separation steering, not treated as solid walls.
+    for ally in get_tree().get_nodes_in_group("enemies"):
+        if ally != self and is_instance_valid(ally) and ally is CollisionObject3D:
+            exclusions.append(ally.get_rid())
+    query.exclude = exclusions
     query.collision_mask = 1
     return space.intersect_ray(query)
+
+func _apply_ally_separation(direction: Vector3) -> Vector3:
+    var desired := direction
+    desired.y = 0.0
+    if desired.length_squared() < 0.0001:
+        return Vector3.ZERO
+    var separation := Vector3.ZERO
+    for node in get_tree().get_nodes_in_group("enemies"):
+        if node == self or not is_instance_valid(node) or not node is Node3D:
+            continue
+        var ally := node as Node3D
+        if float(ally.get("health")) <= 0.0:
+            continue
+        var offset := global_position - ally.global_position
+        offset.y = 0.0
+        var distance := offset.length()
+        if distance > 2.2 or distance < 0.001:
+            continue
+        separation += offset.normalized() * ((2.2 - distance) / 2.2)
+    if separation.length_squared() < 0.0001:
+        return desired.normalized() * minf(direction.length(), 1.0)
+    var strength := minf(separation.length(), 1.0) * 0.8
+    var steered := desired.normalized() + separation.normalized() * strength
+    if steered.length_squared() < 0.0001:
+        return separation.normalized() * minf(direction.length(), 1.0)
+    return steered.normalized() * minf(direction.length(), 1.0)
 
 func _get_patrol_points() -> Array[Node3D]:
     var points: Array[Node3D] = []
@@ -622,6 +656,7 @@ func _choose_flank_goal() -> Vector3:
         if travel < 1.5:
             continue
         var score := -travel * 0.35 + randf_range(-0.25, 0.25)
+        score -= _flank_ally_spacing_penalty(candidate)
         var cover_ray := PhysicsRayQueryParameters3D.create(player.global_position + Vector3.UP * 1.25, candidate + Vector3.UP * 1.0)
         cover_ray.exclude = [get_rid(), player.get_rid()]
         if not get_world_3d().direct_space_state.intersect_ray(cover_ray).is_empty():
@@ -630,6 +665,24 @@ func _choose_flank_goal() -> Vector3:
             best_score = score
             best = candidate
     return best
+
+func _flank_ally_spacing_penalty(candidate: Vector3) -> float:
+    var penalty := 0.0
+    for node in get_tree().get_nodes_in_group("enemies"):
+        if node == self or not is_instance_valid(node) or not node is Node3D:
+            continue
+        var ally := node as Node3D
+        if float(ally.get("health")) <= 0.0:
+            continue
+        var ally_goal: Vector3 = ally.get("flank_goal")
+        if ally_goal != Vector3.ZERO:
+            var goal_distance := candidate.distance_to(ally_goal)
+            if goal_distance < 5.0:
+                penalty += (5.0 - goal_distance) * 1.8
+        var body_distance := candidate.distance_to(ally.global_position)
+        if body_distance < 2.8:
+            penalty += (2.8 - body_distance) * 1.1
+    return penalty
 
 func _cover_ally_spacing_penalty(candidate: Vector3) -> float:
     var penalty := 0.0
