@@ -13,7 +13,7 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 - Combat HUD feedback with low-ammo warning colors, stamina percentage, a live intel distance/bearing indicator, and viewport-anchored layout; weapon view shifts into a tighter aim-down-sights position
 - Three interactable ammo caches let players resupply reserve ammunition, with one-time pickup behaviour and a hard reserve cap
 - Limited frag grenades can be thrown with G; the timed blast applies distance-falloff damage, reduced through solid cover, physical knockback, and a short explosion flash
-- Layered window bays, facade trim, side-wall details, service doors, battered street lamps, road gutters, damaged asphalt patches, scattered debris, drifting ash, a looping procedural wind bed, occasional distant artillery, and lightweight battlefield smoke
+- Layered window bays, facade trim, side-wall details, service doors, battered street lamps, road gutters, damaged asphalt patches, scattered debris, drifting ash, a looping procedural wind bed, occasional distant artillery, lightweight battlefield smoke, and three shootable cover panels with damage cracks and debris
 - Expanded outer district with eight additional ruined perimeter buildings, a secondary service lane, utility crates, drainage details, and distributed rubble clusters; repeated materials are shared to keep the scene lightweight
 - Mission briefing includes Recruit, Standard, and Veteran threat profiles that tune hostile awareness, firing cadence, and incoming damage
 - Godot Compatibility renderer for integrated graphics
@@ -54,7 +54,7 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 
 ## Current limits
 
-This is a foundation, not the finished game. Combatants use procedural meshes and inexpensive logic. The vertical slice still needs authored high-detail environment/character assets, proper skeletal animations, spatial weapon/ambience audio, robust navigation and cover tactics, destructible environments, vehicles, additional missions, co-op, and multiplayer. Current geometry and enemy logic remain lightweight while the gameplay loop is being verified.
+This is a foundation, not the finished game. Combatants use procedural meshes and inexpensive logic. The vertical slice still needs authored high-detail environment/character assets, proper skeletal animations, spatial weapon/ambience audio, robust navigation and cover tactics, broader destructible-environment coverage, vehicles, additional missions, co-op, and multiplayer. Current geometry and enemy logic remain lightweight while the gameplay loop is being verified.
 
 ## Performance
 

@@ -286,6 +286,39 @@ func _build_arena() -> void:
     _box("ObjectiveLight", Vector3(0, 2.4, -30.5), Vector3(0.25, 0.25, 0.25), Color(0.85,0.58,0.18), false)
     _street_furniture()
     _add_road_markings()
+    _spawn_destructible_cover()
+
+func _spawn_destructible_cover() -> void:
+    var panels := [
+        [Vector3(-10.5, 1.1, -6.0), Vector3(2.6, 2.2, 0.2), Color(0.30, 0.22, 0.14)],
+        [Vector3(10.5, 1.1, 6.0), Vector3(2.6, 2.2, 0.2), Color(0.26, 0.23, 0.17)],
+        [Vector3(-10.5, 1.1, 30.0), Vector3(2.6, 2.2, 0.2), Color(0.32, 0.24, 0.15)]
+    ]
+    for index in range(panels.size()):
+        var cover := StaticBody3D.new()
+        cover.name = "DestructibleCover_%02d" % (index + 1)
+        cover.set_script(load("res://scripts/destructible_cover.gd"))
+        cover.set("cover_size", panels[index][1])
+        cover.set("base_color", panels[index][2])
+        cover.position = panels[index][0]
+        cover.add_to_group("arena_cover")
+        cover.add_to_group("destructible_cover")
+
+        var cover_mesh := MeshInstance3D.new()
+        cover_mesh.name = "CoverMesh"
+        var panel_mesh := BoxMesh.new()
+        panel_mesh.size = panels[index][1]
+        cover_mesh.mesh = panel_mesh
+        cover_mesh.material_override = _material(panels[index][2])
+        cover.add_child(cover_mesh)
+
+        var collision := CollisionShape3D.new()
+        collision.name = "CollisionShape3D"
+        var shape := BoxShape3D.new()
+        shape.size = panels[index][1]
+        collision.shape = shape
+        cover.add_child(collision)
+        add_child(cover)
 
 func _add_road_markings() -> void:
     var faded_white := Color(0.50, 0.51, 0.46)

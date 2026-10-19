@@ -82,3 +82,6 @@ jobs:
 
       - name: Run battlefield atmosphere regression checks
         run: godot --headless --path . --script res://tests/test_battlefield_atmosphere.gd
+
+      - name: Run destructible cover regression checks
+        run: godot --headless --path . --script res://tests/test_destructible_cover.gd
