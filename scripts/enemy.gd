@@ -318,15 +318,11 @@ func _build_limb_meshes() -> void:
     right_arm_pivot.rotation.z = 0.24
     _add_limb_end(left_arm_pivot, "LeftGlove", Vector3(0.0, -0.54, -0.04), Vector3(0.14, 0.10, 0.13), glove_material)
     _add_limb_end(right_arm_pivot, "RightGlove", Vector3(0.0, -0.54, -0.04), Vector3(0.14, 0.10, 0.13), glove_material)
-    _add_limb_end(left_arm_pivot, "LeftElbowPad", Vector3(0.0, -0.30, -0.095), Vector3(0.18, 0.14, 0.105), boot_material)
-    _add_limb_end(right_arm_pivot, "RightElbowPad", Vector3(0.0, -0.30, -0.095), Vector3(0.18, 0.14, 0.105), boot_material)
 
     left_leg_pivot = _make_limb_pivot("LeftLegPivot", Vector3(-0.18, 0.66, 0.015), 0.76, 0.135, trouser_material)
     right_leg_pivot = _make_limb_pivot("RightLegPivot", Vector3(0.18, 0.66, 0.015), 0.76, 0.135, trouser_material)
     _add_limb_end(left_leg_pivot, "LeftBoot", Vector3(0.0, -0.69, -0.075), Vector3(0.24, 0.13, 0.34), boot_material)
     _add_limb_end(right_leg_pivot, "RightBoot", Vector3(0.0, -0.69, -0.075), Vector3(0.24, 0.13, 0.34), boot_material)
-    _add_limb_end(left_leg_pivot, "LeftThighUtilityStrap", Vector3(0.0, -0.16, -0.005), Vector3(0.255, 0.075, 0.255), glove_material)
-    _add_limb_end(right_leg_pivot, "RightThighUtilityStrap", Vector3(0.0, -0.16, -0.005), Vector3(0.255, 0.075, 0.255), glove_material)
 
 func _make_limb_pivot(label: String, pivot_position: Vector3, length: float, radius: float, material: StandardMaterial3D) -> Node3D:
     var pivot := Node3D.new()
@@ -396,6 +392,13 @@ func _animate_visuals(delta: float) -> void:
     visual_root.rotation.z += hit_reaction_direction * 0.12 * reaction_strength
     left_arm_pivot.rotation.z = -0.26 - hit_reaction_direction * 0.18 * reaction_strength
     right_arm_pivot.rotation.z = 0.24 + hit_reaction_direction * 0.18 * reaction_strength
+    # Keep the rifle shouldered while engaging, with gait layered underneath the ready pose.
+    var weapon_ready := state == "COMBAT" or state == "REPOSITION"
+    var pose_weight := minf(delta * 7.0, 1.0)
+    var left_arm_target := -0.30 if weapon_ready else 0.0
+    var right_arm_target := -0.22 if weapon_ready else 0.0
+    left_arm_pivot.rotation.x = lerpf(left_arm_pivot.rotation.x, left_arm_target, pose_weight)
+    right_arm_pivot.rotation.x = lerpf(right_arm_pivot.rotation.x, right_arm_target, pose_weight)
 
 func _physics_process(delta: float) -> void:
     if get_tree().paused:
