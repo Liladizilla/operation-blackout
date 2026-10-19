@@ -8,6 +8,7 @@ var detection_range := 30.0
 var fire_interval_min := 0.65
 var fire_interval_max := 1.25
 var difficulty := "STANDARD"
+var combat_role := "RIFLEMAN"
 var player: Node3D
 var state := "SEARCH"
 var think_timer := 0.0
@@ -154,6 +155,19 @@ func _ready() -> void:
     add_to_group("enemies")
     _initialize_patrol()
     set_difficulty(difficulty)
+
+func set_combat_role(value: String) -> void:
+    var normalized := value.strip_edges().to_upper()
+    combat_role = normalized if normalized in ["ASSAULT", "SUPPORT", "FLANKER", "RIFLEMAN"] else "RIFLEMAN"
+
+func _combat_engagement_ranges() -> Vector2:
+    match combat_role:
+        "ASSAULT":
+            return Vector2(4.5, 10.5)
+        "SUPPORT":
+            return Vector2(9.0, 15.0)
+        _:
+            return Vector2(5.5, 13.0)
 
 func set_difficulty(value: String) -> void:
     difficulty = value.strip_edges().to_upper()
@@ -335,13 +349,20 @@ func _physics_process(delta: float) -> void:
     if state == "COMBAT":
         var to_player := player.global_position - global_position
         to_player.y = 0
-        if distance_to_player > 13:
+        var engagement := _combat_engagement_ranges()
+        if distance_to_player > engagement.y:
             target_dir = to_player.normalized()
-        elif distance_to_player < 5.5:
+        elif distance_to_player < engagement.x:
             target_dir = -to_player.normalized()
             flank_timer = 0.0
+        elif combat_role == "SUPPORT":
+            # Support holds a wider firing lane and makes small lateral corrections.
+            if flank_timer <= 0.0:
+                strafe_sign *= -1.0
+                flank_timer = randf_range(1.8, 3.0)
+            target_dir = Vector3(-to_player.z, 0.0, to_player.x).normalized() * strafe_sign * 0.22
         else:
-            # Break predictable left-right strafing with short, readable flank runs.
+            # Flankers and riflemen break predictable left-right strafing with short runs.
             if flank_timer <= 0.0 or global_position.distance_to(flank_goal) < 1.6:
                 flank_goal = _choose_flank_goal()
                 flank_timer = randf_range(2.2, 3.8)
@@ -351,7 +372,7 @@ func _physics_process(delta: float) -> void:
             if to_flank.length() > 1.0:
                 target_dir = to_flank.normalized()
             else:
-                target_dir = Vector3(-to_player.z,0,to_player.x).normalized() * strafe_sign * 0.42
+                target_dir = Vector3(-to_player.z, 0.0, to_player.x).normalized() * strafe_sign * 0.42
         look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
         if distance_to_player < maxf(10.0, detection_range - 5.0) and fire_timer <= 0:
             fire_timer = randf_range(fire_interval_min, fire_interval_max)
