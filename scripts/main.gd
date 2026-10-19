@@ -384,7 +384,7 @@ func _building(pos: Vector3, size: Vector3, color: Color) -> void:
     _box("RoofRubble", pos + Vector3(0,size.y + 0.3,0), Vector3(size.x*0.45,0.6,size.z*0.5), color.darkened(0.18), true)
 
     # Roof services add recognizable scale cues to the otherwise damaged roofline.
-    if int(abs(pos.x)) % 2 == 0:
+    if int(abs(pos.x + pos.z)) % 2 == 0:
         var tank_root := Node3D.new()
         tank_root.name = "RooftopWaterTank"
         tank_root.position = Vector3(pos.x + size.x * 0.24, pos.y + size.y + 1.25, pos.z + size.z * 0.12)
