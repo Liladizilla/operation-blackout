@@ -412,7 +412,7 @@ func _building(pos: Vector3, size: Vector3, color: Color) -> void:
     _box("BalconyFrontRail", Vector3(balcony_x, balcony_y - 0.12, balcony_z - 0.36), Vector3(balcony_width + 0.42, 0.075, 0.065), rail_material, true)
     for side in [-1.0, 1.0]:
         _box("BalconySideRail", Vector3(balcony_x + side * (balcony_width + 0.42) * 0.5, balcony_y - 0.35, balcony_z), Vector3(0.065, 0.62, 0.72), rail_material, true)
-        _box("BalconyRailPost", Vector3(balcony_x + side * (ww + 0.42) * 0.5, balcony_y - 0.35, balcony_z - 0.36), Vector3(0.065, 0.62, 0.065), rail_material, true)
+        _box("BalconyRailPost", Vector3(balcony_x + side * (balcony_width + 0.42) * 0.5, balcony_y - 0.35, balcony_z - 0.36), Vector3(0.065, 0.62, 0.065), rail_material, true)
 
     # Exposed reinforcement, cracked plaster, and battered service equipment.
     for damage_index in range(2):
