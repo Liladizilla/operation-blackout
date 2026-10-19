@@ -246,7 +246,15 @@ func _choose_cover(threat_position: Vector3) -> Vector3:
         Vector3(-2, 0, -30.2),
         Vector3(-28.5, 0, -24), Vector3(-28.5, 0, -12),
         Vector3(-28.5, 0, 0), Vector3(-28.5, 0, 12),
-        Vector3(-28.5, 0, 24)
+        Vector3(-28.5, 0, 24),
+        Vector3(-22.0, 0, -29.0), Vector3(-22.0, 0, -15.0),
+        Vector3(-22.0, 0, -1.0), Vector3(-22.0, 0, 13.0),
+        Vector3(-22.0, 0, 27.0), Vector3(22.0, 0, -29.0),
+        Vector3(22.0, 0, -15.0), Vector3(22.0, 0, -1.0),
+        Vector3(22.0, 0, 13.0), Vector3(22.0, 0, 27.0),
+        Vector3(28.5, 0, -24.0), Vector3(28.5, 0, -12.0),
+        Vector3(28.5, 0, 0.0), Vector3(28.5, 0, 12.0),
+        Vector3(28.5, 0, 24.0)
     ]
     var best := global_position
     var best_score := -INF
