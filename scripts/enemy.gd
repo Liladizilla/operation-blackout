@@ -158,7 +158,7 @@ func _avoid_obstacles(direction: Vector3) -> Vector3:
     if forward.length_squared() < 0.01:
         return Vector3.ZERO
     forward = forward.normalized()
-    var origin := global_position + Vector3.UP * 0.85
+    var origin := global_position + Vector3.UP * 0.25
     var space := get_world_3d().direct_space_state
     var forward_hit := _steering_ray(space, origin, forward)
     if forward_hit.is_empty() or forward_hit.get("collider") == player:
