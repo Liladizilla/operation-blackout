@@ -54,7 +54,7 @@ func _run_tests() -> void:
     _check(InputMap.has_action("throw_grenade"), "G grenade input action is registered")
     _check(scene.get_remaining_enemies() == 5, "five hostiles spawn")
     var visual_test_enemy: Node = scene.enemies[0]
-    _check(visual_test_enemy.get_node_or_null("EnemyMuzzleFlash") != null, "hostiles have muzzle flash geometry")
+    _check(visual_test_enemy.get_node_or_null("VisualRoot/EnemyMuzzleFlash") != null, "hostiles have muzzle flash geometry")
     visual_test_enemy._show_muzzle_flash()
     _check(visual_test_enemy.enemy_muzzle_flash.visible and visual_test_enemy.enemy_muzzle_light.light_energy > 0.0, "hostile muzzle flash activates")
     _check(scene.get_node_or_null("IntelObjective") != null, "intel objective spawns")

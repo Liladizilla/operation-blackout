@@ -67,3 +67,6 @@ jobs:
 
       - name: Run reload animation regression checks
         run: godot --headless --path . --script res://tests/test_reload_animation.gd
+
+      - name: Run procedural character animation regression checks
+        run: godot --headless --path . --script res://tests/test_character_animation.gd
