@@ -150,7 +150,14 @@ func _physics_process(delta: float) -> void:
         query.exclude = [get_rid()]
         var sight := get_world_3d().direct_space_state.intersect_ray(query)
         var sees_player: bool = distance < 30.0 and (sight.is_empty() or sight.get("collider") == player)
-        if suppression_timer > 0.0:
+        var grenade_threat := _nearest_grenade_threat()
+        if is_instance_valid(grenade_threat):
+            if state != "REPOSITION" or cover_timer <= 0.0:
+                cover_goal = _choose_cover(grenade_threat.global_position)
+                cover_timer = 1.0
+            state = "REPOSITION"
+            suppression_timer = maxf(suppression_timer, 0.35)
+        elif suppression_timer > 0.0:
             state = "REPOSITION"
             last_known_position = player.global_position
             alert_memory_timer = 5.0
@@ -255,6 +262,21 @@ func _steering_ray(space: PhysicsDirectSpaceState3D, origin: Vector3, direction:
     query.exclude = [get_rid()]
     query.collision_mask = 1
     return space.intersect_ray(query)
+
+func _nearest_grenade_threat() -> Node3D:
+    var nearest: Node3D = null
+    var nearest_distance := 9.0
+    for grenade in get_tree().get_nodes_in_group("active_grenades"):
+        var grenade_node := grenade as Node3D
+        if not is_instance_valid(grenade_node) or bool(grenade_node.get("exploded")):
+            continue
+        if float(grenade_node.get("fuse_timer")) > 1.85:
+            continue
+        var distance := global_position.distance_to(grenade_node.global_position)
+        if distance < nearest_distance:
+            nearest = grenade_node
+            nearest_distance = distance
+    return nearest
 
 func hear_noise(source_position: Vector3, noise_type: String) -> void:
     if health <= 0.0:
