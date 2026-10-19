@@ -45,6 +45,11 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 - **R**: reload
 - **F**: interact / recover intel
 - **Esc**: pause / release mouse
+- **Controller left stick**: move
+- **Controller right stick**: look
+- **Controller RT / LT**: fire / aim down sights
+- **Controller A / B / X / Y**: jump / crouch / reload / throw frag
+- **Controller LB / L3 / R3 / Start**: interact / sprint / prone / pause
 - **Mission briefing**: choose Recruit, Standard, or Veteran before deployment
 
 ## Current limits
