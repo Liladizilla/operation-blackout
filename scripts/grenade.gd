@@ -39,7 +39,7 @@ func _ready() -> void:
     mesh_instance.material_override = material
     add_child(mesh_instance)
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
     if exploded:
         return
     fuse_timer -= delta
