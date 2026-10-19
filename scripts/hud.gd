@@ -176,7 +176,9 @@ func update_stamina(value: float, maximum: float) -> void:
 func _update_navigation() -> void:
     if not is_instance_valid(navigation_label) or not is_instance_valid(player_ref):
         return
-    var objective := owner_scene.get_node_or_null("IntelObjective") if is_instance_valid(owner_scene) else null
+    var objective: Node = null
+    if is_instance_valid(owner_scene):
+        objective = owner_scene.get_node_or_null("IntelObjective")
     if not is_instance_valid(objective):
         navigation_label.text = "INTEL SECURED  /  EXFIL COMPLETE"
         return
