@@ -53,6 +53,8 @@ func _run_tests() -> void:
     var assault_ranges: Vector2 = scene.enemies[0]._combat_engagement_ranges()
     var support_ranges: Vector2 = scene.enemies[1]._combat_engagement_ranges()
     _check(assault_ranges.y < support_ranges.y and assault_ranges.x < support_ranges.x, "assault and support roles use distinct engagement distances")
+    _check(scene.enemies[1]._combat_fire_interval_scale() > scene.enemies[2]._combat_fire_interval_scale(), "support fires at a steadier slower cadence than flankers")
+    _check(scene.enemies[2]._combat_fire_interval_scale() < scene.enemies[0]._combat_fire_interval_scale(), "flankers use a faster firing cadence than assault units")
     scene.enemies[1].set_combat_role("unknown")
     _check(scene.enemies[1].combat_role == "RIFLEMAN", "unknown combat roles safely fall back to rifleman")
     scene.enemies[1].set_combat_role("SUPPORT")
@@ -90,6 +92,14 @@ func _run_tests() -> void:
     var first_cover: Vector3 = alert_receiver._choose_cover(suppression_source)
     var second_cover: Vector3 = alert_receiver._choose_cover(suppression_source)
     _check(not first_cover.is_equal_approx(second_cover), "cover selection discourages immediately reusing the previous position")
+    alert_source.state = "REPOSITION"
+    alert_source.cover_timer = 2.0
+    alert_source.cover_goal = Vector3(8.0, 0.0, 19.0)
+    var shared_cover_penalty: float = alert_receiver._cover_ally_spacing_penalty(alert_source.cover_goal)
+    var distant_cover_penalty: float = alert_receiver._cover_ally_spacing_penalty(Vector3(100.0, 0.0, 100.0))
+    _check(shared_cover_penalty > distant_cover_penalty, "cover scoring penalizes crowding a teammate's assigned position")
+    alert_source.state = "COMBAT"
+    alert_source.cover_timer = 0.0
 
     # Combat movement chooses a lateral route around the player, not just a fixed strafe.
     alert_receiver.player = player
