@@ -8,7 +8,7 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 - First-person mouse look, WASD movement, sprint, jump, crouch, prone
 - Aim-down-sights field-of-view change, breathing/strafe sway, recoil, and brief muzzle illumination
 - Assault rifle firing, raycast hit detection, ammunition and reloads
-- Hostile AI: line-of-sight detection, pursuit/strafe, last-known-position investigation, cover-aware repositioning, short-range obstacle steering around concrete barriers, and hitscan return fire; taking damage triggers a suppression/reposition response
+- Hostile AI: line-of-sight detection, pursuit/strafe, last-known-position investigation, cover-aware repositioning, short-range obstacle steering around concrete barriers, visible muzzle flashes during return fire, and hitscan return fire; taking damage triggers a brief hit reaction and suppression/reposition response
 - Health and directional damage feedback, headshot-aware hit confirmation, hold-to-recover intel objective gated behind enemy clearance, pause menu, and mission-complete/replay screen
 - Combat HUD feedback with low-ammo warning colors, stamina percentage, a live intel distance/bearing indicator, and viewport-anchored layout; weapon view shifts into a tighter aim-down-sights position
 - Layered window bays, facade trim, side-wall details, service doors, battered street lamps, road gutters, damaged asphalt patches, scattered debris, and lightweight battlefield smoke
@@ -52,7 +52,7 @@ The project uses the Compatibility renderer, shared repeated materials, modest g
 
 ## Verification
 
-- **Automated gameplay checks:** test firing/hitscan damage, player damage and respawn, reload ammunition transfer, enemy damage/death, suppression response, enemy-count updates, the intel gate, mission-complete HUD state, stamina and ammunition HUD updates, intel rangefinder presence, hostile obstacle steering, viewport-anchored HUD layout, and expected outer-district environment props.
+- **Automated gameplay checks:** test firing/hitscan damage, player damage and respawn, reload ammunition transfer, enemy damage/death, suppression response, enemy-count updates, the intel gate, mission-complete HUD state, stamina and ammunition HUD updates, intel rangefinder presence, hostile obstacle steering, enemy muzzle-flash/hit-reaction feedback, viewport-anchored HUD layout, and expected outer-district environment props.
 - **Headless smoke test:** passed in Godot 4.4.1 with a 300-frame main-scene run and no script/parse errors.
 - **Still requires local verification:** visual quality, enemy behaviour in a live fight, mouse capture, pause-menu interaction, actual FPS, and GPU load.
 - GitHub Actions runs the headless scene test and gameplay regression suite on pushes and pull requests.
