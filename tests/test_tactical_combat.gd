@@ -58,6 +58,15 @@ func _run_tests() -> void:
     _check(scene.enemies[1]._combat_burst_size() > scene.enemies[2]._combat_burst_size(), "support units use longer controlled bursts than flankers")
     _check(scene.enemies[1]._combat_burst_pause() > scene.enemies[2]._combat_burst_pause(), "support units pause longer between bursts than flankers")
     _check(scene.enemies[2]._combat_reacquire_delay() < scene.enemies[1]._combat_reacquire_delay(), "flankers reacquire targets faster than support units")
+    _check(scene.enemies[1]._combat_suppression_weight() > scene.enemies[2]._combat_suppression_weight(), "support units prioritize sustained suppression over maneuver speed")
+    _check(scene.enemies[2]._should_take_flank_route(), "designated flankers own the squad's primary maneuver")
+    _check(not scene.enemies[0]._should_take_flank_route(), "assault units maintain pressure instead of duplicating the flank")
+    _check(not scene.enemies[3]._should_take_flank_route(), "riflemen hold a firing lane while a living flanker is nearby")
+    scene.enemies[2].health = 0.0
+    scene.enemies[4].health = 0.0
+    _check(scene.enemies[3]._should_take_flank_route(), "riflemen can inherit maneuver duty when no living flankers remain")
+    scene.enemies[2].health = 100.0
+    scene.enemies[4].health = 100.0
     _check(scene.enemies[0]._combat_can_engage(13.0), "assault units engage within their close-pressure firing envelope")
     _check(not scene.enemies[0]._combat_can_engage(17.0), "assault units do not waste shots beyond their role's firing envelope")
     _check(scene.enemies[1]._combat_can_engage(17.0), "support units retain a wider firing envelope than assault units")
