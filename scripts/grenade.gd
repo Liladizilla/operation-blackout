@@ -113,6 +113,18 @@ func _spawn_explosion_effect() -> void:
     var scene := get_tree().current_scene
     if not is_instance_valid(scene):
         return
+    var audio := AudioStreamPlayer3D.new()
+    audio.name = "GrenadeExplosionAudio"
+    var audio_fx = load("res://scripts/audio_fx.gd")
+    audio.stream = audio_fx.create_explosion()
+    audio.volume_db = -3.0
+    audio.unit_size = 6.0
+    audio.max_distance = 75.0
+    scene.add_child(audio)
+    audio.global_position = global_position
+    audio.finished.connect(audio.queue_free)
+    audio.play()
+
     var flash := MeshInstance3D.new()
     flash.name = "GrenadeExplosionFlash"
     var flash_mesh := SphereMesh.new()
