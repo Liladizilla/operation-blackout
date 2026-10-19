@@ -15,6 +15,7 @@ func _ready() -> void:
     _setup_input()
     _build_environment()
     _build_arena()
+    _spawn_atmosphere()
     _spawn_player()
     _spawn_enemies()
     _spawn_objective()
@@ -88,6 +89,42 @@ func _setup_environment() -> void:
 
 func _build_environment() -> void:
     _setup_environment()
+
+
+func _spawn_atmosphere() -> void:
+    _smoke_plume(Vector3(-12.0, 1.0, -18.0), 22)
+    _smoke_plume(Vector3(15.0, 0.5, 7.0), 18)
+    _smoke_plume(Vector3(3.0, 0.8, -35.0), 20)
+
+func _smoke_plume(pos: Vector3, particle_count: int) -> void:
+    var particles := CPUParticles3D.new()
+    particles.name = "BattlefieldSmoke"
+    particles.position = pos
+    particles.amount = particle_count
+    particles.lifetime = 5.5
+    particles.preprocess = 2.0
+    particles.emitting = true
+    particles.direction = Vector3(0.0, 1.0, 0.0)
+    particles.spread = 24.0
+    particles.gravity = Vector3(0.0, -0.12, 0.0)
+    particles.initial_velocity_min = 0.25
+    particles.initial_velocity_max = 0.8
+    particles.angular_velocity_min = -12.0
+    particles.angular_velocity_max = 12.0
+    particles.scale_amount_min = 0.7
+    particles.scale_amount_max = 1.7
+    var puff := SphereMesh.new()
+    puff.radius = 0.32
+    puff.height = 0.64
+    var smoke_mat := StandardMaterial3D.new()
+    smoke_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    smoke_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    smoke_mat.blend_mode = BaseMaterial3D.BLEND_MODE_MIX
+    smoke_mat.albedo_color = Color(0.26, 0.27, 0.25, 0.19)
+    smoke_mat.roughness = 1.0
+    puff.material = smoke_mat
+    particles.mesh = puff
+    add_child(particles)
 
 func _build_arena() -> void:
     _box("Ground", Vector3(0, -0.5, 0), Vector3(100, 1, 100), Color(0.19, 0.20, 0.18), true)
