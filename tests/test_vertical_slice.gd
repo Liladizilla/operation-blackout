@@ -70,21 +70,16 @@ func _run_tests() -> void:
     _check(scene.hud.ammo_label.text == "05 / 030", "ammo HUD formats low ammunition")
     _check(scene.get_node_or_null("EnvironmentDetails") != null, "outer district dressing is attached")
     var ground_node := scene.find_child("Ground", true, false)
-    var ground_mesh := ground_node.find_child("MeshInstance3D", true, false) as MeshInstance3D if ground_node != null else null
-    print("SURFACE DEBUG ground=", ground_node, " mesh=", ground_mesh, " material=", ground_mesh.material_override if ground_mesh != null else null, " kind=", scene._surface_kind_for_name("Ground"))
+    var ground_mesh := ground_node.get_child(0) as MeshInstance3D if ground_node != null and ground_node.get_child_count() > 0 else null
     _check(ground_mesh != null and ground_mesh.material_override is ShaderMaterial, "terrain uses the procedural weathered surface shader")
-    var ground_collision := ground_node.find_child("CollisionShape3D", true, false) as CollisionShape3D if ground_node != null else null
-    if ground_collision == null and ground_node != null:
-        for child in ground_node.get_children():
-            if child is CollisionShape3D:
-                ground_collision = child
+    var ground_collision := ground_node.get_child(1) as CollisionShape3D if ground_node != null and ground_node.get_child_count() > 1 else null
     _check(ground_collision != null and ground_collision.shape is BoxShape3D, "terrain retains a solid collision surface beneath its material")
     var road_node := scene.find_child("Road", true, false)
-    var road_mesh := road_node.find_child("MeshInstance3D", true, false) as MeshInstance3D if road_node != null else null
+    var road_mesh := road_node.get_child(0) as MeshInstance3D if road_node != null and road_node.get_child_count() > 0 else null
     _check(road_mesh != null and road_mesh.material_override is ShaderMaterial, "asphalt uses a distinct procedural surface response")
     var perimeter_buildings := scene.get_tree().get_nodes_in_group("district_buildings")
     var perimeter_building := perimeter_buildings[0] as Node3D if not perimeter_buildings.is_empty() else null
-    var perimeter_mesh := perimeter_building.find_child("MeshInstance3D", true, false) as MeshInstance3D if perimeter_building != null else null
+    var perimeter_mesh := perimeter_building.get_child(0) as MeshInstance3D if perimeter_building != null and perimeter_building.get_child_count() > 0 else null
     _check(perimeter_mesh != null and perimeter_mesh.material_override is ShaderMaterial, "perimeter ruins share the weathered concrete material system")
     var environment_node: WorldEnvironment = scene.world_environment as WorldEnvironment
     _check(environment_node != null and environment_node.environment.fog_enabled, "battlefield atmosphere keeps depth fog enabled")
