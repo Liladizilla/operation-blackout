@@ -40,6 +40,17 @@ func _run_tests() -> void:
         enemy.alert_memory_timer = 0.0
 
     _check(scene.report_noise(player.global_position, 0.0, "GUNSHOT", player) == 0, "zero-radius noise events are ignored")
+    var investigation_test: Node = enemies[0]
+    investigation_test.state = "INVESTIGATE"
+    investigation_test.alert_memory_timer = 3.0
+    investigation_test.patrol_pause_timer = 0.0
+    investigation_test.patrol_goal = Vector3(10.0, 0.0, 10.0)
+    investigation_test._complete_investigation()
+    _check(investigation_test.state == "SEARCH", "guards switch from investigation to a local search after reaching a sound source")
+    _check(is_equal_approx(investigation_test.patrol_pause_timer, 1.35), "guards pause briefly to scan the area before resuming patrol")
+    _check(investigation_test.alert_memory_timer == 0.0 and investigation_test.patrol_goal == Vector3.ZERO, "completed investigation clears stale alert memory and patrol target")
+    investigation_test.state = "SEARCH"
+    investigation_test.patrol_pause_timer = 0.0
 
     # A solid building attenuates footstep noise enough that a distant guard
     # on the opposite side does not hear it.
