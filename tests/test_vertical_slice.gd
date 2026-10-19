@@ -107,6 +107,16 @@ func _run_tests() -> void:
     scene.hud.set_status("KEEP THIS UPDATE")
     scene.report_hostile_contact(scene.enemies[1])
     _check(scene.hud.status_label.text == "KEEP THIS UPDATE", "repeat hostile contacts do not spam or overwrite later combat feedback")
+    scene.hostile_contact_reported = false
+    scene.hostile_investigation_reported = false
+    scene.hud.set_status("READY")
+    scene.report_hostile_investigation(scene.enemies[0], "GUNSHOT")
+    _check(scene.hostile_investigation_reported and scene.hud.status_label.text == "NOISE DETECTED  //  HOSTILES INVESTIGATING GUNFIRE", "gunfire triggers a readable hostile investigation warning")
+    scene.hud.set_status("KEEP THIS UPDATE")
+    scene.report_hostile_investigation(scene.enemies[1], "GRENADE")
+    _check(scene.hud.status_label.text == "KEEP THIS UPDATE", "repeated noise events do not spam investigation warnings")
+    scene.report_hostile_contact(scene.enemies[0])
+    _check(scene.hud.status_label.text == "CONTACT  //  HOSTILES HAVE VISUAL", "visual contact supersedes the earlier noise investigation warning")
     _check(scene.hud.navigation_label != null, "HUD includes the intel rangefinder")
     _check(scene.hud.health_label.anchor_bottom == 1.0 and scene.hud.ammo_label.anchor_bottom == 1.0, "health and ammo HUD stay anchored when the viewport resizes")
     scene.hud.update_stamina(2.0, 8.0)
