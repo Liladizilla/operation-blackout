@@ -55,3 +55,6 @@ jobs:
 
       - name: Run enemy survival regression checks
         run: godot --headless --path . --script res://tests/test_enemy_survival.gd
+
+      - name: Run shot tracer regression checks
+        run: godot --headless --path . --script res://tests/test_shot_tracers.gd
