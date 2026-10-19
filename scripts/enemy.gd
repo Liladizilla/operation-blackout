@@ -7,6 +7,11 @@ var think_timer := 0.0
 var fire_timer := 0.7
 var strafe_sign := 1.0
 var body_mesh: MeshInstance3D
+var body_material: StandardMaterial3D
+var enemy_muzzle_flash: MeshInstance3D
+var enemy_muzzle_light: OmniLight3D
+var muzzle_flash_timer := 0.0
+var hit_flash_timer := 0.0
 var last_known_position := Vector3.ZERO
 var cover_goal := Vector3.ZERO
 var cover_timer := 0.0
@@ -25,10 +30,10 @@ func _ready() -> void:
     body.radius = 0.36
     body.height = 1.65
     body_mesh.mesh = body
-    var mat := StandardMaterial3D.new()
-    mat.albedo_color = Color(0.22,0.25,0.22)
-    mat.roughness = 0.9
-    body_mesh.material_override = mat
+    body_material = StandardMaterial3D.new()
+    body_material.albedo_color = Color(0.22,0.25,0.22)
+    body_material.roughness = 0.9
+    body_mesh.material_override = body_material
     body_mesh.position.y = 0.92
     add_child(body_mesh)
     var head_mesh := MeshInstance3D.new()
@@ -69,8 +74,38 @@ func _ready() -> void:
     rifle.mesh = rifle_mesh
     rifle.position = Vector3(0.32,1.25,-0.2)
     rifle.rotation.x = -0.12
-    rifle.material_override = mat
+    var rifle_material := StandardMaterial3D.new()
+    rifle_material.albedo_color = Color(0.10,0.12,0.10)
+    rifle_material.metallic = 0.28
+    rifle_material.roughness = 0.72
+    rifle.material_override = rifle_material
     add_child(rifle)
+
+    enemy_muzzle_flash = MeshInstance3D.new()
+    enemy_muzzle_flash.name = "EnemyMuzzleFlash"
+    var flash_mesh := SphereMesh.new()
+    flash_mesh.radius = 0.07
+    flash_mesh.height = 0.16
+    enemy_muzzle_flash.mesh = flash_mesh
+    enemy_muzzle_flash.position = Vector3(0.32, 1.25, -0.62)
+    var flash_material := StandardMaterial3D.new()
+    flash_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    flash_material.albedo_color = Color(1.0, 0.67, 0.28)
+    flash_material.emission_enabled = true
+    flash_material.emission = Color(1.0, 0.34, 0.08)
+    enemy_muzzle_flash.material_override = flash_material
+    enemy_muzzle_flash.visible = false
+    add_child(enemy_muzzle_flash)
+
+    enemy_muzzle_light = OmniLight3D.new()
+    enemy_muzzle_light.name = "EnemyMuzzleFlashLight"
+    enemy_muzzle_light.position = enemy_muzzle_flash.position
+    enemy_muzzle_light.light_color = Color(1.0, 0.48, 0.18)
+    enemy_muzzle_light.light_energy = 0.0
+    enemy_muzzle_light.omni_range = 3.2
+    enemy_muzzle_light.shadow_enabled = false
+    add_child(enemy_muzzle_light)
+
     player = get_tree().get_first_node_in_group("player")
     if not player:
         player = get_tree().current_scene.get_node_or_null("Player") as Node3D
@@ -79,6 +114,15 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
     if get_tree().paused:
         return
+    if muzzle_flash_timer > 0.0:
+        muzzle_flash_timer = maxf(0.0, muzzle_flash_timer - delta)
+        if muzzle_flash_timer == 0.0:
+            enemy_muzzle_flash.visible = false
+            enemy_muzzle_light.light_energy = 0.0
+    if hit_flash_timer > 0.0:
+        hit_flash_timer = maxf(0.0, hit_flash_timer - delta)
+        if hit_flash_timer == 0.0 and health > 0.0:
+            body_material.albedo_color = Color(0.22,0.25,0.22)
     if not is_instance_valid(player):
         player = get_tree().current_scene.get_node_or_null("Player") as Node3D
         return
@@ -145,15 +189,65 @@ func _physics_process(delta: float) -> void:
             look_at(Vector3(last_known_position.x, global_position.y, last_known_position.z), Vector3.UP)
         else:
             state = "SEARCH"
+    target_dir = _avoid_obstacles(target_dir)
     if not is_on_floor():
         velocity.y -= 9.8 * delta
     velocity.x = move_toward(velocity.x, target_dir.x * 2.1, delta * 4.0)
     velocity.z = move_toward(velocity.z, target_dir.z * 2.1, delta * 4.0)
     move_and_slide()
 
+func _avoid_obstacles(direction: Vector3) -> Vector3:
+    var forward := direction
+    forward.y = 0.0
+    var speed_scale := minf(forward.length(), 1.0)
+    if speed_scale < 0.01:
+        return Vector3.ZERO
+    forward = forward.normalized()
+    var origin := global_position + Vector3.UP * 0.25
+    var space := get_world_3d().direct_space_state
+    var forward_hit := _steering_ray(space, origin, forward)
+    if forward_hit.is_empty() or forward_hit.get("collider") == player:
+        return forward * speed_scale
+
+    # Try either side of the obstruction before committing to a new cover goal.
+    var left := forward.rotated(Vector3.UP, -0.72)
+    var right := forward.rotated(Vector3.UP, 0.72)
+    var left_hit := _steering_ray(space, origin, left)
+    var right_hit := _steering_ray(space, origin, right)
+    if left_hit.is_empty() and right_hit.is_empty():
+        return (left if global_position.x <= cover_goal.x else right) * speed_scale
+    if left_hit.is_empty():
+        return left * speed_scale
+    if right_hit.is_empty():
+        return right * speed_scale
+
+    var wall_normal: Vector3 = forward_hit.get("normal", Vector3.ZERO)
+    wall_normal.y = 0.0
+    if wall_normal.length_squared() > 0.01:
+        return (wall_normal.normalized() + left * 0.45).normalized() * speed_scale
+    return left * speed_scale
+
+func _steering_ray(space: PhysicsDirectSpaceState3D, origin: Vector3, direction: Vector3) -> Dictionary:
+    var query := PhysicsRayQueryParameters3D.create(origin, origin + direction * 2.0)
+    query.exclude = [get_rid()]
+    query.collision_mask = 1
+    return space.intersect_ray(query)
+
 func _choose_cover(threat_position: Vector3) -> Vector3:
     # Candidate positions sit near concrete barriers and wreckage in the arena.
-    var candidates := [Vector3(-7, 0, -10), Vector3(7, 0, -18), Vector3(-5, 0, 7), Vector3(6, 0, 19), Vector3(-12, 0, 25), Vector3(13, 0, -1), Vector3(-2, 0, -29)]
+    # Stand beside cover rather than targeting the solid center of each obstacle.
+    var candidates := [
+        Vector3(-9.1, 0, -10), Vector3(-7, 0, -11.5),
+        Vector3(9.0, 0, -18), Vector3(7, 0, -19.4),
+        Vector3(-7.0, 0, 7), Vector3(-5, 0, 5.5),
+        Vector3(8.0, 0, 19), Vector3(6, 0, 17.5),
+        Vector3(-14.0, 0, 25), Vector3(-12, 0, 23.5),
+        Vector3(15.0, 0, -1), Vector3(13, 0, -2.4),
+        Vector3(-2, 0, -30.2),
+        Vector3(-28.5, 0, -24), Vector3(-28.5, 0, -12),
+        Vector3(-28.5, 0, 0), Vector3(-28.5, 0, 12),
+        Vector3(-28.5, 0, 24)
+    ]
     var best := global_position
     var best_score := -INF
     for candidate in candidates:
@@ -175,6 +269,7 @@ func _choose_cover(threat_position: Vector3) -> Vector3:
     return best
 
 func _try_shoot_player() -> void:
+    _show_muzzle_flash()
     var from := global_position + Vector3.UP*1.35
     var to := player.global_position + Vector3.UP*1.2
     var query := PhysicsRayQueryParameters3D.create(from, to)
@@ -183,6 +278,11 @@ func _try_shoot_player() -> void:
     if not hit.is_empty() and hit.get("collider") == player:
         if player.has_method("apply_damage"):
             player.apply_damage(7.0, global_position)
+
+func _show_muzzle_flash() -> void:
+    enemy_muzzle_flash.visible = true
+    enemy_muzzle_light.light_energy = 1.6
+    muzzle_flash_timer = 0.055
 
 func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot: bool = false) -> bool:
     health -= amount * (3.0 if headshot else 1.0)
@@ -193,9 +293,12 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot:
         suppression_timer = 1.1 if headshot else 0.75
         cover_timer = 0.0
         think_timer = 0.0
-    var mat := StandardMaterial3D.new()
-    mat.albedo_color = Color(0.55,0.12,0.08) if health > 0 else Color(0.08,0.09,0.08)
-    body_mesh.material_override = mat
+    if health > 0.0:
+        body_material.albedo_color = Color(0.55,0.12,0.08)
+        hit_flash_timer = 0.14
+    else:
+        body_material.albedo_color = Color(0.08,0.09,0.08)
+        hit_flash_timer = 0.0
     if health <= 0:
         var scene := get_tree().current_scene
         if scene and scene.has_method("enemy_killed"):

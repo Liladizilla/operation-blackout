@@ -26,6 +26,7 @@ var bob_time := 0.0
 var recoil := 0.0
 var ads := false
 var damage_flash := 0.0
+var respawn_invulnerability := 0.0
 var recoil_recovery := 0.0
 var muzzle_light: OmniLight3D
 var muzzle_flash_mesh: MeshInstance3D
@@ -144,6 +145,7 @@ func _physics_process(delta: float) -> void:
         return
     fire_cooldown = maxf(0.0, fire_cooldown - delta)
     damage_flash = maxf(0.0, damage_flash - delta)
+    respawn_invulnerability = maxf(0.0, respawn_invulnerability - delta)
     if muzzle_flash_timer > 0.0:
         muzzle_flash_timer = maxf(0.0, muzzle_flash_timer - delta)
         if muzzle_flash_timer == 0.0:
@@ -204,7 +206,12 @@ func _physics_process(delta: float) -> void:
     var reload_duration := 2.7 if ammo <= 0 else 2.0
     var reload_progress := clampf(1.0 - reload_time / reload_duration, 0.0, 1.0) if is_reloading else 0.0
     var reload_drop := sin(reload_progress * PI) * 0.14
-    weapon_root.position = Vector3(0.28, -0.28 + sin(bob_time * 0.5) * 0.008 + recoil * 0.65 - reload_drop, -0.55 + recoil * 1.8 + reload_drop * 0.3)
+    var weapon_base := Vector3(0.06, -0.17, -0.43) if ads else Vector3(0.28, -0.28, -0.55)
+    weapon_root.position = Vector3(
+        weapon_base.x,
+        weapon_base.y + sin(bob_time * 0.5) * (0.004 if ads else 0.008) + recoil * 0.65 - reload_drop,
+        weapon_base.z + recoil * 1.8 + reload_drop * 0.3
+    )
     weapon_root.rotation.x = recoil + reload_drop * 1.4
     weapon_root.rotation.y = lerpf(weapon_root.rotation.y, -input_dir.x * 0.035, delta * 8.0)
     weapon_root.rotation.z = lerpf(weapon_root.rotation.z, -0.22 if is_reloading else 0.0, delta * 7.0)
@@ -306,6 +313,8 @@ func _try_interact() -> void:
             collider.interact(self)
 
 func apply_damage(amount: float, source_position: Vector3 = Vector3.ZERO) -> void:
+    if respawn_invulnerability > 0.0:
+        return
     health = maxf(0.0, health - amount)
     if hud and hud.has_method("show_damage_direction"):
         hud.show_damage_direction(global_position, global_transform.basis, source_position)
@@ -317,6 +326,7 @@ func apply_damage(amount: float, source_position: Vector3 = Vector3.ZERO) -> voi
         reserve = 120
         is_reloading = false
         reload_time = 0.0
+        respawn_invulnerability = 1.5
         global_position = Vector3(0,1.2,25)
         velocity = Vector3.ZERO
         camera_pivot.rotation = Vector3.ZERO
