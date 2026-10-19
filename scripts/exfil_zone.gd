@@ -86,6 +86,8 @@ func _on_exit(body: Node3D) -> void:
     if body.is_in_group("player") or body.name == "Player":
         player_inside = false
         progress = 0.0
+        if not completed:
+            _set_status("EXTRACTION INTERRUPTED. RETURN TO THE BEACON.")
 
 func _set_status(message: String) -> void:
     if current_status == message:
