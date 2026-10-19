@@ -121,15 +121,14 @@ func _setup_environment() -> void:
     var env := Environment.new()
     env.background_mode = Environment.BG_SKY
     var sky := Sky.new()
-    var sky_mat := ProceduralSkyMaterial.new()
-    sky_mat.sky_top_color = Color(0.12, 0.17, 0.20)
-    sky_mat.sky_horizon_color = Color(0.52, 0.46, 0.36)
-    sky_mat.sky_curve = 0.22
-    sky_mat.ground_curve = 0.16
-    sky_mat.energy_multiplier = 0.82
-    sky_mat.use_debanding = true
-    sky_mat.ground_bottom_color = Color(0.055, 0.06, 0.055)
-    sky_mat.ground_horizon_color = Color(0.28, 0.26, 0.22)
+    var sky_mat := ShaderMaterial.new()
+    sky_mat.shader = load("res://shaders/battlefield_sky.gdshader") as Shader
+    sky_mat.set_shader_parameter("sky_top_color", Color(0.12, 0.17, 0.20))
+    sky_mat.set_shader_parameter("sky_horizon_color", Color(0.52, 0.46, 0.36))
+    sky_mat.set_shader_parameter("cloud_color", Color(0.47, 0.48, 0.45))
+    sky_mat.set_shader_parameter("sun_color", Color(1.0, 0.72, 0.43))
+    sky_mat.set_shader_parameter("cloud_coverage", 0.56)
+    sky_mat.set_shader_parameter("cloud_contrast", 0.62)
     sky.sky_material = sky_mat
     env.sky = sky
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
