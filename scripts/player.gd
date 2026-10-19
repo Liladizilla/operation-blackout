@@ -441,6 +441,9 @@ func _fire() -> void:
         if not confirmed_hit and collider is StaticBody3D:
             _spawn_bullet_impact(hit.get("position", to), hit.get("normal", Vector3.UP))
             _play_impact_audio(hit.get("position", to))
+            var impact_scene := get_tree().current_scene
+            if is_instance_valid(impact_scene) and impact_scene.has_method("report_noise"):
+                impact_scene.report_noise(hit.get("position", to), 24.0, "IMPACT", self)
         _impact_spark(hit.get("position", to), hit.get("normal", Vector3.UP))
     var scene := get_tree().current_scene
     if is_instance_valid(scene) and scene.has_method("register_shot"):
