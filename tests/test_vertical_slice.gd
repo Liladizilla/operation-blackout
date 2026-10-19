@@ -69,6 +69,17 @@ func _run_tests() -> void:
     scene.hud.set_ammo(5, 30)
     _check(scene.hud.ammo_label.text == "05 / 030", "ammo HUD formats low ammunition")
     _check(scene.get_node_or_null("EnvironmentDetails") != null, "outer district dressing is attached")
+    var ground_mesh := scene.get_node_or_null("Ground/MeshInstance3D") as MeshInstance3D
+    _check(ground_mesh != null and ground_mesh.material_override is ShaderMaterial, "terrain uses the procedural weathered surface shader")
+    var ground_collision := scene.get_node_or_null("Ground/CollisionShape3D") as CollisionShape3D
+    _check(ground_collision != null and ground_collision.shape is BoxShape3D, "terrain retains a solid collision surface beneath its material")
+    var road_mesh := scene.get_node_or_null("Road/MeshInstance3D") as MeshInstance3D
+    _check(road_mesh != null and road_mesh.material_override is ShaderMaterial, "asphalt uses a distinct procedural surface response")
+    var perimeter_building := scene.get_tree().get_nodes_in_group("district_buildings")[0] as Node3D
+    var perimeter_mesh := perimeter_building.get_node_or_null("MeshInstance3D") as MeshInstance3D
+    _check(perimeter_mesh != null and perimeter_mesh.material_override is ShaderMaterial, "perimeter ruins share the weathered concrete material system")
+    var environment_node := scene.get_node_or_null("WorldEnvironment") as WorldEnvironment
+    _check(environment_node != null and environment_node.environment.fog_enabled, "battlefield atmosphere keeps depth fog enabled")
     _check(scene.get_tree().get_nodes_in_group("district_buildings").size() == 8, "eight perimeter buildings are generated")
     _check(scene.get_tree().get_nodes_in_group("service_alley_crates").size() == 5, "service alley utility crates are generated")
     _check(scene.get_tree().get_nodes_in_group("facade_collapse_rubble").size() == 24, "ruined facades have distributed collapse rubble")
