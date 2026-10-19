@@ -100,6 +100,13 @@ func _run_tests() -> void:
 
     scene.hud.notify_hostile_neutralized(3)
     _check(scene.hud.status_label.text == "HOSTILE NEUTRALIZED  //  3 REMAINING", "HUD confirms a hostile elimination and remaining threat count")
+    scene.hud.set_status("READY")
+    scene.hostile_contact_reported = false
+    scene.report_hostile_contact(scene.enemies[0])
+    _check(scene.hostile_contact_reported and scene.hud.status_label.text == "CONTACT  //  HOSTILES HAVE VISUAL", "first hostile visual acquisition raises a combat contact cue")
+    scene.hud.set_status("KEEP THIS UPDATE")
+    scene.report_hostile_contact(scene.enemies[1])
+    _check(scene.hud.status_label.text == "KEEP THIS UPDATE", "repeat hostile contacts do not spam or overwrite later combat feedback")
     _check(scene.hud.navigation_label != null, "HUD includes the intel rangefinder")
     _check(scene.hud.health_label.anchor_bottom == 1.0 and scene.hud.ammo_label.anchor_bottom == 1.0, "health and ammo HUD stay anchored when the viewport resizes")
     scene.hud.update_stamina(2.0, 8.0)
