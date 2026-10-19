@@ -70,3 +70,6 @@ jobs:
 
       - name: Run procedural character animation regression checks
         run: godot --headless --path . --script res://tests/test_character_animation.gd
+
+      - name: Run weapon impact regression checks
+        run: godot --headless --path . --script res://tests/test_weapon_impacts.gd
