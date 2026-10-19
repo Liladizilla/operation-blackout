@@ -169,6 +169,17 @@ func _combat_engagement_ranges() -> Vector2:
         _:
             return Vector2(5.5, 13.0)
 
+func _combat_fire_interval_scale() -> float:
+    match combat_role:
+        "SUPPORT":
+            return 1.2
+        "FLANKER":
+            return 0.86
+        "ASSAULT":
+            return 0.92
+        _:
+            return 1.0
+
 func set_difficulty(value: String) -> void:
     difficulty = value.strip_edges().to_upper()
     match difficulty:
@@ -375,7 +386,7 @@ func _physics_process(delta: float) -> void:
                 target_dir = Vector3(-to_player.z, 0.0, to_player.x).normalized() * strafe_sign * 0.42
         look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
         if distance_to_player < maxf(10.0, detection_range - 5.0) and fire_timer <= 0:
-            fire_timer = randf_range(fire_interval_min, fire_interval_max)
+            fire_timer = randf_range(fire_interval_min, fire_interval_max) * _combat_fire_interval_scale()
             _try_shoot_player()
     elif state == "REPOSITION":
         var to_cover := cover_goal - global_position
@@ -620,6 +631,26 @@ func _choose_flank_goal() -> Vector3:
             best = candidate
     return best
 
+func _cover_ally_spacing_penalty(candidate: Vector3) -> float:
+    var penalty := 0.0
+    for node in get_tree().get_nodes_in_group("enemies"):
+        if node == self or not is_instance_valid(node) or not node is Node3D:
+            continue
+        var ally := node as Node3D
+        if float(ally.get("health")) <= 0.0:
+            continue
+        var ally_state := str(ally.get("state"))
+        var ally_cover_timer := float(ally.get("cover_timer"))
+        var ally_cover_goal: Vector3 = ally.get("cover_goal")
+        if ally_state == "REPOSITION" and ally_cover_timer > 0.0 and ally_cover_goal != Vector3.ZERO:
+            var goal_distance := candidate.distance_to(ally_cover_goal)
+            if goal_distance < 4.0:
+                penalty += (4.0 - goal_distance) * 2.5
+        var body_distance := candidate.distance_to(ally.global_position)
+        if body_distance < 2.6:
+            penalty += (2.6 - body_distance) * 1.2
+    return penalty
+
 func _choose_cover(threat_position: Vector3) -> Vector3:
     # Candidate positions sit near concrete barriers and wreckage in the arena.
     # Stand beside cover rather than targeting the solid center of each obstacle.
@@ -645,6 +676,7 @@ func _choose_cover(threat_position: Vector3) -> Vector3:
         var away: Vector3 = candidate - threat_position
         away.y = 0.0
         var score: float = away.length() * 0.65 - flat.length() * 0.55 + randf_range(-0.6, 0.6)
+        score -= _cover_ally_spacing_penalty(candidate)
         # Avoid cycling straight back to the last position when other cover is available.
         if has_last_cover_goal and candidate.distance_to(last_cover_goal) < 4.5:
             score -= 12.0
