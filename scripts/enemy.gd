@@ -369,15 +369,19 @@ func _animate_visuals(delta: float) -> void:
     var reaction_strength := clampf(hit_reaction_timer / 0.28, 0.0, 1.0)
     reaction_strength = reaction_strength * reaction_strength * (3.0 - 2.0 * reaction_strength)
     var horizontal_speed := Vector2(velocity.x, velocity.z).length()
+    var weapon_ready := state == "COMBAT" or state == "REPOSITION"
     if horizontal_speed > 0.22:
         gait_time += delta * lerpf(5.0, 10.0, clampf(horizontal_speed / 3.5, 0.0, 1.0))
-        var swing := sin(gait_time) * 0.48
+        # A cautious, shorter stride while shouldering the rifle reads as combat movement.
+        var stride_scale := 0.68 if weapon_ready else 1.0
+        var swing := sin(gait_time) * 0.48 * stride_scale
         left_leg_pivot.rotation.x = swing
         right_leg_pivot.rotation.x = -swing
         left_arm_pivot.rotation.x = -swing * 0.42
         right_arm_pivot.rotation.x = swing * 0.42
-        visual_root.position.y = absf(sin(gait_time * 2.0)) * 0.035
-        visual_root.rotation.z = clampf(-velocity.x * 0.018, -0.055, 0.055)
+        visual_root.position.y = absf(sin(gait_time * 2.0)) * (0.024 if weapon_ready else 0.035)
+        var local_velocity := global_transform.basis.inverse() * velocity
+        visual_root.rotation.z = clampf(-local_velocity.x * 0.018, -0.055, 0.055)
     else:
         gait_time += delta * 1.2
         left_leg_pivot.rotation.x = lerpf(left_leg_pivot.rotation.x, 0.0, delta * 7.0)
@@ -388,12 +392,11 @@ func _animate_visuals(delta: float) -> void:
         # Remove the previous frame's flinch offset before recentering the idle lean.
         visual_root.rotation.z = lerpf(visual_root.rotation.z - hit_reaction_direction * 0.12 * reaction_strength, 0.0, delta * 4.0)
     # Layer a brief upper-body flinch over locomotion without freezing movement.
-    visual_root.rotation.x = -0.16 * reaction_strength
+    visual_root.rotation.x = (-0.075 if weapon_ready else 0.0) - 0.16 * reaction_strength
     visual_root.rotation.z += hit_reaction_direction * 0.12 * reaction_strength
     left_arm_pivot.rotation.z = -0.26 - hit_reaction_direction * 0.18 * reaction_strength
     right_arm_pivot.rotation.z = 0.24 + hit_reaction_direction * 0.18 * reaction_strength
     # Keep the rifle shouldered while engaging, with gait layered underneath the ready pose.
-    var weapon_ready := state == "COMBAT" or state == "REPOSITION"
     var pose_weight := minf(delta * 7.0, 1.0)
     var left_arm_target := -0.30 if weapon_ready else 0.0
     var right_arm_target := -0.22 if weapon_ready else 0.0
