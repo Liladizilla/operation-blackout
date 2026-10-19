@@ -76,6 +76,19 @@ func _run_tests() -> void:
     var intel_marker: Node = scene.get_node("IntelObjective")
     _check(intel_marker.get_node_or_null("IntelInteractionArea") != null, "intel objective interaction area initializes in the scene tree")
     _check(intel_marker.get_node_or_null("IntelBeaconBeam") != null and intel_marker.get_node_or_null("IntelBeaconLight") != null, "intel objective has a visible beam and beacon light")
+    var objective_script: Node = intel_marker
+    objective_script.player_inside = true
+    objective_script.progress = 1.0
+    Input.action_press("interact")
+    objective_script._process(0.1)
+    _check(objective_script.beacon_ring.rotation.y > 0.0, "intel beacon ring rotates during collection")
+    _check(objective_script.beacon_light.light_energy > 1.0, "intel beacon light intensifies while data is being recovered")
+    var objective_beam_material := objective_script.beacon_beam.material_override as StandardMaterial3D
+    _check(objective_beam_material.albedo_color.a > 0.28, "intel beacon beam brightens during collection")
+    Input.action_release("interact")
+    objective_script.player_inside = false
+    objective_script.progress = 0.0
+
     _check(scene.hud.navigation_label != null, "HUD includes the intel rangefinder")
     _check(scene.hud.health_label.anchor_bottom == 1.0 and scene.hud.ammo_label.anchor_bottom == 1.0, "health and ammo HUD stay anchored when the viewport resizes")
     scene.hud.update_stamina(2.0, 8.0)
