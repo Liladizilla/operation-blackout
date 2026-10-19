@@ -88,6 +88,60 @@ func _setup_input() -> void:
     _key_action("interact", KEY_F)
     _key_action("throw_grenade", KEY_G)
     _key_action("pause", KEY_ESCAPE)
+    _setup_gamepad_input()
+
+func _setup_gamepad_input() -> void:
+    # Shared actions let mouse/keyboard and common Xbox/PlayStation-style pads
+    # drive the same gameplay code without device-specific branches.
+    _mouse_button_action("fire", MOUSE_BUTTON_LEFT)
+    _mouse_button_action("aim", MOUSE_BUTTON_RIGHT)
+    _joy_axis_action("fire", JOY_AXIS_TRIGGER_RIGHT, 1.0)
+    _joy_axis_action("aim", JOY_AXIS_TRIGGER_LEFT, 1.0)
+
+    _joy_axis_action("move_left", JOY_AXIS_LEFT_X, -1.0)
+    _joy_axis_action("move_right", JOY_AXIS_LEFT_X, 1.0)
+    _joy_axis_action("move_forward", JOY_AXIS_LEFT_Y, -1.0)
+    _joy_axis_action("move_back", JOY_AXIS_LEFT_Y, 1.0)
+    _joy_axis_action("look_left", JOY_AXIS_RIGHT_X, -1.0)
+    _joy_axis_action("look_right", JOY_AXIS_RIGHT_X, 1.0)
+    _joy_axis_action("look_up", JOY_AXIS_RIGHT_Y, -1.0)
+    _joy_axis_action("look_down", JOY_AXIS_RIGHT_Y, 1.0)
+
+    _joy_button_action("jump", JOY_BUTTON_A)
+    _joy_button_action("crouch", JOY_BUTTON_B)
+    _joy_button_action("reload", JOY_BUTTON_X)
+    _joy_button_action("throw_grenade", JOY_BUTTON_Y)
+    _joy_button_action("interact", JOY_BUTTON_LEFT_SHOULDER)
+    _joy_button_action("sprint", JOY_BUTTON_LEFT_STICK)
+    _joy_button_action("prone", JOY_BUTTON_RIGHT_STICK)
+    _joy_button_action("pause", JOY_BUTTON_START)
+
+func _ensure_action(action: String) -> void:
+    if not InputMap.has_action(action):
+        InputMap.add_action(action)
+    InputMap.action_set_deadzone(action, 0.18)
+
+func _mouse_button_action(action: String, button_index: int) -> void:
+    _ensure_action(action)
+    var event := InputEventMouseButton.new()
+    event.button_index = button_index
+    if not InputMap.action_has_event(action, event):
+        InputMap.action_add_event(action, event)
+
+func _joy_button_action(action: String, button_index: int) -> void:
+    _ensure_action(action)
+    var event := InputEventJoypadButton.new()
+    event.button_index = button_index
+    if not InputMap.action_has_event(action, event):
+        InputMap.action_add_event(action, event)
+
+func _joy_axis_action(action: String, axis: int, direction: float) -> void:
+    _ensure_action(action)
+    var event := InputEventJoypadMotion.new()
+    event.axis = axis
+    event.axis_value = direction
+    if not InputMap.action_has_event(action, event):
+        InputMap.action_add_event(action, event)
 
 func _key_action(action: String, keycode: int) -> void:
     if not InputMap.has_action(action):
