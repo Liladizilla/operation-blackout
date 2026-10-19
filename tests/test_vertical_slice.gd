@@ -54,6 +54,14 @@ func _run_tests() -> void:
     player.pitch = 0.0
     player.ammo = 30
     player.fire_cooldown = 0.0
+    var debug_from: Vector3 = player.camera.global_position
+    var debug_to: Vector3 = debug_from + (-player.camera.global_transform.basis.z) * 180.0
+    var debug_query := PhysicsRayQueryParameters3D.create(debug_from, debug_to)
+    debug_query.exclude = [player.get_rid()]
+    debug_query.collide_with_areas = true
+    debug_query.collision_mask = 3
+    var debug_hit := player.get_world_3d().direct_space_state.intersect_ray(debug_query)
+    print("DEBUG: camera=", debug_from, " forward=", -player.camera.global_transform.basis.z, " target=", firing_target.global_position, " hit=", debug_hit.get("collider").name if not debug_hit.is_empty() else "none")
     player._fire()
     _check(player.ammo == 29, "firing consumes one round")
     _check(firing_target.health < 100.0 or not scene.enemies.has(firing_target), "hitscan shot damages target")
