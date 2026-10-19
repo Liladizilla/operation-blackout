@@ -281,10 +281,13 @@ func notify_hostile_search() -> void:
 
 func set_status(message: String) -> void:
     status_label.text = message
+    # Transient alert colors should not leak into later objective or interaction messages.
+    status_label.remove_theme_color_override("font_color")
 
 func set_mission_state(message: String) -> void:
     objective_label.text = message
     status_label.text = "MISSION UPDATE"
+    status_label.remove_theme_color_override("font_color")
     if message.contains("EXFILTRATION COMPLETE"):
         _show_mission_complete()
 
