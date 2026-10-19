@@ -47,6 +47,7 @@ func _run_tests() -> void:
     await physics_frame
 
     _check(scene.get_node_or_null("Player") != null, "player spawns")
+    _check(InputMap.has_action("throw_grenade"), "G grenade input action is registered")
     _check(scene.get_remaining_enemies() == 5, "five hostiles spawn")
     var visual_test_enemy: Node = scene.enemies[0]
     _check(visual_test_enemy.get_node_or_null("EnemyMuzzleFlash") != null, "hostiles have muzzle flash geometry")
