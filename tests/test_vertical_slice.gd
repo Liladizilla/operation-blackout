@@ -48,6 +48,10 @@ func _run_tests() -> void:
 
     _check(scene.get_node_or_null("Player") != null, "player spawns")
     _check(scene.get_remaining_enemies() == 5, "five hostiles spawn")
+    var visual_test_enemy: Node = scene.enemies[0]
+    _check(visual_test_enemy.get_node_or_null("EnemyMuzzleFlash") != null, "hostiles have muzzle flash geometry")
+    visual_test_enemy._show_muzzle_flash()
+    _check(visual_test_enemy.enemy_muzzle_flash.visible and visual_test_enemy.enemy_muzzle_light.light_energy > 0.0, "hostile muzzle flash activates")
     _check(scene.get_node_or_null("IntelObjective") != null, "intel objective spawns")
     _check(scene.hud.navigation_label != null, "HUD includes the intel rangefinder")
     _check(scene.hud.health_label.anchor_bottom == 1.0 and scene.hud.ammo_label.anchor_bottom == 1.0, "health and ammo HUD stay anchored when the viewport resizes")
@@ -109,6 +113,7 @@ func _run_tests() -> void:
     var first_enemy: Node = scene.enemies[0]
     var survived: bool = first_enemy.take_damage(10.0)
     _check(not survived and is_equal_approx(first_enemy.health, 90.0), "enemy survives nonlethal damage")
+    _check(first_enemy.hit_flash_timer > 0.0, "nonlethal hits trigger a temporary enemy hit reaction")
     _check(first_enemy.state == "REPOSITION" and first_enemy.suppression_timer > 0.0, "incoming fire triggers suppression reposition")
     survived = first_enemy.take_damage(100.0)
     _check(survived, "enemy death is reported")
