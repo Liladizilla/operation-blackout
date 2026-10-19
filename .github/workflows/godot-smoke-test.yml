@@ -64,3 +64,6 @@ jobs:
 
       - name: Run road marking regression checks
         run: godot --headless --path . --script res://tests/test_road_markings.gd
+
+      - name: Run reload animation regression checks
+        run: godot --headless --path . --script res://tests/test_reload_animation.gd
