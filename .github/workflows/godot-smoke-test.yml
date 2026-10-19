@@ -61,3 +61,6 @@ jobs:
 
       - name: Run difficulty-balance regression checks
         run: godot --headless --path . --script res://tests/test_difficulty.gd
+
+      - name: Run road marking regression checks
+        run: godot --headless --path . --script res://tests/test_road_markings.gd
