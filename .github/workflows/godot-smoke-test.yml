@@ -52,3 +52,6 @@ jobs:
 
       - name: Run enemy patrol regression checks
         run: godot --headless --path . --script res://tests/test_enemy_patrol.gd
+
+      - name: Run enemy survival regression checks
+        run: godot --headless --path . --script res://tests/test_enemy_survival.gd
