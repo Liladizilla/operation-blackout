@@ -52,6 +52,8 @@ func _run_tests() -> void:
     _check(visual_test_enemy.get_node_or_null("EnemyMuzzleFlash") != null, "hostiles have muzzle flash geometry")
     visual_test_enemy._show_muzzle_flash()
     _check(visual_test_enemy.enemy_muzzle_flash.visible and visual_test_enemy.enemy_muzzle_light.light_energy > 0.0, "hostile muzzle flash activates")
+    _check(visual_test_enemy._shot_spread(1.0) < visual_test_enemy._shot_spread(30.0), "hostile fire becomes less accurate at longer range")
+    _check(is_equal_approx(visual_test_enemy._shot_spread(0.0), 0.12) and is_equal_approx(visual_test_enemy._shot_spread(30.0), 0.9), "hostile shot spread remains within intended close and long-range limits")
     var cover_test_goal: Vector3 = visual_test_enemy._choose_cover(scene.get_node("Player").global_position)
     _check(absf(cover_test_goal.x) <= 50.0 and absf(cover_test_goal.z) <= 50.0, "hostile cover selection stays within the playable district")
     visual_test_enemy.state = "SEARCH"
@@ -160,6 +162,11 @@ func _run_tests() -> void:
     gated_objective._on_exit(player)
     _check(is_equal_approx(gated_objective.progress, 0.0), "leaving the intel zone cancels partial recovery progress")
     _check(scene.hud.status_label.text == "INTEL RECOVERY INTERRUPTED", "leaving the intel zone reports interrupted recovery")
+
+    var headshot_test_enemy: Node = scene.enemies[2]
+    headshot_test_enemy.take_damage(10.0, Vector3.ZERO, true)
+    _check(is_equal_approx(headshot_test_enemy.health, 70.0), "headshots apply the intended three-times damage multiplier")
+    _check(headshot_test_enemy.suppression_timer >= 1.25, "headshots trigger an extended hostile suppression response")
 
     var first_enemy: Node = scene.enemies[0]
     var chosen_cover: Vector3 = first_enemy._choose_cover(player.global_position)
