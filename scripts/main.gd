@@ -355,7 +355,7 @@ func _box(name: String, pos: Vector3, size: Vector3, color: Color, collision: bo
     var root: Node3D = StaticBody3D.new() if collision else Node3D.new()
     root.name = name
     root.position = pos
-    root.add_child(_mesh_box(size, color))
+    root.add_child(_mesh_box(size, color, _surface_kind_for_name(name)))
     if collision:
         var col := CollisionShape3D.new()
         var shape := BoxShape3D.new()
@@ -364,6 +364,27 @@ func _box(name: String, pos: Vector3, size: Vector3, color: Color, collision: bo
         root.add_child(col)
     add_child(root)
     return root
+
+func _surface_kind_for_name(label: String) -> float:
+    if label in ["Ground", "Terrain", "Dirt", "Rubble", "ConcreteRubble", "FacadeCollapseRubble", "StreetDebris"]:
+        return 2.0
+    if label in ["Road", "BrokenAsphalt", "RoadGutter", "ServiceLane"]:
+        return 1.0
+    if label in ["Building", "OuterDistrictBuilding", "RoofRubble", "CollapsedRoof", "ConcreteBarrier", "ExposedFacadeRib"]:
+        return 0.0
+    return -1.0
+
+func _surface_material(color: Color, surface_kind: float) -> ShaderMaterial:
+    var key := "surface:%s:%s" % [color.to_html(true), str(surface_kind)]
+    if material_cache.has(key):
+        return material_cache[key] as ShaderMaterial
+    var shader_material := ShaderMaterial.new()
+    shader_material.shader = load("res://shaders/battlefield_surface.gdshader") as Shader
+    shader_material.set_shader_parameter("base_color", color)
+    shader_material.set_shader_parameter("surface_kind", surface_kind)
+    shader_material.set_shader_parameter("detail_scale", 1.0)
+    material_cache[key] = shader_material
+    return shader_material
 
 func _box_child(parent: Node3D, name: String, pos: Vector3, size: Vector3, color: Color, collision: bool) -> Node3D:
     var root: Node3D = StaticBody3D.new() if collision else Node3D.new()
@@ -379,12 +400,12 @@ func _box_child(parent: Node3D, name: String, pos: Vector3, size: Vector3, color
     parent.add_child(root)
     return root
 
-func _mesh_box(size: Vector3, color: Color) -> MeshInstance3D:
+func _mesh_box(size: Vector3, color: Color, surface_kind: float = -1.0) -> MeshInstance3D:
     var mi := MeshInstance3D.new()
     var mesh := BoxMesh.new()
     mesh.size = size
     mi.mesh = mesh
-    mi.material_override = _material(color)
+    mi.material_override = _surface_material(color, surface_kind) if surface_kind >= 0.0 else _material(color)
     return mi
 
 func _spawn_player() -> void:
