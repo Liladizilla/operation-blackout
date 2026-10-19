@@ -872,6 +872,9 @@ func _cover_ally_spacing_penalty(candidate: Vector3) -> float:
             penalty += (2.6 - body_distance) * 1.2
     return penalty
 
+func _cover_threat_distance_weight() -> float:
+    return 1.05 if health <= 35.0 else 0.65
+
 func _should_hold_committed_cover() -> bool:
     return state == "REPOSITION" and cover_timer > 0.0
 
@@ -913,7 +916,8 @@ func _choose_cover(threat_position: Vector3) -> Vector3:
             continue
         var away: Vector3 = candidate - threat_position
         away.y = 0.0
-        var score: float = away.length() * 0.65 - flat.length() * 0.55 + randf_range(-0.6, 0.6)
+        # Wounded hostiles value distance from the threat more than a short route to cover.
+        var score: float = away.length() * _cover_threat_distance_weight() - flat.length() * 0.55 + randf_range(-0.6, 0.6)
         score -= _cover_ally_spacing_penalty(candidate)
         # Avoid cycling straight back to the last position when other cover is available.
         if has_last_cover_goal and candidate.distance_to(last_cover_goal) < 4.5:
