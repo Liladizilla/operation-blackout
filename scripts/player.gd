@@ -5,7 +5,7 @@ const SPRINT_SPEED := 7.5
 const CROUCH_SPEED := 2.0
 const PRONE_SPEED := 1.0
 const JUMP_VELOCITY := 4.2
-const GAMEPAD_LOOK_SENSITIVITY := 2.2
+var gamepad_look_sensitivity := 2.2
 var mouse_sensitivity := 0.0018
 const MAG_SIZE := 30
 const MAX_STAMINA := 8.0
@@ -239,8 +239,8 @@ func _physics_process(delta: float) -> void:
     var look_x := Input.get_axis("look_left", "look_right")
     var look_y := Input.get_axis("look_up", "look_down")
     if absf(look_x) > 0.12 or absf(look_y) > 0.12:
-        rotate_y(-look_x * GAMEPAD_LOOK_SENSITIVITY * delta)
-        pitch = clampf(pitch - look_y * GAMEPAD_LOOK_SENSITIVITY * delta, deg_to_rad(-85), deg_to_rad(85))
+        rotate_y(-look_x * gamepad_look_sensitivity * delta)
+        pitch = clampf(pitch - look_y * gamepad_look_sensitivity * delta, deg_to_rad(-85), deg_to_rad(85))
         camera_pivot.rotation.x = pitch
     fire_cooldown = maxf(0.0, fire_cooldown - delta)
     damage_flash = maxf(0.0, damage_flash - delta)

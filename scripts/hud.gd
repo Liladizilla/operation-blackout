@@ -15,6 +15,8 @@ var player_ref: Node
 var pause_panel: PanelContainer
 var sensitivity_slider: HSlider
 var sensitivity_value_label: Label
+var gamepad_sensitivity_slider: HSlider
+var gamepad_sensitivity_value_label: Label
 var briefing_panel: PanelContainer
 var briefing_backdrop: ColorRect
 var difficulty_selector: OptionButton
@@ -465,8 +467,8 @@ func show_pause() -> void:
     pause_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
     pause_panel.offset_left = -210
     pause_panel.offset_right = 210
-    pause_panel.offset_top = -220
-    pause_panel.offset_bottom = 220
+    pause_panel.offset_top = -255
+    pause_panel.offset_bottom = 255
     var box := VBoxContainer.new()
     box.add_theme_constant_override("separation", 8)
     pause_panel.add_child(box)
@@ -494,6 +496,25 @@ func show_pause() -> void:
         sensitivity_value_label.text = "MOUSE SENSITIVITY  %.1fx" % (value / 0.0018)
     )
     box.add_child(sensitivity_slider)
+
+    gamepad_sensitivity_value_label = _label("CONTROLLER LOOK SPEED", 14, Color(0.82,0.84,0.78))
+    box.add_child(gamepad_sensitivity_value_label)
+    gamepad_sensitivity_slider = HSlider.new()
+    gamepad_sensitivity_slider.min_value = 0.8
+    gamepad_sensitivity_slider.max_value = 4.0
+    gamepad_sensitivity_slider.step = 0.1
+    gamepad_sensitivity_slider.custom_minimum_size = Vector2(300, 24)
+    var current_gamepad_sensitivity: float = 2.2
+    if is_instance_valid(player_ref):
+        current_gamepad_sensitivity = float(player_ref.get("gamepad_look_sensitivity"))
+    gamepad_sensitivity_slider.value = clampf(current_gamepad_sensitivity, gamepad_sensitivity_slider.min_value, gamepad_sensitivity_slider.max_value)
+    gamepad_sensitivity_value_label.text = "CONTROLLER LOOK SPEED  %.1fx" % (gamepad_sensitivity_slider.value / 2.2)
+    gamepad_sensitivity_slider.value_changed.connect(func(value: float):
+        if is_instance_valid(player_ref):
+            player_ref.set("gamepad_look_sensitivity", value)
+        gamepad_sensitivity_value_label.text = "CONTROLLER LOOK SPEED  %.1fx" % (value / 2.2)
+    )
+    box.add_child(gamepad_sensitivity_slider)
     var resume := Button.new()
     resume.text = "RESUME"
     resume.custom_minimum_size = Vector2(300, 36)

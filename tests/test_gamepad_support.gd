@@ -91,5 +91,11 @@ func _run_tests() -> void:
     _check(player.ammo == 9, "shared fire action fires the weapon")
     player.set_physics_process(true)
 
+    scene.hud.show_pause()
+    _check(scene.hud.gamepad_sensitivity_slider != null, "pause menu exposes controller look sensitivity")
+    scene.hud.gamepad_sensitivity_slider.value = 3.3
+    _check(is_equal_approx(player.gamepad_look_sensitivity, 3.3), "controller sensitivity slider updates right-stick look speed")
+    scene.hud.hide_pause()
+
     print("GAMEPAD RESULT: ", passed, " checks passed; failed=", failed)
     quit(1 if failed else 0)
