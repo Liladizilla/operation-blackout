@@ -40,6 +40,12 @@ func _run_tests() -> void:
     _check(enemy.visual_root.get_node_or_null("LeftArmPivot") != null and enemy.visual_root.get_node_or_null("RightArmPivot") != null, "hostile model includes two animated arms")
     _check(enemy.visual_root.get_node_or_null("LeftLegPivot") != null and enemy.visual_root.get_node_or_null("RightLegPivot") != null, "hostile model includes two animated legs")
     _check(enemy.visual_root.get_node_or_null("LeftLegPivot/LeftLegMesh") != null and enemy.visual_root.get_node_or_null("RightLegPivot/RightLegMesh") != null, "hostile legs use lightweight mesh geometry")
+    _check(enemy.visual_root.get_node_or_null("Helmet") != null and enemy.visual_root.get_node_or_null("HelmetBrim") != null, "hostile model has layered helmet and brim geometry")
+    _check(enemy.visual_root.get_node_or_null("BallisticGoggles") != null, "hostile model includes ballistic eye protection")
+    _check(enemy.visual_root.get_node_or_null("TacticalBackpack") != null and enemy.visual_root.get_node_or_null("WaistBelt") != null, "hostile model carries a backpack and fitted equipment belt")
+    _check(enemy.visual_root.get_node_or_null("MagazinePouch_00") != null and enemy.visual_root.get_node_or_null("MagazinePouch_03") != null, "hostile chest rig has individually modeled magazine pouches")
+    _check(enemy.visual_root.get_node_or_null("RifleBarrel") != null and enemy.visual_root.get_node_or_null("RifleOptic") != null, "hostile rifle has a separate barrel and optic silhouette")
+    _check(enemy.visual_root.get_node_or_null("LeftLegPivot/LeftKneePad") != null and enemy.visual_root.get_node_or_null("RightLegPivot/RightBootToeCap") != null, "hostile lower-body gear follows animated limb pivots")
 
     enemy.velocity = Vector3(2.0, 0.0, 0.0)
     enemy.gait_time = 0.0

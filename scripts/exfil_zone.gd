@@ -7,6 +7,7 @@ var current_status := ""
 var beacon_pulse_time := 0.0
 var area: Area3D
 var beacon_light: OmniLight3D
+var beacon_mesh_instance: MeshInstance3D
 
 func _ready() -> void:
     _build_marker()
@@ -40,6 +41,7 @@ func _build_marker() -> void:
 
     var beacon := MeshInstance3D.new()
     beacon.name = "ExfilBeacon"
+    beacon_mesh_instance = beacon
     var beacon_mesh := CylinderMesh.new()
     beacon_mesh.top_radius = 0.07
     beacon_mesh.bottom_radius = 0.13
@@ -121,8 +123,15 @@ func _build_marker() -> void:
 
 func _process(delta: float) -> void:
     beacon_pulse_time += delta
+    var extraction_ratio := clampf(progress / 2.0, 0.0, 1.0) if player_inside and Input.is_action_pressed("interact") else 0.0
     if is_instance_valid(beacon_light):
-        beacon_light.light_energy = 0.65 + (sin(beacon_pulse_time * 2.6) + 1.0) * 0.18
+        beacon_light.light_energy = 0.65 + (sin(beacon_pulse_time * (2.6 + extraction_ratio * 4.0)) + 1.0) * 0.18 + extraction_ratio * 1.2
+    if is_instance_valid(beacon_mesh_instance):
+        beacon_mesh_instance.rotation.y += delta * (0.45 + extraction_ratio * 2.4)
+        beacon_mesh_instance.scale = Vector3.ONE * (1.0 + extraction_ratio * 0.12)
+        var beacon_material := beacon_mesh_instance.material_override as StandardMaterial3D
+        if is_instance_valid(beacon_material):
+            beacon_material.emission = Color(0.75, 0.22, 0.035).lerp(Color(1.0, 0.56, 0.14), extraction_ratio)
     if completed:
         return
     if not player_inside:
@@ -144,8 +153,11 @@ func _on_enter(body: Node3D) -> void:
 
 func _on_exit(body: Node3D) -> void:
     if body.is_in_group("player") or body.name == "Player":
+        var was_extracting := progress > 0.0
         player_inside = false
         progress = 0.0
+        if was_extracting and not completed:
+            _set_status("EXTRACTION INTERRUPTED  //  RETURN TO THE EXFIL BEACON")
 
 func _set_status(message: String) -> void:
     if current_status == message:

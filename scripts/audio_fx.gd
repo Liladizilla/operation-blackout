@@ -8,6 +8,29 @@ static func create_gunshot() -> AudioStreamWAV:
 static func create_explosion() -> AudioStreamWAV:
     return _make_burst(0.78, true)
 
+static func create_impact() -> AudioStreamWAV:
+    var duration := 0.11
+    var sample_count := int(SAMPLE_RATE * duration)
+    var pcm := PackedByteArray()
+    pcm.resize(sample_count * 2)
+    var rng := RandomNumberGenerator.new()
+    rng.randomize()
+    for index in range(sample_count):
+        var time := float(index) / float(SAMPLE_RATE)
+        var noise := rng.randf_range(-1.0, 1.0)
+        var transient := exp(-time * 95.0)
+        var body := sin(TAU * 190.0 * time) * exp(-time * 29.0) * 0.28
+        body += sin(TAU * 430.0 * time) * exp(-time * 52.0) * 0.12
+        var sample := noise * transient * 0.32 + body
+        sample *= clampf(1.0 - time / duration, 0.0, 1.0)
+        pcm.encode_s16(index * 2, int(round(clampf(sample, -1.0, 1.0) * 32767.0)))
+    var stream := AudioStreamWAV.new()
+    stream.format = AudioStreamWAV.FORMAT_16_BITS
+    stream.mix_rate = SAMPLE_RATE
+    stream.stereo = false
+    stream.data = pcm
+    return stream
+
 static func create_footstep() -> AudioStreamWAV:
     var duration := 0.13
     var sample_count := int(SAMPLE_RATE * duration)

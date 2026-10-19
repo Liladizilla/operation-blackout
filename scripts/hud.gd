@@ -22,6 +22,8 @@ var difficulty_description: Label
 var hitmarker_timer := 0.0
 var damage_direction_label: Label
 var damage_direction_timer := 0.0
+var last_hostile_fire_direction := ""
+var hostile_fire_repeat_count := 0
 var mission_panel: PanelContainer
 var mission_stats_label: Label
 var stamina_label: Label
@@ -259,18 +261,59 @@ func set_enemy_count(count: int) -> void:
     if count == 0:
         objective_label.text = "AREA SECURE  //  RECOVER THE INTERCEPTED INTEL"
 
+func notify_hostile_neutralized(remaining: int) -> void:
+    # Give the player an immediate, readable confirmation without replacing the main objective.
+    status_label.text = "HOSTILE NEUTRALIZED  //  %d REMAINING" % remaining
+    status_label.add_theme_color_override("font_color", Color(1.0, 0.62, 0.28))
+
+func notify_hostile_contact() -> void:
+    status_label.text = "CONTACT  //  HOSTILES HAVE VISUAL"
+    status_label.add_theme_color_override("font_color", Color(1.0, 0.32, 0.22))
+
+func notify_hostile_investigation(noise_type: String) -> void:
+    var source_label := "EXPLOSION" if noise_type == "GRENADE" else "GUNFIRE" if noise_type == "GUNSHOT" else "IMPACT"
+    status_label.text = "NOISE DETECTED  //  HOSTILES INVESTIGATING %s" % source_label
+    status_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.32))
+
+func notify_hostile_search() -> void:
+    status_label.text = "HOSTILES SEARCHING  //  LAST KNOWN POSITION"
+    status_label.add_theme_color_override("font_color", Color(0.92, 0.78, 0.48))
+
 func set_status(message: String) -> void:
     status_label.text = message
+    # Transient alert colors should not leak into later objective or interaction messages.
+    status_label.remove_theme_color_override("font_color")
 
 func set_mission_state(message: String) -> void:
     objective_label.text = message
     status_label.text = "MISSION UPDATE"
+    status_label.remove_theme_color_override("font_color")
     if message.contains("EXFILTRATION COMPLETE"):
         _show_mission_complete()
+
+func show_hostile_fire(player_position: Vector3, player_basis: Basis, source_position: Vector3) -> void:
+    if not is_instance_valid(damage_direction_label):
+        return
+    var local_source: Vector3 = player_basis.inverse() * (source_position - player_position)
+    var direction := ""
+    if absf(local_source.x) > absf(local_source.z):
+        direction = "<" if local_source.x < 0.0 else ">"
+    else:
+        direction = "v" if local_source.z > 0.0 else "^"
+    # Repeated shots from the same quadrant indicate sustained pressure, not a fresh isolated warning.
+    if damage_direction_timer > 0.0 and direction == last_hostile_fire_direction:
+        hostile_fire_repeat_count = mini(hostile_fire_repeat_count + 1, 3)
+    else:
+        hostile_fire_repeat_count = 1
+    last_hostile_fire_direction = direction
+    damage_direction_label.text = "HOSTILE FIRE  %s" % direction if hostile_fire_repeat_count == 1 else "HOSTILE FIRE x%d  %s" % [hostile_fire_repeat_count, direction]
+    damage_direction_label.add_theme_color_override("font_color", Color(1.0, 0.55, 0.22))
+    damage_direction_timer = 0.7
 
 func show_damage_direction(player_position: Vector3, player_basis: Basis, source_position: Vector3) -> void:
     if not is_instance_valid(damage_direction_label):
         return
+    damage_direction_label.add_theme_color_override("font_color", Color(0.92, 0.24, 0.16))
     var local_source: Vector3 = player_basis.inverse() * (source_position - player_position)
     if absf(local_source.x) > absf(local_source.z):
         damage_direction_label.text = "<  INCOMING" if local_source.x < 0.0 else "INCOMING  >"

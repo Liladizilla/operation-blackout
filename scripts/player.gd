@@ -11,6 +11,7 @@ const MAX_STAMINA := 8.0
 const STAMINA_REGEN_DELAY := 1.0
 const SPENT_CASING_SCRIPT = preload("res://scripts/spent_casing.gd")
 const BULLET_IMPACT_SCRIPT = preload("res://scripts/bullet_impact.gd")
+const MAX_IMPACT_AUDIO := 8
 const MAX_SPENT_CASINGS := 8
 const MAX_BULLET_IMPACTS := 12
 const STAMINA_REGEN_RATE := 1.4
@@ -424,6 +425,11 @@ func _fire() -> void:
     query.collide_with_areas = true
     query.collision_mask = 3
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
+    var shot_end: Vector3 = hit.get("position", to) if not hit.is_empty() else to
+    var direct_target: Node = hit.get("collider") if not hit.is_empty() else null
+    if direct_target is Area3D and direct_target.has_meta("headshot"):
+        direct_target = direct_target.get_parent()
+    _suppress_nearby_enemies(from, shot_end, direct_target)
     var confirmed_hit := false
     if not hit.is_empty():
         var collider = hit.get("collider")
@@ -439,6 +445,10 @@ func _fire() -> void:
                 hud.flash_hitmarker(killed, headshot)
         if not confirmed_hit and collider is StaticBody3D:
             _spawn_bullet_impact(hit.get("position", to), hit.get("normal", Vector3.UP))
+            _play_impact_audio(hit.get("position", to))
+            var impact_scene := get_tree().current_scene
+            if is_instance_valid(impact_scene) and impact_scene.has_method("report_noise"):
+                impact_scene.report_noise(hit.get("position", to), 24.0, "IMPACT", self)
         _impact_spark(hit.get("position", to), hit.get("normal", Vector3.UP))
     var scene := get_tree().current_scene
     if is_instance_valid(scene) and scene.has_method("register_shot"):
@@ -450,6 +460,23 @@ func _fire() -> void:
     muzzle_flash_timer = 0.045
     if hud and hud.has_method("flash_muzzle"):
         hud.flash_muzzle()
+
+func _suppress_nearby_enemies(line_start: Vector3, line_end: Vector3, direct_target: Node = null) -> void:
+    var segment := line_end - line_start
+    var segment_length_squared := segment.length_squared()
+    if segment_length_squared <= 0.001:
+        return
+    for candidate in get_tree().get_nodes_in_group("enemies"):
+        if not is_instance_valid(candidate) or candidate == direct_target or not candidate.has_method("apply_suppression"):
+            continue
+        var enemy := candidate as Node3D
+        if not is_instance_valid(enemy) or float(enemy.get("health")) <= 0.0:
+            continue
+        var target_point := enemy.global_position + Vector3.UP * 0.9
+        var along := clampf((target_point - line_start).dot(segment) / segment_length_squared, 0.0, 1.0)
+        var nearest_point := line_start + segment * along
+        if target_point.distance_to(nearest_point) <= 1.35:
+            enemy.call("apply_suppression", global_position)
 
 func _spawn_spent_casing() -> void:
     var active_scene := get_tree().current_scene
@@ -523,21 +550,80 @@ func _spawn_bullet_impact(pos: Vector3, normal: Vector3) -> void:
     active_scene.add_child(mark)
     mark.call("configure", pos, normal)
 
+func _play_impact_audio(pos: Vector3) -> void:
+    var active_scene := get_tree().current_scene
+    if not is_instance_valid(active_scene):
+        return
+    var existing := get_tree().get_nodes_in_group("impact_audio")
+    while existing.size() >= MAX_IMPACT_AUDIO:
+        var oldest := existing.pop_front() as Node
+        if is_instance_valid(oldest):
+            # Remove the oldest emitter immediately so rapid-fire impacts cannot
+            # temporarily exceed the cap before deferred frees are processed.
+            oldest.free()
+    var audio_fx = load("res://scripts/audio_fx.gd")
+    var emitter := AudioStreamPlayer3D.new()
+    emitter.name = "BulletImpactAudio"
+    emitter.add_to_group("impact_audio")
+    emitter.stream = audio_fx.create_impact()
+    emitter.volume_db = -10.0
+    emitter.unit_size = 4.0
+    emitter.max_distance = 32.0
+    active_scene.add_child(emitter)
+    emitter.global_position = pos
+    emitter.play()
+    emitter.finished.connect(emitter.queue_free)
+
 func _impact_spark(pos: Vector3, normal: Vector3) -> void:
-    var marker := MeshInstance3D.new()
-    var mesh := SphereMesh.new()
-    mesh.radius = 0.045
-    mesh.height = 0.09
-    marker.mesh = mesh
-    var mat := StandardMaterial3D.new()
-    mat.albedo_color = Color(0.95,0.58,0.18)
-    mat.emission_enabled = true
-    mat.emission = Color(0.9,0.28,0.05)
-    marker.material_override = mat
-    get_tree().current_scene.add_child(marker)
-    marker.global_position = pos + normal * 0.04
-    var timer := get_tree().create_timer(0.18)
-    timer.timeout.connect(marker.queue_free)
+    var active_scene := get_tree().current_scene
+    if not is_instance_valid(active_scene):
+        return
+    var existing := get_tree().get_nodes_in_group("impact_spark_bursts")
+    while existing.size() >= 8:
+        var oldest := existing.pop_front() as Node
+        if is_instance_valid(oldest):
+            oldest.queue_free()
+
+    # A short GPU particle burst gives hard impacts directional, scattered sparks
+    # instead of the old single glowing bead. The burst is deliberately brief.
+    var burst := GPUParticles3D.new()
+    burst.name = "ImpactSparkBurst"
+    burst.add_to_group("impact_spark_bursts")
+    burst.amount = 10
+    burst.lifetime = 0.24
+    burst.one_shot = true
+    burst.explosiveness = 1.0
+    burst.local_coords = false
+    burst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+    var particles := ParticleProcessMaterial.new()
+    particles.direction = normal.normalized() if normal.length_squared() > 0.01 else Vector3.UP
+    particles.spread = 38.0
+    particles.initial_velocity_min = 1.4
+    particles.initial_velocity_max = 4.2
+    particles.gravity = Vector3(0.0, -10.0, 0.0)
+    particles.scale_min = 0.025
+    particles.scale_max = 0.065
+    particles.damping_min = 2.0
+    particles.damping_max = 5.0
+    burst.process_material = particles
+
+    var spark_mesh := SphereMesh.new()
+    spark_mesh.radius = 0.025
+    spark_mesh.height = 0.05
+    burst.draw_pass_1 = spark_mesh
+    var spark_material := StandardMaterial3D.new()
+    spark_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    spark_material.albedo_color = Color(1.0, 0.62, 0.22)
+    spark_material.emission_enabled = true
+    spark_material.emission = Color(1.0, 0.3, 0.055)
+    spark_material.emission_energy_multiplier = 2.0
+    burst.material_override = spark_material
+
+    active_scene.add_child(burst)
+    burst.global_position = pos + (normal.normalized() * 0.035 if normal.length_squared() > 0.01 else Vector3.UP * 0.035)
+    burst.emitting = true
+    burst.finished.connect(burst.queue_free)
 
 func _update_magazine_reload(progress: float) -> void:
     if not is_instance_valid(weapon_magazine):

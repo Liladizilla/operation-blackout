@@ -8,11 +8,15 @@ var detection_range := 30.0
 var fire_interval_min := 0.65
 var fire_interval_max := 1.25
 var difficulty := "STANDARD"
+var combat_role := "RIFLEMAN"
 var player: Node3D
 var state := "SEARCH"
 var think_timer := 0.0
 var fire_timer := 0.7
+var burst_shots_remaining := 0
 var strafe_sign := 1.0
+var flank_timer := 0.0
+var flank_goal := Vector3.ZERO
 var visual_root: Node3D
 var left_arm_pivot: Node3D
 var right_arm_pivot: Node3D
@@ -30,8 +34,12 @@ var enemy_muzzle_light: OmniLight3D
 var enemy_fire_audio: AudioStreamPlayer3D
 var muzzle_flash_timer := 0.0
 var hit_flash_timer := 0.0
+var hit_reaction_timer := 0.0
+var hit_reaction_direction := 1.0
 var last_known_position := Vector3.ZERO
 var cover_goal := Vector3.ZERO
+var last_cover_goal := Vector3.ZERO
+var has_last_cover_goal := false
 var cover_timer := 0.0
 var suppression_timer := 0.0
 var low_health_retreat_used := false
@@ -133,6 +141,7 @@ func _ready() -> void:
     enemy_muzzle_light.shadow_enabled = false
     visual_root.add_child(enemy_muzzle_light)
     _build_limb_meshes()
+    _build_equipment_details()
 
     player = get_tree().get_first_node_in_group("player")
     if not player:
@@ -148,6 +157,130 @@ func _ready() -> void:
     add_to_group("enemies")
     _initialize_patrol()
     set_difficulty(difficulty)
+
+func set_combat_role(value: String) -> void:
+    var normalized := value.strip_edges().to_upper()
+    combat_role = normalized if normalized in ["ASSAULT", "SUPPORT", "FLANKER", "RIFLEMAN"] else "RIFLEMAN"
+
+func _combat_engagement_ranges() -> Vector2:
+    match combat_role:
+        "ASSAULT":
+            return Vector2(4.5, 10.5)
+        "SUPPORT":
+            return Vector2(9.0, 15.0)
+        _:
+            return Vector2(5.5, 13.0)
+
+func _combat_fire_interval_scale() -> float:
+    match combat_role:
+        "SUPPORT":
+            return 1.2
+        "FLANKER":
+            return 0.86
+        "ASSAULT":
+            return 0.92
+        _:
+            return 1.0
+
+func _combat_burst_size() -> int:
+    match combat_role:
+        "SUPPORT":
+            return 4
+        "FLANKER":
+            return 2
+        "ASSAULT":
+            return 3
+        _:
+            return 3
+
+func _combat_burst_pause() -> float:
+    match combat_role:
+        "SUPPORT":
+            return 0.72
+        "FLANKER":
+            return 0.28
+        "ASSAULT":
+            return 0.38
+        _:
+            return 0.5
+
+func _combat_reacquire_delay() -> float:
+    match combat_role:
+        "SUPPORT":
+            return 0.5
+        "FLANKER":
+            return 0.18
+        "ASSAULT":
+            return 0.25
+        _:
+            return 0.35
+
+func _squad_has_live_flanker() -> bool:
+    # Riflemen should not all abandon their lanes when the squad already has flankers.
+    for node in get_tree().get_nodes_in_group("enemies"):
+        if node == self or not is_instance_valid(node) or not node is Node3D:
+            continue
+        if str(node.get("combat_role")) != "FLANKER" or float(node.get("health")) <= 0.0:
+            continue
+        if global_position.distance_to((node as Node3D).global_position) <= 28.0:
+            return true
+    return false
+
+func _should_take_flank_route() -> bool:
+    # Flankers own the maneuver; riflemen only inherit it if no living flanker can do so.
+    if combat_role == "FLANKER":
+        return true
+    if combat_role == "RIFLEMAN":
+        return not _squad_has_live_flanker()
+    return false
+
+func _squad_has_supporting_fire() -> bool:
+    # A live support unit signals a brief maneuver window while actively firing a burst.
+    for node in get_tree().get_nodes_in_group("enemies"):
+        if node == self or not is_instance_valid(node) or not node is Node3D:
+            continue
+        if str(node.get("combat_role")) != "SUPPORT" or float(node.get("health")) <= 0.0:
+            continue
+        if global_position.distance_to((node as Node3D).global_position) > 36.0:
+            continue
+        if str(node.get("state")) == "COMBAT" and (int(node.get("burst_shots_remaining")) > 0 or float(node.get("muzzle_flash_timer")) > 0.0):
+            return true
+    return false
+
+func _combat_movement_speed() -> float:
+    # Flankers exploit active supporting fire; otherwise retain the baseline combat pace.
+    if state == "COMBAT" and _should_take_flank_route() and _squad_has_supporting_fire():
+        return 2.65
+    return 2.1
+
+func _combat_suppression_weight() -> float:
+    # Support units sustain pressure while maneuver elements use shorter, faster bursts.
+    match combat_role:
+        "SUPPORT":
+            return 1.35
+        "FLANKER":
+            return 0.75
+        "ASSAULT":
+            return 0.9
+        _:
+            return 1.0
+
+func _combat_can_engage(distance: float) -> bool:
+    # Keep firing distance aligned with each role's movement doctrine.
+    var engagement := _combat_engagement_ranges()
+    return distance <= engagement.y + 2.5
+
+func _combat_miss_radius(distance: float, horizontal_speed: float) -> float:
+    # Moving fire is less stable; support troops are steadier while flankers accept more spread.
+    var role_scale := 1.0
+    match combat_role:
+        "SUPPORT":
+            role_scale = 0.82
+        "FLANKER":
+            role_scale = 1.18
+        "ASSAULT":
+            role_scale = 0.94
+    return (0.08 + maxf(distance, 0.0) * 0.018 + clampf(horizontal_speed, 0.0, 3.0) * 0.22) * role_scale
 
 func set_difficulty(value: String) -> void:
     difficulty = value.strip_edges().to_upper()
@@ -169,6 +302,102 @@ func set_difficulty(value: String) -> void:
             fire_interval_min = 0.65
             fire_interval_max = 1.25
     fire_timer = fire_interval_max
+
+func _build_equipment_details() -> void:
+    var helmet_material := StandardMaterial3D.new()
+    helmet_material.albedo_color = Color(0.19, 0.22, 0.18)
+    helmet_material.roughness = 0.92
+    var rubber_material := StandardMaterial3D.new()
+    rubber_material.albedo_color = Color(0.045, 0.052, 0.047)
+    rubber_material.roughness = 0.72
+    var fabric_material := StandardMaterial3D.new()
+    fabric_material.albedo_color = Color(0.16, 0.18, 0.14)
+    fabric_material.roughness = 1.0
+    var buckle_material := StandardMaterial3D.new()
+    buckle_material.albedo_color = Color(0.31, 0.29, 0.22)
+    buckle_material.metallic = 0.18
+    buckle_material.roughness = 0.82
+
+    var helmet := MeshInstance3D.new()
+    helmet.name = "Helmet"
+    var helmet_mesh := SphereMesh.new()
+    helmet_mesh.radius = 0.205
+    helmet_mesh.height = 0.25
+    helmet.mesh = helmet_mesh
+    helmet.position = Vector3(0.0, 2.025, 0.015)
+    helmet.material_override = helmet_material
+    visual_root.add_child(helmet)
+    _add_equipment_box("HelmetBrim", Vector3(0.0, 1.985, -0.055), Vector3(0.43, 0.055, 0.32), helmet_material)
+    _add_equipment_box("HelmetMount", Vector3(0.0, 2.105, -0.155), Vector3(0.105, 0.07, 0.07), rubber_material)
+    _add_equipment_box("BallisticGoggles", Vector3(0.0, 1.885, -0.166), Vector3(0.29, 0.085, 0.045), rubber_material)
+    _add_equipment_box("GoggleLens", Vector3(0.0, 1.888, -0.191), Vector3(0.235, 0.038, 0.012), buckle_material)
+
+    _add_equipment_box("TacticalBackpack", Vector3(0.0, 1.22, 0.19), Vector3(0.43, 0.54, 0.22), fabric_material)
+    _add_equipment_box("BackpackTopFlap", Vector3(0.0, 1.48, 0.19), Vector3(0.36, 0.12, 0.235), helmet_material)
+    # Compact squad radio and whip antenna break up the otherwise flat backpack silhouette.
+    _add_equipment_box("RadioPack", Vector3(-0.19, 1.34, 0.075), Vector3(0.14, 0.23, 0.12), rubber_material)
+    var radio_antenna := MeshInstance3D.new()
+    radio_antenna.name = "RadioAntenna"
+    var antenna_mesh := CylinderMesh.new()
+    antenna_mesh.top_radius = 0.009
+    antenna_mesh.bottom_radius = 0.014
+    antenna_mesh.height = 0.34
+    radio_antenna.mesh = antenna_mesh
+    radio_antenna.position = Vector3(-0.22, 1.60, 0.10)
+    radio_antenna.rotation.z = -0.12
+    radio_antenna.material_override = rubber_material
+    visual_root.add_child(radio_antenna)
+    _add_equipment_box("SidearmHolster", Vector3(0.285, 0.76, -0.015), Vector3(0.13, 0.23, 0.16), rubber_material)
+    _add_equipment_box("WaistBelt", Vector3(0.0, 0.79, -0.005), Vector3(0.55, 0.105, 0.29), rubber_material)
+    _add_equipment_box("BeltBuckle", Vector3(0.0, 0.79, -0.165), Vector3(0.09, 0.075, 0.025), buckle_material)
+
+    for index in range(4):
+        var pouch_x := -0.205 + float(index) * 0.137
+        _add_equipment_box("MagazinePouch_%02d" % index, Vector3(pouch_x, 0.91, -0.155), Vector3(0.105, 0.17, 0.09), fabric_material)
+        _add_equipment_box("PouchFlap_%02d" % index, Vector3(pouch_x, 0.96, -0.205), Vector3(0.085, 0.055, 0.018), helmet_material)
+
+    for side in [-1.0, 1.0]:
+        var shoulder := MeshInstance3D.new()
+        shoulder.name = "ShoulderPadLeft" if side < 0.0 else "ShoulderPadRight"
+        var shoulder_mesh := SphereMesh.new()
+        shoulder_mesh.radius = 0.145
+        shoulder_mesh.height = 0.22
+        shoulder.mesh = shoulder_mesh
+        shoulder.position = Vector3(side * 0.365, 1.38, -0.025)
+        shoulder.material_override = helmet_material
+        visual_root.add_child(shoulder)
+        _add_equipment_box("ShoulderWebbingLeft" if side < 0.0 else "ShoulderWebbingRight", Vector3(side * 0.28, 1.40, -0.16), Vector3(0.075, 0.29, 0.035), fabric_material)
+
+    _add_equipment_box("RifleMagazine", Vector3(0.32, 1.105, -0.13), Vector3(0.09, 0.22, 0.14), rubber_material)
+    _add_equipment_box("RifleStock", Vector3(0.32, 1.24, 0.18), Vector3(0.10, 0.105, 0.25), fabric_material)
+    _add_equipment_box("RifleOptic", Vector3(0.32, 1.325, -0.21), Vector3(0.12, 0.085, 0.13), rubber_material)
+    _add_equipment_box("RifleGrip", Vector3(0.32, 1.17, -0.005), Vector3(0.075, 0.15, 0.09), rubber_material)
+    var barrel := MeshInstance3D.new()
+    barrel.name = "RifleBarrel"
+    var barrel_mesh := CylinderMesh.new()
+    barrel_mesh.top_radius = 0.022
+    barrel_mesh.bottom_radius = 0.028
+    barrel_mesh.height = 0.32
+    barrel.mesh = barrel_mesh
+    barrel.position = Vector3(0.32, 1.25, -0.67)
+    barrel.rotation.x = PI * 0.5
+    barrel.material_override = buckle_material
+    visual_root.add_child(barrel)
+
+    _add_limb_end(left_leg_pivot, "LeftKneePad", Vector3(0.0, -0.31, -0.105), Vector3(0.23, 0.19, 0.12), rubber_material)
+    _add_limb_end(right_leg_pivot, "RightKneePad", Vector3(0.0, -0.31, -0.105), Vector3(0.23, 0.19, 0.12), rubber_material)
+    _add_limb_end(left_leg_pivot, "LeftBootToeCap", Vector3(0.0, -0.69, -0.19), Vector3(0.19, 0.10, 0.12), rubber_material)
+    _add_limb_end(right_leg_pivot, "RightBootToeCap", Vector3(0.0, -0.69, -0.19), Vector3(0.19, 0.10, 0.12), rubber_material)
+
+func _add_equipment_box(label: String, local_position: Vector3, size: Vector3, material: Material) -> void:
+    var piece := MeshInstance3D.new()
+    piece.name = label
+    var mesh := BoxMesh.new()
+    mesh.size = size
+    piece.mesh = mesh
+    piece.position = local_position
+    piece.material_override = material
+    visual_root.add_child(piece)
 
 func _build_limb_meshes() -> void:
     var arm_material := StandardMaterial3D.new()
@@ -237,16 +466,26 @@ func _process(delta: float) -> void:
 func _animate_visuals(delta: float) -> void:
     if is_dead or not is_instance_valid(visual_root):
         return
+    hit_reaction_timer = maxf(0.0, hit_reaction_timer - delta)
+    var reaction_strength := clampf(hit_reaction_timer / 0.28, 0.0, 1.0)
+    reaction_strength = reaction_strength * reaction_strength * (3.0 - 2.0 * reaction_strength)
     var horizontal_speed := Vector2(velocity.x, velocity.z).length()
+    var weapon_ready := state == "COMBAT" or state == "REPOSITION"
     if horizontal_speed > 0.22:
         gait_time += delta * lerpf(5.0, 10.0, clampf(horizontal_speed / 3.5, 0.0, 1.0))
-        var swing := sin(gait_time) * 0.48
+        # A cautious, shorter stride while shouldering the rifle reads as combat movement.
+        var stride_scale := 0.68 if weapon_ready else 1.0
+        var swing := sin(gait_time) * 0.48 * stride_scale
         left_leg_pivot.rotation.x = swing
         right_leg_pivot.rotation.x = -swing
         left_arm_pivot.rotation.x = -swing * 0.42
         right_arm_pivot.rotation.x = swing * 0.42
-        visual_root.position.y = absf(sin(gait_time * 2.0)) * 0.035
-        visual_root.rotation.z = clampf(-velocity.x * 0.018, -0.055, 0.055)
+        visual_root.position.y = absf(sin(gait_time * 2.0)) * (0.024 if weapon_ready else 0.035)
+        var local_velocity := global_transform.basis.inverse() * velocity
+        var lateral_lean := clampf(-local_velocity.x * 0.018, -0.055, 0.055)
+        # Ease into and out of lateral lean so direction changes feel weighted, not snapped.
+        var lean_weight := minf(delta * 6.0, 1.0)
+        visual_root.rotation.z = lerpf(visual_root.rotation.z - hit_reaction_direction * 0.12 * reaction_strength, lateral_lean, lean_weight)
     else:
         gait_time += delta * 1.2
         left_leg_pivot.rotation.x = lerpf(left_leg_pivot.rotation.x, 0.0, delta * 7.0)
@@ -254,7 +493,19 @@ func _animate_visuals(delta: float) -> void:
         left_arm_pivot.rotation.x = lerpf(left_arm_pivot.rotation.x, 0.0, delta * 7.0)
         right_arm_pivot.rotation.x = lerpf(right_arm_pivot.rotation.x, 0.0, delta * 7.0)
         visual_root.position.y = lerpf(visual_root.position.y, sin(gait_time) * 0.006, delta * 4.0)
-        visual_root.rotation.z = lerpf(visual_root.rotation.z, 0.0, delta * 4.0)
+        # Remove the previous frame's flinch offset before recentering the idle lean.
+        visual_root.rotation.z = lerpf(visual_root.rotation.z - hit_reaction_direction * 0.12 * reaction_strength, 0.0, delta * 4.0)
+    # Layer a brief upper-body flinch over locomotion without freezing movement.
+    visual_root.rotation.x = (-0.075 if weapon_ready else 0.0) - 0.16 * reaction_strength
+    visual_root.rotation.z += hit_reaction_direction * 0.12 * reaction_strength
+    left_arm_pivot.rotation.z = -0.26 - hit_reaction_direction * 0.18 * reaction_strength
+    right_arm_pivot.rotation.z = 0.24 + hit_reaction_direction * 0.18 * reaction_strength
+    # Keep the rifle shouldered while engaging, with gait layered underneath the ready pose.
+    var pose_weight := minf(delta * 7.0, 1.0)
+    var left_arm_target := -0.30 if weapon_ready else 0.0
+    var right_arm_target := -0.22 if weapon_ready else 0.0
+    left_arm_pivot.rotation.x = lerpf(left_arm_pivot.rotation.x, left_arm_target, pose_weight)
+    right_arm_pivot.rotation.x = lerpf(right_arm_pivot.rotation.x, right_arm_target, pose_weight)
 
 func _physics_process(delta: float) -> void:
     if get_tree().paused:
@@ -274,6 +525,7 @@ func _physics_process(delta: float) -> void:
     think_timer -= delta
     fire_timer -= delta
     cover_timer = maxf(0.0, cover_timer - delta)
+    flank_timer = maxf(0.0, flank_timer - delta)
     suppression_timer = maxf(0.0, suppression_timer - delta)
     alert_memory_timer = maxf(0.0, alert_memory_timer - delta)
     alert_broadcast_timer = maxf(0.0, alert_broadcast_timer - delta)
@@ -288,19 +540,29 @@ func _physics_process(delta: float) -> void:
         if is_instance_valid(grenade_threat):
             if state != "REPOSITION" or cover_timer <= 0.0:
                 cover_goal = _choose_cover(grenade_threat.global_position)
-                cover_timer = 1.0
+                cover_timer = _cover_commitment_duration()
             state = "REPOSITION"
             suppression_timer = maxf(suppression_timer, 0.35)
+        elif _should_hold_committed_cover():
+            # Finish the committed move and briefly hold cover even if the near-miss timer expires.
+            # Otherwise visible enemies immediately abandon cover and repeat the same exposed exchange.
+            state = "REPOSITION"
         elif suppression_timer > 0.0:
             state = "REPOSITION"
-            last_known_position = player.global_position
-            alert_memory_timer = 5.0
+            # Preserve the actual source of incoming fire; do not assume it is the player.
+            var suppression_source := last_known_position if last_known_position != Vector3.ZERO else player.global_position
             if cover_timer <= 0.0:
-                cover_goal = _choose_cover(player.global_position)
-                cover_timer = 1.6
+                cover_goal = _choose_cover(suppression_source)
+                cover_timer = _cover_commitment_duration()
         elif sees_player:
             if state != "COMBAT":
+                var mission_scene := get_tree().current_scene
+                if mission_scene and mission_scene.has_method("report_hostile_contact"):
+                    mission_scene.report_hostile_contact(self)
                 _broadcast_alert(player.global_position)
+                # Reacquire deliberately after losing sight or leaving cover.
+                fire_timer = maxf(fire_timer, _combat_reacquire_delay())
+                burst_shots_remaining = 0
             state = "COMBAT"
             last_known_position = player.global_position
             alert_memory_timer = 5.0
@@ -319,26 +581,61 @@ func _physics_process(delta: float) -> void:
     if state == "COMBAT":
         var to_player := player.global_position - global_position
         to_player.y = 0
-        if distance_to_player > 13:
+        var engagement := _combat_engagement_ranges()
+        if distance_to_player > engagement.y:
             target_dir = to_player.normalized()
-        elif distance_to_player < 5.5:
+        elif distance_to_player < engagement.x:
             target_dir = -to_player.normalized()
+            flank_timer = 0.0
+        elif combat_role == "SUPPORT":
+            # Support holds a wider firing lane and makes small lateral corrections.
+            if flank_timer <= 0.0:
+                strafe_sign *= -1.0
+                flank_timer = randf_range(1.8, 3.0)
+            target_dir = Vector3(-to_player.z, 0.0, to_player.x).normalized() * strafe_sign * 0.22
+        elif _should_take_flank_route():
+            # Maneuver elements take the route; line units keep pressure on the target.
+            if flank_timer <= 0.0 or global_position.distance_to(flank_goal) < 1.6:
+                flank_goal = _choose_flank_goal()
+                flank_timer = randf_range(2.2, 3.8)
+                strafe_sign *= -1.0
+            var to_flank := flank_goal - global_position
+            to_flank.y = 0.0
+            if to_flank.length() > 1.0:
+                target_dir = to_flank.normalized()
+            else:
+                target_dir = Vector3(-to_player.z, 0.0, to_player.x).normalized() * strafe_sign * 0.42
         else:
-            target_dir = Vector3(-to_player.z,0,to_player.x).normalized() * strafe_sign * 0.42
+            # Assault units close the gap; riflemen hold a lane while designated flankers maneuver.
+            if combat_role == "ASSAULT" and distance_to_player > engagement.x + 1.0:
+                target_dir = to_player.normalized() * 0.32
+            else:
+                if flank_timer <= 0.0:
+                    strafe_sign *= -1.0
+                    flank_timer = randf_range(1.8, 3.0)
+                target_dir = Vector3(-to_player.z, 0.0, to_player.x).normalized() * strafe_sign * 0.18
         look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
-        if distance_to_player < maxf(10.0, detection_range - 5.0) and fire_timer <= 0:
-            fire_timer = randf_range(fire_interval_min, fire_interval_max)
+        if _combat_can_engage(distance_to_player) and fire_timer <= 0:
+            if burst_shots_remaining <= 0:
+                burst_shots_remaining = _combat_burst_size()
             _try_shoot_player()
+            burst_shots_remaining -= 1
+            var interval_scale := _combat_fire_interval_scale() / _combat_suppression_weight()
+            if burst_shots_remaining > 0:
+                # Short controlled bursts, with role-specific cadence between rounds.
+                fire_timer = randf_range(fire_interval_min, fire_interval_max) * interval_scale * 0.52
+            else:
+                # Pause to settle and reacquire before the next burst.
+                fire_timer = _combat_burst_pause() + randf_range(fire_interval_min, fire_interval_max) * interval_scale
     elif state == "REPOSITION":
         var to_cover := cover_goal - global_position
         to_cover.y = 0.0
         if to_cover.length() > 1.1:
-            target_dir = to_cover.normalized()
+            # Bleed off speed as the hostile reaches cover instead of overshooting it.
+            target_dir = to_cover.normalized() * _cover_approach_scale(to_cover.length())
         else:
-            # If no nearby cover is reachable, at least break the player's firing line.
-            var retreat := global_position - player.global_position
-            retreat.y = 0.0
-            target_dir = retreat.normalized()
+            # Hold the selected cover position while suppression or a grenade threat persists.
+            target_dir = Vector3.ZERO
         look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
     elif state == "INVESTIGATE":
         var investigate_target := cover_goal
@@ -350,8 +647,8 @@ func _physics_process(delta: float) -> void:
             target_dir = to_target.normalized() * 0.72
             look_at(Vector3(investigate_target.x, global_position.y, investigate_target.z), Vector3.UP)
         else:
-            state = "SEARCH"
-            alert_memory_timer = 0.0
+            _complete_investigation()
+            look_at(Vector3(investigate_target.x, global_position.y, investigate_target.z), Vector3.UP)
     elif state == "SEARCH":
         if patrol_pause_timer > 0.0:
             patrol_pause_timer = maxf(0.0, patrol_pause_timer - delta)
@@ -363,11 +660,13 @@ func _physics_process(delta: float) -> void:
             else:
                 target_dir = to_patrol.normalized() * 0.48
                 look_at(Vector3(patrol_goal.x, global_position.y, patrol_goal.z), Vector3.UP)
+    target_dir = _apply_ally_separation(target_dir)
     target_dir = _avoid_obstacles(target_dir)
     if not is_on_floor():
         velocity.y -= 9.8 * delta
-    velocity.x = move_toward(velocity.x, target_dir.x * 2.1, delta * 4.0)
-    velocity.z = move_toward(velocity.z, target_dir.z * 2.1, delta * 4.0)
+    var movement_speed := _combat_movement_speed()
+    velocity.x = move_toward(velocity.x, target_dir.x * movement_speed, delta * 4.0)
+    velocity.z = move_toward(velocity.z, target_dir.z * movement_speed, delta * 4.0)
     move_and_slide()
     _animate_visuals(delta)
 
@@ -404,9 +703,36 @@ func _avoid_obstacles(direction: Vector3) -> Vector3:
 
 func _steering_ray(space: PhysicsDirectSpaceState3D, origin: Vector3, direction: Vector3) -> Dictionary:
     var query := PhysicsRayQueryParameters3D.create(origin, origin + direction * 2.0)
-    query.exclude = [get_rid()]
+    # Squadmates are handled by separation steering, not treated as solid walls.
+    query.exclude = _movement_ray_exclusions()
     query.collision_mask = 1
     return space.intersect_ray(query)
+
+func _apply_ally_separation(direction: Vector3) -> Vector3:
+    var desired := direction
+    desired.y = 0.0
+    if desired.length_squared() < 0.0001:
+        return Vector3.ZERO
+    var separation := Vector3.ZERO
+    for node in get_tree().get_nodes_in_group("enemies"):
+        if node == self or not is_instance_valid(node) or not node is Node3D:
+            continue
+        var ally := node as Node3D
+        if float(ally.get("health")) <= 0.0:
+            continue
+        var offset := global_position - ally.global_position
+        offset.y = 0.0
+        var distance := offset.length()
+        if distance > 2.2 or distance < 0.001:
+            continue
+        separation += offset.normalized() * ((2.2 - distance) / 2.2)
+    if separation.length_squared() < 0.0001:
+        return desired.normalized() * minf(direction.length(), 1.0)
+    var strength := minf(separation.length(), 1.0) * 0.8
+    var steered := desired.normalized() + separation.normalized() * strength
+    if steered.length_squared() < 0.0001:
+        return separation.normalized() * minf(direction.length(), 1.0)
+    return steered.normalized() * minf(direction.length(), 1.0)
 
 func _get_patrol_points() -> Array[Node3D]:
     var points: Array[Node3D] = []
@@ -498,11 +824,17 @@ func hear_noise(source_position: Vector3, noise_type: String) -> void:
             memory_duration = 2.0
         "GUNSHOT":
             memory_duration = 5.0
+        "IMPACT":
+            memory_duration = 2.8
         "GRENADE":
             memory_duration = 6.0
     last_known_position = source_position
     alert_memory_timer = maxf(alert_memory_timer, memory_duration)
     if state != "COMBAT":
+        if noise_type in ["GUNSHOT", "IMPACT", "GRENADE"]:
+            var mission_scene := get_tree().current_scene
+            if mission_scene and mission_scene.has_method("report_hostile_investigation"):
+                mission_scene.report_hostile_investigation(self, noise_type)
         state = "INVESTIGATE"
         if cover_timer <= 0.0 or noise_type != "FOOTSTEP":
             cover_goal = _choose_cover(source_position)
@@ -530,6 +862,16 @@ func hear_alert(threat_position: Vector3) -> void:
         cover_timer = 1.2
     think_timer = minf(think_timer, 0.1)
 
+func _complete_investigation() -> void:
+    # Reaching a noise location should trigger a brief scan, not an instant return to patrol.
+    var mission_scene := get_tree().current_scene
+    if mission_scene and mission_scene.has_method("report_hostile_search"):
+        mission_scene.report_hostile_search(self)
+    state = "SEARCH"
+    alert_memory_timer = 0.0
+    patrol_pause_timer = maxf(patrol_pause_timer, 1.35)
+    patrol_goal = Vector3.ZERO
+
 func _get_district_cover_candidates() -> Array[Vector3]:
     var candidates: Array[Vector3] = []
     var offsets := [Vector3(-1.65, 0, 0), Vector3(1.65, 0, 0), Vector3(0, 0, -1.35), Vector3(0, 0, 1.35)]
@@ -541,6 +883,168 @@ func _get_district_cover_candidates() -> Array[Vector3]:
             for offset in offsets:
                 candidates.append(prop_position + offset)
     return candidates
+
+func _choose_flank_goal() -> Vector3:
+    if not is_instance_valid(player):
+        return global_position
+    var away := global_position - player.global_position
+    away.y = 0.0
+    if away.length_squared() < 0.01:
+        away = Vector3.FORWARD
+    away = away.normalized()
+    var best := global_position
+    var best_score := -INF
+    # Offset around the player's position instead of charging directly down the same lane.
+    for angle in [-1.25, 1.25, -0.78, 0.78, 2.2, -2.2]:
+        var direction := away.rotated(Vector3.UP, angle)
+        var candidate := player.global_position + direction * randf_range(7.5, 10.0)
+        candidate.y = global_position.y
+        var travel := candidate.distance_to(global_position)
+        if travel < 1.5:
+            continue
+        var score := _score_flank_candidate(candidate, travel)
+        if score > best_score:
+            best_score = score
+            best = candidate
+    return best
+
+func _score_flank_candidate(candidate: Vector3, travel: float) -> float:
+    var score := -travel * 0.35 + randf_range(-0.25, 0.25)
+    score -= _flank_ally_spacing_penalty(candidate)
+    score -= _flank_lane_occupancy_penalty(candidate)
+    # Keep a useful route instead of oscillating between nearby alternatives every think cycle.
+    if flank_goal != Vector3.ZERO and global_position.distance_to(flank_goal) > 1.5:
+        var goal_reuse_distance := candidate.distance_to(flank_goal)
+        if goal_reuse_distance < 3.5:
+            score -= (3.5 - goal_reuse_distance) * 1.6
+    var space := get_world_3d().direct_space_state
+    var origin := global_position + Vector3.UP * 0.9
+    var flat_to_candidate := candidate - global_position
+    flat_to_candidate.y = 0.0
+    if flat_to_candidate.length_squared() > 0.01:
+        var direction := flat_to_candidate.normalized()
+        var direct_path := PhysicsRayQueryParameters3D.create(origin, origin + direction * minf(travel, 4.0))
+        direct_path.exclude = _movement_ray_exclusions()
+        direct_path.collision_mask = 1
+        if not space.intersect_ray(direct_path).is_empty():
+            score -= 4.5
+    var cover_ray := PhysicsRayQueryParameters3D.create(player.global_position + Vector3.UP * 1.25, candidate + Vector3.UP * 1.0)
+    cover_ray.exclude = [get_rid(), player.get_rid()]
+    cover_ray.collision_mask = 1
+    if not space.intersect_ray(cover_ray).is_empty():
+        score += 1.8
+    return score
+
+func _flank_lane_occupancy_penalty(candidate: Vector3) -> float:
+    if not is_instance_valid(player):
+        return 0.0
+    var side_axis := player.global_transform.basis.x
+    side_axis.y = 0.0
+    if side_axis.length_squared() < 0.01:
+        side_axis = Vector3.RIGHT
+    side_axis = side_axis.normalized()
+    var candidate_offset := candidate - player.global_position
+    candidate_offset.y = 0.0
+    var candidate_side := candidate_offset.dot(side_axis)
+    if absf(candidate_side) < 0.75:
+        return 0.0
+    var penalty := 0.0
+    for node in get_tree().get_nodes_in_group("enemies"):
+        if node == self or not is_instance_valid(node) or not node is Node3D:
+            continue
+        var ally := node as Node3D
+        if float(ally.get("health")) <= 0.0:
+            continue
+        var ally_goal: Vector3 = ally.get("flank_goal")
+        if ally_goal == Vector3.ZERO:
+            continue
+        var ally_offset := ally_goal - player.global_position
+        ally_offset.y = 0.0
+        var ally_side := ally_offset.dot(side_axis)
+        if absf(ally_side) >= 0.75 and signf(candidate_side) == signf(ally_side):
+            penalty += 2.2
+    return penalty
+
+func _movement_ray_exclusions() -> Array[RID]:
+    var exclusions: Array[RID] = [get_rid()]
+    if is_instance_valid(player):
+        exclusions.append(player.get_rid())
+    for ally in get_tree().get_nodes_in_group("enemies"):
+        if ally != self and is_instance_valid(ally) and ally is CollisionObject3D:
+            exclusions.append(ally.get_rid())
+    return exclusions
+
+func _flank_ally_spacing_penalty(candidate: Vector3) -> float:
+    var penalty := 0.0
+    for node in get_tree().get_nodes_in_group("enemies"):
+        if node == self or not is_instance_valid(node) or not node is Node3D:
+            continue
+        var ally := node as Node3D
+        if float(ally.get("health")) <= 0.0:
+            continue
+        var ally_goal: Vector3 = ally.get("flank_goal")
+        if ally_goal != Vector3.ZERO:
+            var goal_distance := candidate.distance_to(ally_goal)
+            if goal_distance < 5.0:
+                penalty += (5.0 - goal_distance) * 1.8
+        var body_distance := candidate.distance_to(ally.global_position)
+        if body_distance < 2.8:
+            penalty += (2.8 - body_distance) * 1.1
+    return penalty
+
+func _cover_ally_spacing_penalty(candidate: Vector3) -> float:
+    var penalty := 0.0
+    for node in get_tree().get_nodes_in_group("enemies"):
+        if node == self or not is_instance_valid(node) or not node is Node3D:
+            continue
+        var ally := node as Node3D
+        if float(ally.get("health")) <= 0.0:
+            continue
+        var ally_state := str(ally.get("state"))
+        var ally_cover_timer := float(ally.get("cover_timer"))
+        var ally_cover_goal: Vector3 = ally.get("cover_goal")
+        if ally_state == "REPOSITION" and ally_cover_timer > 0.0 and ally_cover_goal != Vector3.ZERO:
+            var goal_distance := candidate.distance_to(ally_cover_goal)
+            if goal_distance < 4.0:
+                penalty += (4.0 - goal_distance) * 2.5
+        var body_distance := candidate.distance_to(ally.global_position)
+        if body_distance < 2.6:
+            penalty += (2.6 - body_distance) * 1.2
+    return penalty
+
+func _cover_threat_distance_weight() -> float:
+    return 1.05 if health <= 35.0 else 0.65
+
+func _cover_commitment_duration() -> float:
+    # Wounded soldiers stay down longer; support holds a position while flankers keep moving.
+    if health <= 35.0:
+        return 2.4
+    match combat_role:
+        "SUPPORT":
+            return 2.0
+        "FLANKER":
+            return 1.15
+        "ASSAULT":
+            return 1.35
+        _:
+            return 1.65
+
+func _should_hold_committed_cover() -> bool:
+    return state == "REPOSITION" and cover_timer > 0.0
+
+func _cover_approach_scale(distance: float) -> float:
+    return clampf(distance / 3.0, 0.0, 1.0)
+
+func _has_cover_from_threat(threat_position: Vector3, candidate: Vector3) -> bool:
+    var threat_eye := threat_position + Vector3.UP * 1.25
+    var cover_point := candidate + Vector3.UP * 1.0
+    if threat_eye.distance_to(cover_point) < 0.5:
+        return false
+    var cover_ray := PhysicsRayQueryParameters3D.create(threat_eye, cover_point)
+    # Only world geometry should count as cover; players and squadmates are not cover.
+    cover_ray.exclude = _movement_ray_exclusions()
+    cover_ray.collision_mask = 1
+    return not get_world_3d().direct_space_state.intersect_ray(cover_ray).is_empty()
 
 func _choose_cover(threat_position: Vector3) -> Vector3:
     # Candidate positions sit near concrete barriers and wreckage in the arena.
@@ -566,24 +1070,43 @@ func _choose_cover(threat_position: Vector3) -> Vector3:
             continue
         var away: Vector3 = candidate - threat_position
         away.y = 0.0
-        var score: float = away.length() * 0.65 - flat.length() * 0.55 + randf_range(-0.6, 0.6)
-        var cover_ray := PhysicsRayQueryParameters3D.create(threat_position + Vector3.UP * 1.25, candidate + Vector3.UP * 1.0)
-        cover_ray.exclude = [get_rid()]
-        var obstruction := get_world_3d().direct_space_state.intersect_ray(cover_ray)
-        if not obstruction.is_empty():
-            score += 5.0
+        # Wounded hostiles value distance from the threat more than a short route to cover.
+        var score: float = away.length() * _cover_threat_distance_weight() - flat.length() * 0.55 + randf_range(-0.6, 0.6)
+        score -= _cover_ally_spacing_penalty(candidate)
+        # Avoid cycling straight back to the last position when other cover is available.
+        if has_last_cover_goal and candidate.distance_to(last_cover_goal) < 4.5:
+            score -= 12.0
+        # Prefer positions with real world geometry between the hostile and the threat.
+        if _has_cover_from_threat(threat_position, candidate):
+            score += 8.0
+        else:
+            score -= 3.0
         if score > best_score:
             best_score = score
             best = candidate
+    if best.distance_to(global_position) > 0.75:
+        last_cover_goal = best
+        has_last_cover_goal = true
     return best
 
 func _try_shoot_player() -> void:
     _show_muzzle_flash()
+    if is_instance_valid(player):
+        var player_hud = player.get("hud")
+        if is_instance_valid(player_hud) and player_hud.has_method("show_hostile_fire"):
+            player_hud.call("show_hostile_fire", player.global_position, player.global_transform.basis, global_position)
     if is_instance_valid(enemy_fire_audio):
         enemy_fire_audio.pitch_scale = randf_range(0.94, 1.06)
         enemy_fire_audio.play()
     var from := global_position + Vector3.UP*1.35
-    var to := player.global_position + Vector3.UP*1.2
+    var target_distance := global_position.distance_to(player.global_position)
+    var horizontal_speed := Vector2(velocity.x, velocity.z).length()
+    var miss_radius := _combat_miss_radius(target_distance, horizontal_speed)
+    var miss_angle := randf_range(0.0, TAU)
+    var miss_distance := randf_range(0.0, miss_radius)
+    var aim_offset := Vector3(cos(miss_angle) * miss_distance, 0.0, sin(miss_angle) * miss_distance)
+    # Shots converge near the target but spread more when the shooter is moving quickly.
+    var to := player.global_position + Vector3.UP*1.2 + aim_offset
     var query := PhysicsRayQueryParameters3D.create(from, to)
     query.exclude = [get_rid()]
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
@@ -594,6 +1117,14 @@ func _try_shoot_player() -> void:
         if player.has_method("apply_damage"):
             player.apply_damage(shot_damage, global_position)
     _spawn_shot_tracer(from, tracer_end, tracer_tint)
+    var active_scene := get_tree().current_scene
+    if is_instance_valid(active_scene) and active_scene.has_method("report_noise"):
+        active_scene.call("report_noise", from, 42.0, "GUNSHOT", self)
+    if not hit.is_empty() and hit.get("collider") is StaticBody3D and is_instance_valid(player):
+        if player.has_method("_spawn_bullet_impact"):
+            player.call("_spawn_bullet_impact", hit.get("position", tracer_end), hit.get("normal", Vector3.UP))
+        if player.has_method("_play_impact_audio"):
+            player.call("_play_impact_audio", hit.get("position", tracer_end))
 
 func _spawn_shot_tracer(start_position: Vector3, end_position: Vector3, tint: Color) -> void:
     var active_scene := get_tree().current_scene
@@ -609,7 +1140,21 @@ func _show_muzzle_flash() -> void:
     enemy_muzzle_light.light_energy = 1.6
     muzzle_flash_timer = 0.055
 
-func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot: bool = false) -> bool:
+func apply_suppression(source_position: Vector3) -> void:
+    if is_dead or health <= 0.0:
+        return
+    last_known_position = source_position
+    alert_memory_timer = maxf(alert_memory_timer, 3.5)
+    suppression_timer = maxf(suppression_timer, 0.85)
+    # A second near miss should reinforce the current evasive move, not restart it.
+    if state != "REPOSITION" or cover_goal == Vector3.ZERO or global_position.distance_to(cover_goal) < 1.2:
+        cover_timer = 0.0
+    think_timer = 0.0
+    if state != "COMBAT":
+        state = "REPOSITION"
+    _broadcast_alert(source_position)
+
+func take_damage(amount: float, hit_position: Vector3 = Vector3.ZERO, headshot: bool = false) -> bool:
     if is_dead:
         return true
     health -= amount * (3.0 if headshot else 1.0)
@@ -631,6 +1176,12 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot:
         _broadcast_alert(player.global_position)
     body_material.albedo_color = Color(0.55,0.12,0.08)
     hit_flash_timer = 0.14
+    hit_reaction_timer = maxf(hit_reaction_timer, 0.32 if headshot else 0.22)
+    if hit_position != Vector3.ZERO:
+        var local_hit := global_transform.basis.inverse() * (hit_position - global_position)
+        hit_reaction_direction = -1.0 if local_hit.x < 0.0 else 1.0
+    else:
+        hit_reaction_direction = -hit_reaction_direction
     return false
 
 func _begin_death() -> void:

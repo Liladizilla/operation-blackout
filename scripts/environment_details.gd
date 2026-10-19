@@ -91,6 +91,27 @@ func _material(color: Color) -> StandardMaterial3D:
 	shared_materials[key] = material
 	return material
 
+func _surface_kind_for_name(label: String) -> float:
+	if label in ["ConcreteRubble", "FacadeCollapseRubble"]:
+		return 2.0
+	if label == "ServiceLane":
+		return 1.0
+	if label in ["OuterDistrictBuilding", "CollapsedRoof", "ExposedFacadeRib"]:
+		return 0.0
+	return -1.0
+
+func _surface_material(color: Color, surface_kind: float) -> ShaderMaterial:
+	var key := "surface:%s:%s" % [color.to_html(true), str(surface_kind)]
+	if shared_materials.has(key):
+		return shared_materials[key] as ShaderMaterial
+	var shader_material := ShaderMaterial.new()
+	shader_material.shader = load("res://shaders/battlefield_surface.gdshader") as Shader
+	shader_material.set_shader_parameter("base_color", color)
+	shader_material.set_shader_parameter("surface_kind", surface_kind)
+	shader_material.set_shader_parameter("detail_scale", 1.0)
+	shared_materials[key] = shader_material
+	return shader_material
+
 func _box(label: String, pos: Vector3, size: Vector3, color: Color, collision: bool) -> Node3D:
 	var node: Node3D = StaticBody3D.new() if collision else Node3D.new()
 	node.name = label
@@ -105,7 +126,8 @@ func _box(label: String, pos: Vector3, size: Vector3, color: Color, collision: b
 	var mesh := BoxMesh.new()
 	mesh.size = size
 	mesh_instance.mesh = mesh
-	mesh_instance.material_override = _material(color)
+	var surface_kind := _surface_kind_for_name(label)
+	mesh_instance.material_override = _surface_material(color, surface_kind) if surface_kind >= 0.0 else _material(color)
 	node.add_child(mesh_instance)
 	if collision:
 		var shape_node := CollisionShape3D.new()
