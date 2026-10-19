@@ -425,6 +425,11 @@ func _fire() -> void:
     query.collide_with_areas = true
     query.collision_mask = 3
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
+    var shot_end: Vector3 = hit.get("position", to) if not hit.is_empty() else to
+    var direct_target: Node = hit.get("collider") if not hit.is_empty() else null
+    if direct_target is Area3D and direct_target.has_meta("headshot"):
+        direct_target = direct_target.get_parent()
+    _suppress_nearby_enemies(from, shot_end, direct_target)
     var confirmed_hit := false
     if not hit.is_empty():
         var collider = hit.get("collider")
@@ -455,6 +460,23 @@ func _fire() -> void:
     muzzle_flash_timer = 0.045
     if hud and hud.has_method("flash_muzzle"):
         hud.flash_muzzle()
+
+func _suppress_nearby_enemies(line_start: Vector3, line_end: Vector3, direct_target: Node = null) -> void:
+    var segment := line_end - line_start
+    var segment_length_squared := segment.length_squared()
+    if segment_length_squared <= 0.001:
+        return
+    for candidate in get_tree().get_nodes_in_group("enemies"):
+        if not is_instance_valid(candidate) or candidate == direct_target or not candidate.has_method("apply_suppression"):
+            continue
+        var enemy := candidate as Node3D
+        if not is_instance_valid(enemy) or float(enemy.get("health")) <= 0.0:
+            continue
+        var target_point := enemy.global_position + Vector3.UP * 0.9
+        var along := clampf((target_point - line_start).dot(segment) / segment_length_squared, 0.0, 1.0)
+        var nearest_point := line_start + segment * along
+        if target_point.distance_to(nearest_point) <= 1.35:
+            enemy.call("apply_suppression", global_position)
 
 func _spawn_spent_casing() -> void:
     var active_scene := get_tree().current_scene
