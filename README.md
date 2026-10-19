@@ -61,3 +61,5 @@ The project uses the Compatibility renderer, shared repeated materials, modest g
 - **Headless smoke test:** GitHub Actions imports the project and runs the main scene for 300 frames on Godot 4.7.2 before executing gameplay regressions.
 - **Still requires local verification:** visual quality, enemy behaviour in a live fight, mouse capture, pause-menu interaction, actual FPS, and GPU load.
 - GitHub Actions runs the headless scene test and gameplay regression suite on pushes and pull requests.
+
+Tactical HUD: nearby hostile shots trigger a brief directional `HOSTILE FIRE` cue before damage lands; confirmed incoming damage replaces it with the stronger hit-direction warning. Enemy cover selection also penalizes immediately reusing the previous position to encourage movement between engagements.
