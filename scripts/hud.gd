@@ -143,7 +143,7 @@ func _build() -> void:
     damage_direction_label.offset_bottom = 62
     damage_direction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     root.add_child(damage_direction_label)
-    status_label = _label("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   RMB AIM   LMB FIRE   R RELOAD   F INTERACT   G GRENADE", 13, Color(0.70,0.72,0.68))
+    status_label = _label("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   Q/E LEAN   RMB AIM   LMB FIRE   R RELOAD   F INTERACT   G GRENADE", 13, Color(0.70,0.72,0.68))
     status_label.anchor_top = 1
     status_label.anchor_bottom = 1
     status_label.offset_left = 28
@@ -387,7 +387,7 @@ func show_briefing() -> void:
     var objectives := _label("01   ELIMINATE ALL HOSTILES\n02   HOLD F TO RECOVER INTEL\n03   REACH EXFIL AND HOLD F TO CONFIRM", 14, Color(0.89, 0.75, 0.52))
     objectives.custom_minimum_size = Vector2(520, 66)
     box.add_child(objectives)
-    var controls := _label("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE\nLMB FIRE   RMB AIM   R RELOAD   G GRENADE", 12, Color(0.65, 0.70, 0.65))
+    var controls := _label("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   Q/E LEAN\nLMB FIRE   RMB AIM   R RELOAD   G GRENADE", 12, Color(0.65, 0.70, 0.65))
     controls.custom_minimum_size = Vector2(520, 40)
     box.add_child(controls)
 
@@ -471,7 +471,7 @@ func show_pause() -> void:
     var title := _label("PAUSED", 28, Color(0.9,0.82,0.65))
     title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     box.add_child(title)
-    var controls := _label("WASD MOVE  /  SHIFT SPRINT  /  CTRL CROUCH  /  Z PRONE\nLMB FIRE  /  RMB AIM  /  R RELOAD  /  F INTERACT  /  G GRENADE", 12, Color(0.70,0.73,0.68))
+    var controls := _label("WASD MOVE  /  SHIFT SPRINT  /  CTRL CROUCH  /  Z PRONE  /  Q/E LEAN\nLMB FIRE  /  RMB AIM  /  R RELOAD  /  F INTERACT  /  G GRENADE", 12, Color(0.70,0.73,0.68))
     controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     box.add_child(controls)
     sensitivity_value_label = _label("MOUSE SENSITIVITY", 14, Color(0.82,0.84,0.78))
