@@ -74,7 +74,11 @@ func _ready() -> void:
     rifle.mesh = rifle_mesh
     rifle.position = Vector3(0.32,1.25,-0.2)
     rifle.rotation.x = -0.12
-    rifle.material_override = body_material
+    var rifle_material := StandardMaterial3D.new()
+    rifle_material.albedo_color = Color(0.10,0.12,0.10)
+    rifle_material.metallic = 0.28
+    rifle_material.roughness = 0.72
+    rifle.material_override = rifle_material
     add_child(rifle)
 
     enemy_muzzle_flash = MeshInstance3D.new()
