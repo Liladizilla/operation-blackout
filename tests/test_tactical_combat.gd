@@ -92,6 +92,7 @@ func _run_tests() -> void:
     _check(is_equal_approx(alert_receiver._cover_approach_scale(1.5), 0.5), "hostile slows to half approach speed near cover")
     _check(is_equal_approx(alert_receiver._cover_approach_scale(0.5), 1.0 / 6.0), "hostile makes a controlled final approach to cover")
     _check(is_equal_approx(alert_receiver._cover_approach_scale(4.0), 1.0), "hostile keeps full approach speed when cover is distant")
+    _check(not alert_receiver._has_cover_from_threat(suppression_source, suppression_source), "zero-distance cover candidate is not treated as protection")
     var first_cover: Vector3 = alert_receiver._choose_cover(suppression_source)
     var second_cover: Vector3 = alert_receiver._choose_cover(suppression_source)
     _check(not first_cover.is_equal_approx(second_cover), "cover selection discourages immediately reusing the previous position")
