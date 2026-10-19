@@ -12,12 +12,17 @@ var muzzle_flash: ColorRect
 var owner_scene: Node
 var player_ref: Node
 var pause_panel: PanelContainer
+var hitmarker_timer := 0.0
 
 func initialize(scene: Node, player: Node) -> void:
     owner_scene = scene
     player_ref = player
     player.set("hud", self)
     _build()
+    set_ammo(int(player.get("ammo")), int(player.get("reserve")))
+    set_health(float(player.get("health")))
+    if scene.has_method("get_remaining_enemies"):
+        set_enemy_count(scene.get_remaining_enemies())
 
 func _build() -> void:
     root = Control.new()
@@ -36,7 +41,7 @@ func _build() -> void:
     var top := _label("OPERATION BLACKOUT  /  FIRST LIGHT", 22, Color(0.85,0.78,0.61))
     top.position = Vector2(28,22)
     root.add_child(top)
-    objective_label = _label("OBJECTIVE  //  SECURE THE INTERCEPTED INTEL", 18, Color(0.92,0.90,0.82))
+    objective_label = _label("OBJECTIVE  //  ELIMINATE HOSTILES, THEN RECOVER INTEL", 18, Color(0.92,0.90,0.82))
     objective_label.position = Vector2(28,58)
     root.add_child(objective_label)
     enemy_label = _label("VANGUARD HOSTILES: 5", 16, Color(0.82,0.36,0.25))
@@ -85,6 +90,11 @@ func _label(text: String, font_size: int, color: Color) -> Label:
     return label
 
 func _process(delta: float) -> void:
+    if hitmarker_timer > 0.0:
+        hitmarker_timer = maxf(0.0, hitmarker_timer - delta)
+        if hitmarker_timer == 0.0 and is_instance_valid(center_dot):
+            center_dot.text = "+"
+            center_dot.add_theme_color_override("font_color", Color(0.88,0.86,0.76))
     if hit_flash and hit_flash.color.a > 0:
         var c := hit_flash.color
         c.a = maxf(0.0, c.a - delta * 0.8)
@@ -100,6 +110,13 @@ func _process(delta: float) -> void:
             status_label.text = "REACH THE MARKER AND HOLD F TO RECOVER INTEL"
         else:
             status_label.text = "WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   RMB AIM   LMB FIRE   R RELOAD   F INTERACT"
+
+func flash_hitmarker(killed: bool = false) -> void:
+    if not is_instance_valid(center_dot):
+        return
+    center_dot.text = "X" if killed else "+"
+    center_dot.add_theme_color_override("font_color", Color(0.95,0.30,0.18) if killed else Color(0.95,0.92,0.80))
+    hitmarker_timer = 0.18 if killed else 0.11
 
 func set_ammo(current: int, reserve: int) -> void:
     ammo_label.text = "%02d / %03d" % [current, reserve]
@@ -127,9 +144,13 @@ func flash_muzzle() -> void:
     c.a = 0.06
     muzzle_flash.color = c
 
-func show_pause() -> void:
-    if pause_panel:
+func hide_pause() -> void:
+    if is_instance_valid(pause_panel):
         pause_panel.queue_free()
+    pause_panel = null
+
+func show_pause() -> void:
+    hide_pause()
     pause_panel = PanelContainer.new()
     pause_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
     pause_panel.offset_left = -180
@@ -145,7 +166,7 @@ func show_pause() -> void:
     resume.pressed.connect(func():
         get_tree().paused = false
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-        pause_panel.queue_free()
+        hide_pause()
     )
     box.add_child(resume)
     var quit := Button.new()

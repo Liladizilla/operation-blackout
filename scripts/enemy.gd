@@ -108,7 +108,7 @@ func _try_shoot_player() -> void:
         if player.has_method("apply_damage"):
             player.apply_damage(7.0)
 
-func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO) -> void:
+func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO) -> bool:
     health -= amount
     var mat := StandardMaterial3D.new()
     mat.albedo_color = Color(0.55,0.12,0.08) if health > 0 else Color(0.08,0.09,0.08)
@@ -118,3 +118,5 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO) -> void:
         if scene and scene.has_method("enemy_killed"):
             scene.enemy_killed(self)
         queue_free()
+        return true
+    return false
