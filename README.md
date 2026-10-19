@@ -47,6 +47,8 @@ This is a foundation, not the finished game. Combatants use procedural meshes an
 
 The project uses the Compatibility renderer, modest geometry, no imported textures, and no real-time global illumination. It is intended to be approachable on older integrated GPUs while the core gameplay loop is being proven.
 
-## Verification status
+## Verification
 
-The project has not yet passed a Godot runtime test. Initial sandbox validation is the next milestone; passing static upload checks does not prove that the game launches or plays correctly.
+- **Headless smoke test:** passed in Godot 4.7.2, including project import and a 300-frame scene run with no script/parse errors.
+- **Not yet visually verified:** rendered appearance, mouse capture, pause-menu interaction, and gameplay feel still need an interactive run.
+- GitHub Actions repeats the headless smoke test on pushes and pull requests.
