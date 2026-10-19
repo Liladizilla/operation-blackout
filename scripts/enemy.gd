@@ -464,14 +464,8 @@ func _avoid_obstacles(direction: Vector3) -> Vector3:
 
 func _steering_ray(space: PhysicsDirectSpaceState3D, origin: Vector3, direction: Vector3) -> Dictionary:
     var query := PhysicsRayQueryParameters3D.create(origin, origin + direction * 2.0)
-    var exclusions: Array[RID] = [get_rid()]
-    if is_instance_valid(player):
-        exclusions.append(player.get_rid())
     # Squadmates are handled by separation steering, not treated as solid walls.
-    for ally in get_tree().get_nodes_in_group("enemies"):
-        if ally != self and is_instance_valid(ally) and ally is CollisionObject3D:
-            exclusions.append(ally.get_rid())
-    query.exclude = exclusions
+    query.exclude = _movement_ray_exclusions()
     query.collision_mask = 1
     return space.intersect_ray(query)
 
@@ -655,16 +649,41 @@ func _choose_flank_goal() -> Vector3:
         var travel := candidate.distance_to(global_position)
         if travel < 1.5:
             continue
-        var score := -travel * 0.35 + randf_range(-0.25, 0.25)
-        score -= _flank_ally_spacing_penalty(candidate)
-        var cover_ray := PhysicsRayQueryParameters3D.create(player.global_position + Vector3.UP * 1.25, candidate + Vector3.UP * 1.0)
-        cover_ray.exclude = [get_rid(), player.get_rid()]
-        if not get_world_3d().direct_space_state.intersect_ray(cover_ray).is_empty():
-            score += 1.8
+        var score := _score_flank_candidate(candidate, travel)
         if score > best_score:
             best_score = score
             best = candidate
     return best
+
+func _score_flank_candidate(candidate: Vector3, travel: float) -> float:
+    var score := -travel * 0.35 + randf_range(-0.25, 0.25)
+    score -= _flank_ally_spacing_penalty(candidate)
+    var space := get_world_3d().direct_space_state
+    var origin := global_position + Vector3.UP * 0.9
+    var flat_to_candidate := candidate - global_position
+    flat_to_candidate.y = 0.0
+    if flat_to_candidate.length_squared() > 0.01:
+        var direction := flat_to_candidate.normalized()
+        var direct_path := PhysicsRayQueryParameters3D.create(origin, origin + direction * minf(travel, 4.0))
+        direct_path.exclude = _movement_ray_exclusions()
+        direct_path.collision_mask = 1
+        if not space.intersect_ray(direct_path).is_empty():
+            score -= 4.5
+    var cover_ray := PhysicsRayQueryParameters3D.create(player.global_position + Vector3.UP * 1.25, candidate + Vector3.UP * 1.0)
+    cover_ray.exclude = [get_rid(), player.get_rid()]
+    cover_ray.collision_mask = 1
+    if not space.intersect_ray(cover_ray).is_empty():
+        score += 1.8
+    return score
+
+func _movement_ray_exclusions() -> Array[RID]:
+    var exclusions: Array[RID] = [get_rid()]
+    if is_instance_valid(player):
+        exclusions.append(player.get_rid())
+    for ally in get_tree().get_nodes_in_group("enemies"):
+        if ally != self and is_instance_valid(ally) and ally is CollisionObject3D:
+            exclusions.append(ally.get_rid())
+    return exclusions
 
 func _flank_ally_spacing_penalty(candidate: Vector3) -> float:
     var penalty := 0.0
