@@ -58,7 +58,7 @@ func _run_tests() -> void:
     scene.hud.update_stamina(2.0, 8.0)
     _check(scene.hud.stamina_label.text.contains("025%"), "stamina HUD reflects depleted stamina")
     scene.hud.update_stamina(8.0, 8.0)
-    var stability_player: Node = scene.get_node("Player")
+    var stability_player = scene.get_node("Player")
     stability_player.velocity = Vector3.ZERO
     stability_player.is_crouched = false
     stability_player.is_prone = false
