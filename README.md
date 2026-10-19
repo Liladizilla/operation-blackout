@@ -1,5 +1,7 @@
 # OPERATION BLACKOUT: FIRST LIGHT
 
+Suppression now preserves a valid cover commitment across repeated near misses and tracks the actual incoming-fire source when choosing evasive cover.
+
 Tactical AI scores cover using actual world-geometry line of sight, discourages reusing the same cover, separates squadmates' cover and flank goals, biases flankers toward the less occupied side of the player's position, and penalizes near-identical flank routes to reduce movement oscillation.
 
 A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. This is an original project inspired by the pacing and tactical feel of classic shooters, not their protected characters, story, or assets.
