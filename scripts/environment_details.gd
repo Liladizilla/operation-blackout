@@ -44,6 +44,22 @@ func _build_ruined_block(pos: Vector3, size: Vector3, color: Color) -> void:
 		_box("ExposedFacadeRib", Vector3(pos.x + side * (size.x * 0.5 - 0.16), pos.y + size.y * 0.5, pos.z - size.z * 0.5 - 0.11), Vector3(0.18, size.y, 0.18), color.darkened(0.18), false)
 	_box("BlockedServiceDoor", Vector3(pos.x - size.x * 0.22, pos.y + 0.95, pos.z - size.z * 0.5 - 0.07), Vector3(0.95, 1.9, 0.12), Color(0.11, 0.12, 0.11), false)
 
+	# Broken facade seams, exposed reinforcement, and collapsed concrete at the base.
+	for scar_index in range(2):
+		var scar_x := pos.x - size.x * 0.27 + float(scar_index) * size.x * 0.48
+		var scar_y := pos.y + 2.8 + float(scar_index) * 1.7
+		var scar := _box("ConcreteScar", Vector3(scar_x, scar_y, pos.z - size.z * 0.5 - 0.145), Vector3(0.11, 1.05, 0.055), color.darkened(0.24), false)
+		scar.rotation_degrees.z = -13.0 if scar_index == 0 else 17.0
+	for rebar_index in range(2):
+		var rebar := _box("ExposedRebar", Vector3(pos.x - 1.0 + float(rebar_index) * 2.0, pos.y + size.y + 0.38, pos.z - size.z * 0.25), Vector3(0.055, 0.9, 0.055), Color(0.23, 0.12, 0.075), false)
+		rebar.rotation_degrees.z = 24.0 if rebar_index == 0 else -19.0
+	for rubble_index in range(3):
+		var rubble_width := 0.55 + float(rubble_index % 2) * 0.3
+		var rubble_height := 0.22 + float(rubble_index % 3) * 0.12
+		var rubble_x := pos.x - size.x * 0.3 + float(rubble_index) * size.x * 0.3
+		var rubble := _box("FacadeCollapseRubble", Vector3(rubble_x, rubble_height * 0.5, pos.z - size.z * 0.5 - 0.48), Vector3(rubble_width, rubble_height, 0.42 + float(rubble_index % 2) * 0.22), color.darkened(0.16), false)
+		rubble.rotation_degrees.y = float((rubble_index * 31 + int(absf(pos.x))) % 90)
+
 func _build_service_alley() -> void:
 	# A narrow service lane and loading-yard clutter create alternate movement
 	# silhouettes at the edge of the existing central road.
@@ -82,6 +98,8 @@ func _box(label: String, pos: Vector3, size: Vector3, color: Color, collision: b
 		node.add_to_group("district_buildings")
 	elif label == "UtilityCrate":
 		node.add_to_group("service_alley_crates")
+	elif label == "FacadeCollapseRubble":
+		node.add_to_group("facade_collapse_rubble")
 	node.position = pos
 	var mesh_instance := MeshInstance3D.new()
 	var mesh := BoxMesh.new()
