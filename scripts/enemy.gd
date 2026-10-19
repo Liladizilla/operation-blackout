@@ -186,6 +186,18 @@ func _combat_can_engage(distance: float) -> bool:
     var engagement := _combat_engagement_ranges()
     return distance <= engagement.y + 2.5
 
+func _combat_miss_radius(distance: float, horizontal_speed: float) -> float:
+    # Moving fire is less stable; support troops are steadier while flankers accept more spread.
+    var role_scale := 1.0
+    match combat_role:
+        "SUPPORT":
+            role_scale = 0.82
+        "FLANKER":
+            role_scale = 1.18
+        "ASSAULT":
+            role_scale = 0.94
+    return (0.08 + maxf(distance, 0.0) * 0.018 + clampf(horizontal_speed, 0.0, 3.0) * 0.22) * role_scale
+
 func set_difficulty(value: String) -> void:
     difficulty = value.strip_edges().to_upper()
     match difficulty:
@@ -950,7 +962,14 @@ func _try_shoot_player() -> void:
         enemy_fire_audio.pitch_scale = randf_range(0.94, 1.06)
         enemy_fire_audio.play()
     var from := global_position + Vector3.UP*1.35
-    var to := player.global_position + Vector3.UP*1.2
+    var target_distance := global_position.distance_to(player.global_position)
+    var horizontal_speed := Vector2(velocity.x, velocity.z).length()
+    var miss_radius := _combat_miss_radius(target_distance, horizontal_speed)
+    var miss_angle := randf_range(0.0, TAU)
+    var miss_distance := randf_range(0.0, miss_radius)
+    var aim_offset := Vector3(cos(miss_angle) * miss_distance, 0.0, sin(miss_angle) * miss_distance)
+    # Shots converge near the target but spread more when the shooter is moving quickly.
+    var to := player.global_position + Vector3.UP*1.2 + aim_offset
     var query := PhysicsRayQueryParameters3D.create(from, to)
     query.exclude = [get_rid()]
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
