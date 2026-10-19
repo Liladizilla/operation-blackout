@@ -314,11 +314,11 @@ func _run_tests() -> void:
     _check(first_enemy.state == "REPOSITION" and first_enemy.suppression_timer > 0.0, "incoming fire triggers suppression reposition")
     survived = first_enemy.take_damage(100.0)
     _check(survived, "enemy death is reported")
-    await process_frame
-    _check(scene.get_remaining_enemies() == 4, "enemy death updates remaining-hostile count")
-    _check(scene.hostiles_eliminated == 1, "first hostile death increments the debrief kill counter once")
+    _check(scene.get_remaining_enemies() == 4 and scene.hostiles_eliminated == 1, "first hostile death updates objective and debrief counters immediately")
     scene.enemy_killed(first_enemy)
     _check(scene.hostiles_eliminated == 1 and scene.get_remaining_enemies() == 4, "duplicate hostile-death callback cannot inflate kill statistics")
+    await process_frame
+    _check(scene.get_remaining_enemies() == 4, "enemy death remains reflected in remaining-hostile count after cleanup")
 
     for enemy in scene.enemies.duplicate():
         enemy.take_damage(1000.0)
