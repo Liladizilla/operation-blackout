@@ -282,6 +282,7 @@ func show_hostile_fire(player_position: Vector3, player_basis: Basis, source_pos
 func show_damage_direction(player_position: Vector3, player_basis: Basis, source_position: Vector3) -> void:
     if not is_instance_valid(damage_direction_label):
         return
+    damage_direction_label.add_theme_color_override("font_color", Color(0.92, 0.24, 0.16))
     var local_source: Vector3 = player_basis.inverse() * (source_position - player_position)
     if absf(local_source.x) > absf(local_source.z):
         damage_direction_label.text = "<  INCOMING" if local_source.x < 0.0 else "INCOMING  >"
