@@ -111,6 +111,9 @@ func _run_tests() -> void:
     var first_balcony := scene.get_tree().get_nodes_in_group("facade_balconies")[0] as StaticBody3D
     _check(first_balcony != null and first_balcony.get_child_count() >= 2, "damaged balcony platforms have physical collision shapes")
     _check(scene.get_tree().get_nodes_in_group("facade_damage_details").size() >= 24, "main district facades include cracks, exposed rebar and battered service equipment")
+    _check(scene.get_tree().get_nodes_in_group("facade_weathering").size() >= 12, "building facades carry varied rain streaks beneath damaged window bays")
+    _check(scene.get_tree().get_nodes_in_group("facade_service_details").size() >= 18, "exterior electrical junctions and conduit runs dress the damaged facades")
+    _check(scene.get_tree().get_nodes_in_group("roof_water_tanks").size() >= 4, "rooftop water tanks add varied silhouettes to the ruined district")
     _check(scene.get_tree().get_nodes_in_group("ammo_caches").size() == 3, "three ammo resupply caches spawn around the district")
 
     var node_count := _count_nodes(scene)
