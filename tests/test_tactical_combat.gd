@@ -206,6 +206,10 @@ func _run_tests() -> void:
     var hud: Node = scene.hud
     hud.call("show_hostile_fire", player.global_position, player.global_transform.basis, player.global_position + Vector3(4.0, 0.0, 0.0))
     _check(hud.damage_direction_label.text.contains("HOSTILE FIRE"), "HUD identifies the direction of hostile fire before the player is hit")
+    hud.call("show_hostile_fire", player.global_position, player.global_transform.basis, player.global_position + Vector3(4.0, 0.0, 0.0))
+    _check(hud.damage_direction_label.text.contains("x2"), "repeated fire from the same direction is marked as sustained pressure")
+    hud.call("show_hostile_fire", player.global_position, player.global_transform.basis, player.global_position + Vector3(-4.0, 0.0, 0.0))
+    _check(not hud.damage_direction_label.text.contains("x3"), "a new firing direction resets the sustained-fire count")
     hud.call("show_damage_direction", player.global_position, player.global_transform.basis, player.global_position + Vector3(4.0, 0.0, 0.0))
     _check(not hud.damage_direction_label.text.contains("HOSTILE FIRE"), "damage indicator replaces the warning with an incoming-hit cue")
 
