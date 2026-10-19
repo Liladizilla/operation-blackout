@@ -60,6 +60,10 @@ func _run_tests() -> void:
     var search_direction: Vector3 = visual_test_enemy.player.global_position - visual_test_enemy.global_position
     search_direction.y = 0.0
     _check(search_direction.length() > 3.0, "distant search test starts outside close-search radius")
+    var cautious_search: Vector3 = visual_test_enemy._search_direction(scene.get_node("Player").global_position)
+    _check(cautious_search.length() > 0.45 and cautious_search.length() < 0.51, "distant hostiles advance cautiously instead of remaining idle")
+    var near_search: Vector3 = visual_test_enemy._search_direction(visual_test_enemy.global_position + Vector3(1.0, 0.0, 0.0))
+    _check(near_search.length() > 0.2 and near_search.length() < 0.24, "nearby search movement drifts laterally")
     _check(scene.get_node_or_null("IntelObjective") != null, "intel objective spawns")
     _check(scene.hud.navigation_label != null, "HUD includes the intel rangefinder")
     _check(scene.hud.health_label.anchor_bottom == 1.0 and scene.hud.ammo_label.anchor_bottom == 1.0, "health and ammo HUD stay anchored when the viewport resizes")
