@@ -831,6 +831,10 @@ func hear_noise(source_position: Vector3, noise_type: String) -> void:
     last_known_position = source_position
     alert_memory_timer = maxf(alert_memory_timer, memory_duration)
     if state != "COMBAT":
+        if noise_type in ["GUNSHOT", "IMPACT", "GRENADE"]:
+            var mission_scene := get_tree().current_scene
+            if mission_scene and mission_scene.has_method("report_hostile_investigation"):
+                mission_scene.report_hostile_investigation(self, noise_type)
         state = "INVESTIGATE"
         if cover_timer <= 0.0 or noise_type != "FOOTSTEP":
             cover_goal = _choose_cover(source_position)
