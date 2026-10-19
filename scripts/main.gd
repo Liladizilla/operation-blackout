@@ -23,6 +23,7 @@ func _ready() -> void:
     _setup_input()
     _build_environment()
     _build_arena()
+    _build_patrol_points()
     _spawn_atmosphere()
     _spawn_player()
     _spawn_ammo_caches()
@@ -135,6 +136,23 @@ func _setup_environment() -> void:
 func _build_environment() -> void:
     _setup_environment()
 
+
+func _build_patrol_points() -> void:
+    var route_root := Node3D.new()
+    route_root.name = "EnemyPatrolPoints"
+    add_child(route_root)
+    var positions := [
+        Vector3(0, 0, -42), Vector3(-8, 0, -26), Vector3(9, 0, -14),
+        Vector3(10, 0, 0), Vector3(10, 0, 22), Vector3(-5, 0, 22),
+        Vector3(-8, 0, 0), Vector3(-29, 0, -30), Vector3(-29, 0, -16),
+        Vector3(-29, 0, -1), Vector3(-29, 0, 20), Vector3(-29, 0, 34)
+    ]
+    for index in range(positions.size()):
+        var marker := Marker3D.new()
+        marker.name = "PatrolPoint_%02d" % (index + 1)
+        marker.position = positions[index]
+        marker.add_to_group("enemy_patrol_points")
+        route_root.add_child(marker)
 
 func _spawn_atmosphere() -> void:
     _smoke_plume(Vector3(-12.0, 1.0, -18.0), 12)
