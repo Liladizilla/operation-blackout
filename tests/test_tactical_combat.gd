@@ -84,5 +84,11 @@ func _run_tests() -> void:
     alert_receiver.global_position = saved_receiver_position
     alert_receiver.set_physics_process(true)
 
+    var hud: Node = scene.hud
+    hud.call("show_hostile_fire", player.global_position, player.global_transform.basis, player.global_position + Vector3(4.0, 0.0, 0.0))
+    _check(hud.damage_direction_label.text.contains("HOSTILE FIRE"), "HUD identifies the direction of hostile fire before the player is hit")
+    hud.call("show_damage_direction", player.global_position, player.global_transform.basis, player.global_position + Vector3(4.0, 0.0, 0.0))
+    _check(not hud.damage_direction_label.text.contains("HOSTILE FIRE"), "damage indicator replaces the warning with an incoming-hit cue")
+
     print("TACTICAL RESULT: ", passed, " checks passed; failed=", failed)
     quit(1 if failed else 0)
