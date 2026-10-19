@@ -26,6 +26,7 @@ var bob_time := 0.0
 var recoil := 0.0
 var ads := false
 var damage_flash := 0.0
+var recoil_recovery := 0.0
 
 func _ready() -> void:
     var capsule := CapsuleShape3D.new()
@@ -74,6 +75,35 @@ func _build_view_weapon() -> void:
     sight.position = Vector3(0,0.105,-0.1)
     sight.material_override = mat
     weapon_root.add_child(sight)
+    var stock := MeshInstance3D.new()
+    var stock_mesh := BoxMesh.new()
+    stock_mesh.size = Vector3(0.12, 0.14, 0.25)
+    stock.mesh = stock_mesh
+    stock.position = Vector3(0, -0.035, 0.34)
+    stock.material_override = mat
+    weapon_root.add_child(stock)
+    var handguard := MeshInstance3D.new()
+    var guard_mesh := BoxMesh.new()
+    guard_mesh.size = Vector3(0.115, 0.12, 0.28)
+    handguard.mesh = guard_mesh
+    handguard.position = Vector3(0, -0.005, -0.34)
+    handguard.material_override = mat
+    weapon_root.add_child(handguard)
+    var magazine := MeshInstance3D.new()
+    var mag_mesh := BoxMesh.new()
+    mag_mesh.size = Vector3(0.105, 0.24, 0.15)
+    magazine.mesh = mag_mesh
+    magazine.position = Vector3(0, -0.18, -0.02)
+    magazine.rotation.x = -0.12
+    magazine.material_override = mat
+    weapon_root.add_child(magazine)
+    var front_sight := MeshInstance3D.new()
+    var front_mesh := BoxMesh.new()
+    front_mesh.size = Vector3(0.025, 0.09, 0.025)
+    front_sight.mesh = front_mesh
+    front_sight.position = Vector3(0, 0.075, -0.52)
+    front_sight.material_override = mat
+    weapon_root.add_child(front_sight)
 
 func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -138,8 +168,9 @@ func _physics_process(delta: float) -> void:
     camera_pivot.position.y = lerpf(camera_pivot.position.y, (0.72 if is_prone else (1.12 if is_crouched else 1.58)) + sin(bob_time) * bob_scale, delta * 9.0)
     camera.fov = lerpf(camera.fov, 62.0 if ads else 78.0, delta * 10.0)
     recoil = lerpf(recoil, 0.0, delta * 7.0)
-    weapon_root.position = Vector3(0.28, -0.28 + sin(bob_time*0.5)*0.008, -0.55)
+    weapon_root.position = Vector3(0.28, -0.28 + sin(bob_time*0.5)*0.008 + recoil * 0.65, -0.55 + recoil * 1.8)
     weapon_root.rotation.x = recoil
+    weapon_root.rotation.y = lerpf(weapon_root.rotation.y, 0.0, delta * 8.0)
     if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and fire_cooldown <= 0 and not is_reloading:
         _fire()
 
@@ -166,7 +197,10 @@ func _fire() -> void:
         return
     ammo -= 1
     fire_cooldown = 0.095
-    recoil = 0.025 if ads else 0.045
+    recoil = 0.055 if ads else 0.09
+    weapon_root.rotation.y = randf_range(-0.018, 0.018)
+    camera_pivot.rotation.x = clampf(camera_pivot.rotation.x - recoil * (0.48 if ads else 0.7), deg_to_rad(-85), deg_to_rad(85))
+    pitch = camera_pivot.rotation.x
     var spread := 0.002 if ads else 0.009
     var dir := -camera.global_transform.basis.z
     dir += camera.global_transform.basis.x * randf_range(-spread, spread)
@@ -176,13 +210,19 @@ func _fire() -> void:
     var query := PhysicsRayQueryParameters3D.create(from, to)
     query.exclude = [get_rid()]
     query.collide_with_areas = true
+    query.collision_mask = 3
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
     if not hit.is_empty():
         var collider = hit.get("collider")
-        if collider and collider.has_method("take_damage"):
-            var killed: bool = collider.take_damage(34.0, hit.get("position", to))
+        var damage_target: Node = collider
+        var headshot := false
+        if collider is Area3D and collider.has_meta("headshot"):
+            damage_target = collider.get_parent()
+            headshot = true
+        if damage_target and damage_target.has_method("take_damage"):
+            var killed: bool = damage_target.take_damage(34.0, hit.get("position", to), headshot)
             if hud and hud.has_method("flash_hitmarker"):
-                hud.flash_hitmarker(killed)
+                hud.flash_hitmarker(killed, headshot)
         _impact_spark(hit.get("position", to), hit.get("normal", Vector3.UP))
     if hud and hud.has_method("set_ammo"):
         hud.set_ammo(ammo, reserve)
@@ -224,8 +264,10 @@ func _try_interact() -> void:
         if collider and collider.has_method("interact"):
             collider.interact(self)
 
-func apply_damage(amount: float) -> void:
+func apply_damage(amount: float, source_position: Vector3 = Vector3.ZERO) -> void:
     health = maxf(0.0, health - amount)
+    if hud and hud.has_method("show_damage_direction"):
+        hud.show_damage_direction(global_position, global_transform.basis, source_position)
     if hud and hud.has_method("set_health"):
         hud.set_health(health)
     if health <= 0:
@@ -236,6 +278,8 @@ func apply_damage(amount: float) -> void:
         reload_time = 0.0
         global_position = Vector3(0,1.2,25)
         velocity = Vector3.ZERO
+        camera_pivot.rotation = Vector3.ZERO
+        pitch = 0.0
         if hud and hud.has_method("set_status"):
             hud.set_status("WOUNDED. BACK IN THE FIGHT.")
         if hud and hud.has_method("set_health"):
