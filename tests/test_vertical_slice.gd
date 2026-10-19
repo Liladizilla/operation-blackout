@@ -80,6 +80,9 @@ func _run_tests() -> void:
     _check(scene.get_tree().get_nodes_in_group("utility_cables").size() == 12, "overhead utility cables span between lamp poles in sagging segments")
     var skyline_environment: WorldEnvironment = scene.world_environment as WorldEnvironment
     _check(skyline_environment != null and skyline_environment.environment.fog_enabled and skyline_environment.environment.fog_density >= 0.008, "depth fog softens the distant skyline")
+    _check(skyline_environment.environment.sky.sky_material is ShaderMaterial, "battlefield sky uses a dedicated procedural sky shader")
+    var sky_shader_material := skyline_environment.environment.sky.sky_material as ShaderMaterial
+    _check(sky_shader_material.shader != null and sky_shader_material.shader.resource_path == "res://shaders/battlefield_sky.gdshader", "procedural sky shader is loaded from the project assets")
     var sun_lights := scene.find_children("*", "DirectionalLight3D", true, false)
     _check(not sun_lights.is_empty() and (sun_lights[0] as DirectionalLight3D).shadow_enabled, "battlefield uses directional sunlight with shadows")
     var ground_node := scene.find_child("Ground", true, false)
