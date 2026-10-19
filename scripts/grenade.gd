@@ -8,6 +8,7 @@ var fuse_timer := FUSE_SECONDS
 var exploded := false
 
 func _ready() -> void:
+    add_to_group("active_grenades")
     collision_layer = 1
     collision_mask = 1
     mass = 0.35
