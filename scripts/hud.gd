@@ -275,6 +275,10 @@ func notify_hostile_investigation(noise_type: String) -> void:
     status_label.text = "NOISE DETECTED  //  HOSTILES INVESTIGATING %s" % source_label
     status_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.32))
 
+func notify_hostile_search() -> void:
+    status_label.text = "HOSTILES SEARCHING  //  LAST KNOWN POSITION"
+    status_label.add_theme_color_override("font_color", Color(0.92, 0.78, 0.48))
+
 func set_status(message: String) -> void:
     status_label.text = message
 
