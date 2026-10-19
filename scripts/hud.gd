@@ -17,6 +17,8 @@ var sensitivity_slider: HSlider
 var sensitivity_value_label: Label
 var briefing_panel: PanelContainer
 var briefing_backdrop: ColorRect
+var difficulty_selector: OptionButton
+var difficulty_description: Label
 var hitmarker_timer := 0.0
 var damage_direction_label: Label
 var damage_direction_timer := 0.0
@@ -352,8 +354,8 @@ func show_briefing() -> void:
     briefing_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
     briefing_panel.offset_left = -310
     briefing_panel.offset_right = 310
-    briefing_panel.offset_top = -220
-    briefing_panel.offset_bottom = 220
+    briefing_panel.offset_top = -260
+    briefing_panel.offset_bottom = 260
     var panel_style := StyleBoxFlat.new()
     panel_style.bg_color = Color(0.035, 0.045, 0.04, 0.98)
     panel_style.border_color = Color(0.62, 0.37, 0.14, 1.0)
@@ -388,6 +390,29 @@ func show_briefing() -> void:
     var controls := _label("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE\nLMB FIRE   RMB AIM   R RELOAD   G GRENADE", 12, Color(0.65, 0.70, 0.65))
     controls.custom_minimum_size = Vector2(520, 40)
     box.add_child(controls)
+
+    var difficulty_row := HBoxContainer.new()
+    difficulty_row.add_theme_constant_override("separation", 14)
+    var difficulty_label := _label("THREAT PROFILE", 13, Color(0.82, 0.48, 0.20))
+    difficulty_label.custom_minimum_size = Vector2(170, 34)
+    difficulty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+    difficulty_row.add_child(difficulty_label)
+    difficulty_selector = OptionButton.new()
+    difficulty_selector.name = "DifficultySelector"
+    difficulty_selector.custom_minimum_size = Vector2(190, 34)
+    difficulty_selector.add_item("RECRUIT")
+    difficulty_selector.add_item("STANDARD")
+    difficulty_selector.add_item("VETERAN")
+    difficulty_selector.select(1)
+    difficulty_selector.item_selected.connect(_on_difficulty_selected)
+    difficulty_row.add_child(difficulty_selector)
+    box.add_child(difficulty_row)
+    difficulty_description = _label("STANDARD  /  Balanced enemy awareness, damage, and firing cadence.", 12, Color(0.65, 0.70, 0.65))
+    difficulty_description.custom_minimum_size = Vector2(520, 24)
+    difficulty_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    box.add_child(difficulty_description)
+    _on_difficulty_selected(1)
+
     var deploy := Button.new()
     deploy.name = "DeployButton"
     deploy.text = "DEPLOY  /  BEGIN OPERATION"
@@ -395,6 +420,19 @@ func show_briefing() -> void:
     deploy.pressed.connect(dismiss_briefing)
     box.add_child(deploy)
     root.add_child(briefing_panel)
+
+func _on_difficulty_selected(index: int) -> void:
+    var profiles := ["RECRUIT", "STANDARD", "VETERAN"]
+    var descriptions := [
+        "RECRUIT  /  Reduced damage, shorter detection range, and slower hostile fire.",
+        "STANDARD  /  Balanced enemy awareness, damage, and firing cadence.",
+        "VETERAN  /  Longer detection range, harder hits, and faster hostile fire."
+    ]
+    if index < 0 or index >= profiles.size():
+        return
+    difficulty_description.text = descriptions[index]
+    if is_instance_valid(owner_scene) and owner_scene.has_method("set_difficulty"):
+        owner_scene.call("set_difficulty", profiles[index])
 
 func dismiss_briefing() -> void:
     if is_instance_valid(briefing_panel):
