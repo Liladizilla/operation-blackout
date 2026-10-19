@@ -72,6 +72,11 @@ func _run_tests() -> void:
     var skyline_nodes := scene.get_tree().get_nodes_in_group("distant_skyline")
     _check(skyline_nodes.size() == 18, "distant skyline uses layered buildings beyond the playable arena")
     _check(scene.get_node_or_null("DistantCityHorizon") != null, "battlefield has a separate distant city horizon")
+    var lamp_bodies := scene.get_tree().get_nodes_in_group("street_lamp_collisions")
+    _check(lamp_bodies.size() == 8, "street lamps populate both sides of the road")
+    var first_lamp := lamp_bodies[0] as StaticBody3D if not lamp_bodies.is_empty() else null
+    _check(first_lamp != null and first_lamp.get_node_or_null("CollisionShape3D") != null, "street lamp shafts have physical collision")
+    _check(scene.get_tree().get_nodes_in_group("utility_cables").size() == 12, "overhead utility cables span between lamp poles in sagging segments")
     var environment_node: WorldEnvironment = scene.world_environment as WorldEnvironment
     _check(environment_node != null and environment_node.environment.fog_enabled and environment_node.environment.fog_density >= 0.008, "depth fog softens the distant skyline")
     var sun_lights := scene.find_children("*", "DirectionalLight3D", true, false)
