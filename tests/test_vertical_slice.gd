@@ -57,6 +57,8 @@ func _run_tests() -> void:
     _check(visual_test_enemy.get_node_or_null("VisualRoot/EnemyMuzzleFlash") != null, "hostiles have muzzle flash geometry")
     _check(visual_test_enemy.get_node_or_null("VisualRoot/RadioPack") != null and visual_test_enemy.get_node_or_null("VisualRoot/RadioAntenna") != null, "hostiles carry a radio pack with a raised antenna")
     _check(visual_test_enemy.get_node_or_null("VisualRoot/SidearmHolster") != null, "hostiles carry a distinct sidearm holster")
+    _check(visual_test_enemy.get_node_or_null("VisualRoot/LeftArmPivot/LeftElbowPad") != null and visual_test_enemy.get_node_or_null("VisualRoot/RightArmPivot/RightElbowPad") != null, "hostile elbow pads are attached to the animated arm pivots")
+    _check(visual_test_enemy.get_node_or_null("VisualRoot/LeftLegPivot/LeftThighUtilityStrap") != null and visual_test_enemy.get_node_or_null("VisualRoot/RightLegPivot/RightThighUtilityStrap") != null, "thigh utility straps follow the animated leg pivots")
     visual_test_enemy._show_muzzle_flash()
     _check(visual_test_enemy.enemy_muzzle_flash.visible and visual_test_enemy.enemy_muzzle_light.light_energy > 0.0, "hostile muzzle flash activates")
     _check(scene.get_node_or_null("IntelObjective") != null, "intel objective spawns")
