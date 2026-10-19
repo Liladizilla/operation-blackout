@@ -13,6 +13,16 @@ var state := "SEARCH"
 var think_timer := 0.0
 var fire_timer := 0.7
 var strafe_sign := 1.0
+var visual_root: Node3D
+var left_arm_pivot: Node3D
+var right_arm_pivot: Node3D
+var left_leg_pivot: Node3D
+var right_leg_pivot: Node3D
+var gait_time := 0.0
+var is_dead := false
+var death_timer := 0.0
+var death_roll_direction := 1.0
+const DEATH_ANIMATION_SECONDS := 0.62
 var body_mesh: MeshInstance3D
 var body_material: StandardMaterial3D
 var enemy_muzzle_flash: MeshInstance3D
@@ -39,6 +49,9 @@ func _ready() -> void:
     col.shape = capsule
     col.position.y = 0.8
     add_child(col)
+    visual_root = Node3D.new()
+    visual_root.name = "VisualRoot"
+    add_child(visual_root)
     body_mesh = MeshInstance3D.new()
     var body := CapsuleMesh.new()
     body.radius = 0.36
@@ -49,7 +62,7 @@ func _ready() -> void:
     body_material.roughness = 0.9
     body_mesh.material_override = body_material
     body_mesh.position.y = 0.92
-    add_child(body_mesh)
+    visual_root.add_child(body_mesh)
     var head_mesh := MeshInstance3D.new()
     var head := SphereMesh.new()
     head.radius = 0.19
@@ -59,7 +72,7 @@ func _ready() -> void:
     var hm := StandardMaterial3D.new()
     hm.albedo_color = Color(0.35,0.29,0.23)
     head_mesh.material_override = hm
-    add_child(head_mesh)
+    visual_root.add_child(head_mesh)
     var head_area := Area3D.new()
     head_area.name = "HeadHitZone"
     head_area.collision_layer = 2
@@ -81,7 +94,7 @@ func _ready() -> void:
     vest_mat.albedo_color = Color(0.12, 0.14, 0.12)
     vest_mat.roughness = 1.0
     vest.material_override = vest_mat
-    add_child(vest)
+    visual_root.add_child(vest)
     var rifle := MeshInstance3D.new()
     var rifle_mesh := BoxMesh.new()
     rifle_mesh.size = Vector3(0.08,0.08,0.75)
@@ -93,7 +106,7 @@ func _ready() -> void:
     rifle_material.metallic = 0.28
     rifle_material.roughness = 0.72
     rifle.material_override = rifle_material
-    add_child(rifle)
+    visual_root.add_child(rifle)
 
     enemy_muzzle_flash = MeshInstance3D.new()
     enemy_muzzle_flash.name = "EnemyMuzzleFlash"
@@ -109,7 +122,7 @@ func _ready() -> void:
     flash_material.emission = Color(1.0, 0.34, 0.08)
     enemy_muzzle_flash.material_override = flash_material
     enemy_muzzle_flash.visible = false
-    add_child(enemy_muzzle_flash)
+    visual_root.add_child(enemy_muzzle_flash)
 
     enemy_muzzle_light = OmniLight3D.new()
     enemy_muzzle_light.name = "EnemyMuzzleFlashLight"
@@ -118,7 +131,8 @@ func _ready() -> void:
     enemy_muzzle_light.light_energy = 0.0
     enemy_muzzle_light.omni_range = 3.2
     enemy_muzzle_light.shadow_enabled = false
-    add_child(enemy_muzzle_light)
+    visual_root.add_child(enemy_muzzle_light)
+    _build_limb_meshes()
 
     player = get_tree().get_first_node_in_group("player")
     if not player:
@@ -155,6 +169,92 @@ func set_difficulty(value: String) -> void:
             fire_interval_min = 0.65
             fire_interval_max = 1.25
     fire_timer = fire_interval_max
+
+func _build_limb_meshes() -> void:
+    var arm_material := StandardMaterial3D.new()
+    arm_material.albedo_color = Color(0.17, 0.19, 0.16)
+    arm_material.roughness = 0.96
+    var trouser_material := StandardMaterial3D.new()
+    trouser_material.albedo_color = Color(0.20, 0.21, 0.18)
+    trouser_material.roughness = 0.98
+    var glove_material := StandardMaterial3D.new()
+    glove_material.albedo_color = Color(0.055, 0.06, 0.055)
+    glove_material.roughness = 1.0
+    var boot_material := StandardMaterial3D.new()
+    boot_material.albedo_color = Color(0.07, 0.075, 0.07)
+    boot_material.roughness = 1.0
+
+    left_arm_pivot = _make_limb_pivot("LeftArmPivot", Vector3(-0.34, 1.38, -0.04), 0.62, 0.105, arm_material)
+    right_arm_pivot = _make_limb_pivot("RightArmPivot", Vector3(0.34, 1.38, -0.04), 0.62, 0.105, arm_material)
+    left_arm_pivot.rotation.z = -0.26
+    right_arm_pivot.rotation.z = 0.24
+    _add_limb_end(left_arm_pivot, "LeftGlove", Vector3(0.0, -0.54, -0.04), Vector3(0.14, 0.10, 0.13), glove_material)
+    _add_limb_end(right_arm_pivot, "RightGlove", Vector3(0.0, -0.54, -0.04), Vector3(0.14, 0.10, 0.13), glove_material)
+
+    left_leg_pivot = _make_limb_pivot("LeftLegPivot", Vector3(-0.18, 0.66, 0.015), 0.76, 0.135, trouser_material)
+    right_leg_pivot = _make_limb_pivot("RightLegPivot", Vector3(0.18, 0.66, 0.015), 0.76, 0.135, trouser_material)
+    _add_limb_end(left_leg_pivot, "LeftBoot", Vector3(0.0, -0.69, -0.075), Vector3(0.24, 0.13, 0.34), boot_material)
+    _add_limb_end(right_leg_pivot, "RightBoot", Vector3(0.0, -0.69, -0.075), Vector3(0.24, 0.13, 0.34), boot_material)
+
+func _make_limb_pivot(label: String, pivot_position: Vector3, length: float, radius: float, material: StandardMaterial3D) -> Node3D:
+    var pivot := Node3D.new()
+    pivot.name = label
+    pivot.position = pivot_position
+    var limb := MeshInstance3D.new()
+    limb.name = label.replace("Pivot", "Mesh")
+    var capsule := CapsuleMesh.new()
+    capsule.radius = radius
+    capsule.height = length
+    limb.mesh = capsule
+    limb.position.y = -length * 0.42
+    limb.material_override = material
+    pivot.add_child(limb)
+    visual_root.add_child(pivot)
+    return pivot
+
+func _add_limb_end(parent: Node3D, label: String, local_position: Vector3, size: Vector3, material: StandardMaterial3D) -> void:
+    var end_piece := MeshInstance3D.new()
+    end_piece.name = label
+    var box := BoxMesh.new()
+    box.size = size
+    end_piece.mesh = box
+    end_piece.position = local_position
+    end_piece.material_override = material
+    parent.add_child(end_piece)
+
+func _process(delta: float) -> void:
+    if not is_dead:
+        return
+    death_timer += delta
+    var progress := clampf(death_timer / DEATH_ANIMATION_SECONDS, 0.0, 1.0)
+    var eased := progress * progress * (3.0 - 2.0 * progress)
+    visual_root.rotation.z = death_roll_direction * 1.22 * eased
+    visual_root.rotation.x = -0.22 * eased
+    visual_root.position.y = -0.46 * eased
+    if progress >= 1.0:
+        queue_free()
+
+func _animate_visuals(delta: float) -> void:
+    if is_dead or not is_instance_valid(visual_root):
+        return
+    var horizontal_speed := Vector2(velocity.x, velocity.z).length()
+    if horizontal_speed > 0.22:
+        gait_time += delta * lerpf(5.0, 10.0, clampf(horizontal_speed / 3.5, 0.0, 1.0))
+        var swing := sin(gait_time) * 0.48
+        left_leg_pivot.rotation.x = swing
+        right_leg_pivot.rotation.x = -swing
+        left_arm_pivot.rotation.x = -swing * 0.42
+        right_arm_pivot.rotation.x = swing * 0.42
+        visual_root.position.y = absf(sin(gait_time * 2.0)) * 0.035
+        visual_root.rotation.z = clampf(-velocity.x * 0.018, -0.055, 0.055)
+    else:
+        gait_time += delta * 1.2
+        left_leg_pivot.rotation.x = lerpf(left_leg_pivot.rotation.x, 0.0, delta * 7.0)
+        right_leg_pivot.rotation.x = lerpf(right_leg_pivot.rotation.x, 0.0, delta * 7.0)
+        left_arm_pivot.rotation.x = lerpf(left_arm_pivot.rotation.x, 0.0, delta * 7.0)
+        right_arm_pivot.rotation.x = lerpf(right_arm_pivot.rotation.x, 0.0, delta * 7.0)
+        visual_root.position.y = lerpf(visual_root.position.y, sin(gait_time) * 0.006, delta * 4.0)
+        visual_root.rotation.z = lerpf(visual_root.rotation.z, 0.0, delta * 4.0)
 
 func _physics_process(delta: float) -> void:
     if get_tree().paused:
@@ -269,6 +369,7 @@ func _physics_process(delta: float) -> void:
     velocity.x = move_toward(velocity.x, target_dir.x * 2.1, delta * 4.0)
     velocity.z = move_toward(velocity.z, target_dir.z * 2.1, delta * 4.0)
     move_and_slide()
+    _animate_visuals(delta)
 
 func _avoid_obstacles(direction: Vector3) -> Vector3:
     var forward := direction
@@ -509,7 +610,13 @@ func _show_muzzle_flash() -> void:
     muzzle_flash_timer = 0.055
 
 func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot: bool = false) -> bool:
+    if is_dead:
+        return true
     health -= amount * (3.0 if headshot else 1.0)
+    if health <= 0.0:
+        _begin_death()
+        return true
+
     # Incoming fire alerts the unit and forces a short break from its current firing lane.
     if is_instance_valid(player):
         last_known_position = player.global_position
@@ -522,16 +629,36 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot:
         think_timer = 0.0
         alert_memory_timer = 5.0
         _broadcast_alert(player.global_position)
-    if health > 0.0:
-        body_material.albedo_color = Color(0.55,0.12,0.08)
-        hit_flash_timer = 0.14
-    else:
-        body_material.albedo_color = Color(0.08,0.09,0.08)
-        hit_flash_timer = 0.0
-    if health <= 0:
-        var scene := get_tree().current_scene
-        if scene and scene.has_method("enemy_killed"):
-            scene.enemy_killed(self)
-        queue_free()
-        return true
+    body_material.albedo_color = Color(0.55,0.12,0.08)
+    hit_flash_timer = 0.14
     return false
+
+func _begin_death() -> void:
+    is_dead = true
+    state = "DEAD"
+    death_timer = 0.0
+    death_roll_direction = -1.0 if randf() < 0.5 else 1.0
+    velocity = Vector3.ZERO
+    set_physics_process(false)
+    collision_layer = 0
+    collision_mask = 0
+    var body_collision := get_node_or_null("CollisionShape3D") as CollisionShape3D
+    if is_instance_valid(body_collision):
+        body_collision.set_deferred("disabled", true)
+    var head_area := get_node_or_null("HeadHitZone") as Area3D
+    if is_instance_valid(head_area):
+        head_area.monitoring = false
+        head_area.monitorable = false
+        for child in head_area.get_children():
+            if child is CollisionShape3D:
+                child.set_deferred("disabled", true)
+    remove_from_group("enemies")
+    body_material.albedo_color = Color(0.08,0.09,0.08)
+    hit_flash_timer = 0.0
+    enemy_muzzle_flash.visible = false
+    enemy_muzzle_light.light_energy = 0.0
+    if is_instance_valid(enemy_fire_audio):
+        enemy_fire_audio.stop()
+    var scene := get_tree().current_scene
+    if is_instance_valid(scene) and scene.has_method("enemy_killed"):
+        scene.enemy_killed(self)
