@@ -15,6 +15,7 @@ var shots_hit := 0
 var grenades_used := 0
 var ammo_caches_used := 0
 var hostiles_eliminated := 0
+var difficulty := "STANDARD"
 var world_environment: WorldEnvironment
 var material_cache: Dictionary = {}
 
@@ -39,6 +40,13 @@ func _process(delta: float) -> void:
 func begin_mission() -> void:
     mission_started = true
     mission_elapsed = 0.0
+
+func set_difficulty(value: String) -> void:
+    var normalized := value.strip_edges().to_upper()
+    difficulty = normalized if normalized in ["RECRUIT", "STANDARD", "VETERAN"] else "STANDARD"
+    for enemy in enemies:
+        if is_instance_valid(enemy) and enemy.has_method("set_difficulty"):
+            enemy.set_difficulty(difficulty)
 
 func register_shot(confirmed_hit: bool) -> void:
     shots_fired += 1
@@ -384,6 +392,7 @@ func _spawn_enemies() -> void:
         enemy.position = positions[i] + Vector3(0,0.95,0)
         enemy.set_meta("arena", self)
         add_child(enemy)
+        enemy.set_difficulty(difficulty)
         enemies.append(enemy)
 
 func _spawn_objective() -> void:
