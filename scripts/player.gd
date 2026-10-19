@@ -558,7 +558,9 @@ func _play_impact_audio(pos: Vector3) -> void:
     while existing.size() >= MAX_IMPACT_AUDIO:
         var oldest := existing.pop_front() as Node
         if is_instance_valid(oldest):
-            oldest.queue_free()
+            # Remove the oldest emitter immediately so rapid-fire impacts cannot
+            # temporarily exceed the cap before deferred frees are processed.
+            oldest.free()
     var audio_fx = load("res://scripts/audio_fx.gd")
     var emitter := AudioStreamPlayer3D.new()
     emitter.name = "BulletImpactAudio"
