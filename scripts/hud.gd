@@ -13,6 +13,8 @@ var muzzle_flash: ColorRect
 var owner_scene: Node
 var player_ref: Node
 var pause_panel: PanelContainer
+var sensitivity_slider: HSlider
+var sensitivity_value_label: Label
 var hitmarker_timer := 0.0
 var damage_direction_label: Label
 var damage_direction_timer := 0.0
@@ -306,16 +308,38 @@ func show_pause() -> void:
     hide_pause()
     pause_panel = PanelContainer.new()
     pause_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-    pause_panel.offset_left = -180
-    pause_panel.offset_right = 180
-    pause_panel.offset_top = -100
-    pause_panel.offset_bottom = 100
+    pause_panel.offset_left = -210
+    pause_panel.offset_right = 210
+    pause_panel.offset_top = -180
+    pause_panel.offset_bottom = 180
     var box := VBoxContainer.new()
+    box.add_theme_constant_override("separation", 8)
     pause_panel.add_child(box)
     var title := _label("PAUSED", 28, Color(0.9,0.82,0.65))
+    title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     box.add_child(title)
+    var controls := _label("WASD MOVE  /  SHIFT SPRINT  /  CTRL CROUCH  /  Z PRONE\nLMB FIRE  /  RMB AIM  /  R RELOAD  /  F INTERACT  /  G GRENADE", 12, Color(0.70,0.73,0.68))
+    controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    box.add_child(controls)
+    sensitivity_value_label = _label("MOUSE SENSITIVITY", 14, Color(0.82,0.84,0.78))
+    box.add_child(sensitivity_value_label)
+    sensitivity_slider = HSlider.new()
+    sensitivity_slider.min_value = 0.0006
+    sensitivity_slider.max_value = 0.004
+    sensitivity_slider.step = 0.0002
+    sensitivity_slider.custom_minimum_size = Vector2(300, 24)
+    var current_sensitivity := float(player_ref.get("mouse_sensitivity")) if is_instance_valid(player_ref) else 0.0018
+    sensitivity_slider.value = clampf(current_sensitivity, sensitivity_slider.min_value, sensitivity_slider.max_value)
+    sensitivity_value_label.text = "MOUSE SENSITIVITY  %.1fx" % (sensitivity_slider.value / 0.0018)
+    sensitivity_slider.value_changed.connect(func(value: float):
+        if is_instance_valid(player_ref):
+            player_ref.set("mouse_sensitivity", value)
+        sensitivity_value_label.text = "MOUSE SENSITIVITY  %.1fx" % (value / 0.0018)
+    )
+    box.add_child(sensitivity_slider)
     var resume := Button.new()
     resume.text = "RESUME"
+    resume.custom_minimum_size = Vector2(300, 36)
     resume.pressed.connect(func():
         get_tree().paused = false
         Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -324,6 +348,7 @@ func show_pause() -> void:
     box.add_child(resume)
     var quit := Button.new()
     quit.text = "QUIT TO DESKTOP"
+    quit.custom_minimum_size = Vector2(300, 36)
     quit.pressed.connect(func(): get_tree().quit())
     box.add_child(quit)
     root.add_child(pause_panel)
