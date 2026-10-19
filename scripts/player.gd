@@ -80,8 +80,6 @@ func _unhandled_input(event: InputEvent) -> void:
         rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
         pitch = clamp(pitch - event.relative.y * MOUSE_SENSITIVITY, deg_to_rad(-85), deg_to_rad(85))
         camera_pivot.rotation.x = pitch
-    if event is InputEventKey and event.pressed and event.keycode == KEY_F:
-        _try_interact()
 
 func _physics_process(delta: float) -> void:
     if get_tree().paused:
@@ -96,6 +94,10 @@ func _physics_process(delta: float) -> void:
             ammo += loaded
             reserve -= loaded
             is_reloading = false
+            if hud and hud.has_method("set_ammo"):
+                hud.set_ammo(ammo, reserve)
+            if hud and hud.has_method("set_status"):
+                hud.set_status("READY")
     if Input.is_action_just_pressed("reload"):
         _start_reload()
     ads = Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
@@ -178,7 +180,9 @@ func _fire() -> void:
     if not hit.is_empty():
         var collider = hit.get("collider")
         if collider and collider.has_method("take_damage"):
-            collider.take_damage(34.0, hit.get("position", to))
+            var killed: bool = collider.take_damage(34.0, hit.get("position", to))
+            if hud and hud.has_method("flash_hitmarker"):
+                hud.flash_hitmarker(killed)
         _impact_spark(hit.get("position", to), hit.get("normal", Vector3.UP))
     if hud and hud.has_method("set_ammo"):
         hud.set_ammo(ammo, reserve)
@@ -228,9 +232,13 @@ func apply_damage(amount: float) -> void:
         health = 100.0
         ammo = MAG_SIZE
         reserve = 120
+        is_reloading = false
+        reload_time = 0.0
         global_position = Vector3(0,1.2,25)
         velocity = Vector3.ZERO
         if hud and hud.has_method("set_status"):
             hud.set_status("WOUNDED. BACK IN THE FIGHT.")
         if hud and hud.has_method("set_health"):
             hud.set_health(health)
+        if hud and hud.has_method("set_ammo"):
+            hud.set_ammo(ammo, reserve)

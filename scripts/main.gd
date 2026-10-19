@@ -50,6 +50,8 @@ func _input(event: InputEvent) -> void:
             _show_pause()
         else:
             get_tree().paused = false
+            if is_instance_valid(hud):
+                hud.call("hide_pause")
             Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
     elif event is InputEventMouseButton and event.pressed:
         if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE and not get_tree().paused:
@@ -232,6 +234,9 @@ func enemy_killed(enemy: Node) -> void:
         mission_complete = true
         if is_instance_valid(hud):
             hud.call("set_mission_state", "AREA SECURE. RECOVER THE INTEL.")
+
+func get_remaining_enemies() -> int:
+    return enemies.size()
 
 func objective_complete() -> void:
     mission_complete = true

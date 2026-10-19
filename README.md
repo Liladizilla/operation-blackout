@@ -9,7 +9,7 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 - Aim-down-sights field-of-view change and weapon sway/recoil
 - Assault rifle firing, raycast hit detection, ammunition and reloads
 - Basic hostile AI: line-of-sight detection, pursuit/strafe, hitscan return fire
-- Health feedback, HUD, objective interaction, pause menu
+- Health feedback, HUD, hit confirmation, hold-to-recover objective gated behind enemy clearance, pause menu
 - Godot Compatibility renderer for integrated graphics
 
 ## Requirements
