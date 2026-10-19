@@ -94,9 +94,12 @@ func _run_tests() -> void:
     var start_press := InputEventJoypadButton.new()
     start_press.button_index = JOY_BUTTON_START
     start_press.pressed = true
-    Input.parse_input_event(start_press)
+    scene._input(start_press)
     _check(paused, "controller Start opens the pause menu")
-    Input.parse_input_event(start_press)
+    var second_start_press := InputEventJoypadButton.new()
+    second_start_press.button_index = JOY_BUTTON_START
+    second_start_press.pressed = true
+    scene._input(second_start_press)
     _check(not paused, "controller Start resumes gameplay")
 
     print("GAMEPAD RESULT: ", passed, " checks passed; failed=", failed)
