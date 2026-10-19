@@ -234,7 +234,19 @@ func _steering_ray(space: PhysicsDirectSpaceState3D, origin: Vector3, direction:
 
 func _choose_cover(threat_position: Vector3) -> Vector3:
     # Candidate positions sit near concrete barriers and wreckage in the arena.
-    var candidates := [Vector3(-7, 0, -10), Vector3(7, 0, -18), Vector3(-5, 0, 7), Vector3(6, 0, 19), Vector3(-12, 0, 25), Vector3(13, 0, -1), Vector3(-2, 0, -29)]
+    # Stand beside cover rather than targeting the solid center of each obstacle.
+    var candidates := [
+        Vector3(-9.1, 0, -10), Vector3(-7, 0, -11.5),
+        Vector3(9.0, 0, -18), Vector3(7, 0, -19.4),
+        Vector3(-7.0, 0, 7), Vector3(-5, 0, 5.5),
+        Vector3(8.0, 0, 19), Vector3(6, 0, 17.5),
+        Vector3(-14.0, 0, 25), Vector3(-12, 0, 23.5),
+        Vector3(15.0, 0, -1), Vector3(13, 0, -2.4),
+        Vector3(-2, 0, -30.2),
+        Vector3(-28.5, 0, -24), Vector3(-28.5, 0, -12),
+        Vector3(-28.5, 0, 0), Vector3(-28.5, 0, 12),
+        Vector3(-28.5, 0, 24)
+    ]
     var best := global_position
     var best_score := -INF
     for candidate in candidates:
