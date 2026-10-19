@@ -268,6 +268,17 @@ func set_mission_state(message: String) -> void:
     if message.contains("EXFILTRATION COMPLETE"):
         _show_mission_complete()
 
+func show_hostile_fire(player_position: Vector3, player_basis: Basis, source_position: Vector3) -> void:
+    if not is_instance_valid(damage_direction_label):
+        return
+    var local_source: Vector3 = player_basis.inverse() * (source_position - player_position)
+    if absf(local_source.x) > absf(local_source.z):
+        damage_direction_label.text = "HOSTILE FIRE  <" if local_source.x < 0.0 else "HOSTILE FIRE  >"
+    else:
+        damage_direction_label.text = "HOSTILE FIRE  v" if local_source.z > 0.0 else "HOSTILE FIRE  ^"
+    damage_direction_label.add_theme_color_override("font_color", Color(1.0, 0.55, 0.22))
+    damage_direction_timer = 0.7
+
 func show_damage_direction(player_position: Vector3, player_basis: Basis, source_position: Vector3) -> void:
     if not is_instance_valid(damage_direction_label):
         return
