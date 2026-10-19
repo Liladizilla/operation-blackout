@@ -540,7 +540,7 @@ func _physics_process(delta: float) -> void:
         if is_instance_valid(grenade_threat):
             if state != "REPOSITION" or cover_timer <= 0.0:
                 cover_goal = _choose_cover(grenade_threat.global_position)
-                cover_timer = 1.0
+                cover_timer = _cover_commitment_duration()
             state = "REPOSITION"
             suppression_timer = maxf(suppression_timer, 0.35)
         elif _should_hold_committed_cover():
@@ -553,7 +553,7 @@ func _physics_process(delta: float) -> void:
             var suppression_source := last_known_position if last_known_position != Vector3.ZERO else player.global_position
             if cover_timer <= 0.0:
                 cover_goal = _choose_cover(suppression_source)
-                cover_timer = 1.6
+                cover_timer = _cover_commitment_duration()
         elif sees_player:
             if state != "COMBAT":
                 _broadcast_alert(player.global_position)
@@ -997,6 +997,20 @@ func _cover_ally_spacing_penalty(candidate: Vector3) -> float:
 
 func _cover_threat_distance_weight() -> float:
     return 1.05 if health <= 35.0 else 0.65
+
+func _cover_commitment_duration() -> float:
+    # Wounded soldiers stay down longer; support holds a position while flankers keep moving.
+    if health <= 35.0:
+        return 2.4
+    match combat_role:
+        "SUPPORT":
+            return 2.0
+        "FLANKER":
+            return 1.15
+        "ASSAULT":
+            return 1.35
+        _:
+            return 1.65
 
 func _should_hold_committed_cover() -> bool:
     return state == "REPOSITION" and cover_timer > 0.0
