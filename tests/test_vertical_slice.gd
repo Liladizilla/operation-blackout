@@ -47,9 +47,21 @@ func _run_tests() -> void:
     player._physics_process(0.02)
     _check(not player.is_reloading and player.ammo == 30 and player.reserve == 5, "reload transfers ammunition and exits state")
 
+    # Place a target in the camera's forward line and exercise the actual hitscan path.
+    var firing_target: Node = scene.enemies[1]
+    firing_target.global_position = Vector3(0.0, 0.95, 19.0)
+    player.camera_pivot.rotation = Vector3.ZERO
+    player.pitch = 0.0
+    player.ammo = 30
+    player.fire_cooldown = 0.0
+    player._fire()
+    _check(player.ammo == 29, "firing consumes one round")
+    _check(firing_target.health < 100.0 or not scene.enemies.has(firing_target), "hitscan shot damages target")
+
     var first_enemy: Node = scene.enemies[0]
     var survived: bool = first_enemy.take_damage(10.0)
     _check(not survived and is_equal_approx(first_enemy.health, 90.0), "enemy survives nonlethal damage")
+    _check(first_enemy.state == "REPOSITION" and first_enemy.suppression_timer > 0.0, "incoming fire triggers suppression reposition")
     survived = first_enemy.take_damage(100.0)
     _check(survived, "enemy death is reported")
     await process_frame
