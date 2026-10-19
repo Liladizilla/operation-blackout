@@ -60,7 +60,7 @@ func _run_tests() -> void:
     debug_query.exclude = [player.get_rid()]
     debug_query.collide_with_areas = true
     debug_query.collision_mask = 3
-    var debug_hit := player.get_world_3d().direct_space_state.intersect_ray(debug_query)
+    var debug_hit: Dictionary = player.get_world_3d().direct_space_state.intersect_ray(debug_query)
     print("DEBUG: camera=", debug_from, " forward=", -player.camera.global_transform.basis.z, " target=", firing_target.global_position, " hit=", debug_hit.get("collider").name if not debug_hit.is_empty() else "none")
     player._fire()
     _check(player.ammo == 29, "firing consumes one round")
