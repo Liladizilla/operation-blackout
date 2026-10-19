@@ -199,14 +199,15 @@ func _physics_process(delta: float) -> void:
 func _avoid_obstacles(direction: Vector3) -> Vector3:
     var forward := direction
     forward.y = 0.0
-    if forward.length_squared() < 0.01:
+    var speed_scale := minf(forward.length(), 1.0)
+    if speed_scale < 0.01:
         return Vector3.ZERO
     forward = forward.normalized()
     var origin := global_position + Vector3.UP * 0.25
     var space := get_world_3d().direct_space_state
     var forward_hit := _steering_ray(space, origin, forward)
     if forward_hit.is_empty() or forward_hit.get("collider") == player:
-        return forward
+        return forward * speed_scale
 
     # Try either side of the obstruction before committing to a new cover goal.
     var left := forward.rotated(Vector3.UP, -0.72)
@@ -214,17 +215,17 @@ func _avoid_obstacles(direction: Vector3) -> Vector3:
     var left_hit := _steering_ray(space, origin, left)
     var right_hit := _steering_ray(space, origin, right)
     if left_hit.is_empty() and right_hit.is_empty():
-        return left if global_position.x <= cover_goal.x else right
+        return (left if global_position.x <= cover_goal.x else right) * speed_scale
     if left_hit.is_empty():
-        return left
+        return left * speed_scale
     if right_hit.is_empty():
-        return right
+        return right * speed_scale
 
     var wall_normal: Vector3 = forward_hit.get("normal", Vector3.ZERO)
     wall_normal.y = 0.0
     if wall_normal.length_squared() > 0.01:
-        return (wall_normal.normalized() + left * 0.45).normalized()
-    return left
+        return (wall_normal.normalized() + left * 0.45).normalized() * speed_scale
+    return left * speed_scale
 
 func _steering_ray(space: PhysicsDirectSpaceState3D, origin: Vector3, direction: Vector3) -> Dictionary:
     var query := PhysicsRayQueryParameters3D.create(origin, origin + direction * 2.0)
