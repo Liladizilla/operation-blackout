@@ -73,3 +73,6 @@ jobs:
 
       - name: Run weapon impact regression checks
         run: godot --headless --path . --script res://tests/test_weapon_impacts.gd
+
+      - name: Run tactical lean regression checks
+        run: godot --headless --path . --script res://tests/test_tactical_lean.gd
