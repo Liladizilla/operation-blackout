@@ -16,6 +16,7 @@ var pitch := 0.0
 var health := 100.0
 var ammo := 30
 var reserve := 120
+var grenades := 2
 var fire_cooldown := 0.0
 var reload_time := 0.0
 var is_reloading := false
@@ -165,6 +166,8 @@ func _physics_process(delta: float) -> void:
                 hud.set_status("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   RMB AIM   LMB FIRE   R RELOAD   F INTERACT")
     if Input.is_action_just_pressed("reload"):
         _start_reload()
+    if Input.is_action_just_pressed("throw_grenade"):
+        _throw_grenade()
     ads = Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
     if Input.is_action_just_pressed("crouch"):
         is_crouched = not is_crouched
@@ -300,6 +303,28 @@ func _start_reload() -> void:
     reload_time = 2.0 if ammo > 0 else 2.7
     if hud and hud.has_method("set_status"):
         hud.set_status("RELOADING")
+
+func _throw_grenade() -> void:
+    if grenades <= 0:
+        if hud and hud.has_method("set_status"):
+            hud.set_status("NO FRAG GRENADES REMAINING")
+        return
+    var scene := get_tree().current_scene
+    if not is_instance_valid(scene):
+        return
+    var direction := -camera.global_transform.basis.z
+    var grenade := RigidBody3D.new()
+    grenade.name = "FragGrenade"
+    grenade.set_script(load("res://scripts/grenade.gd"))
+    scene.add_child(grenade)
+    grenade.global_position = camera.global_position + direction * 0.75 - Vector3.UP * 0.12
+    grenade.linear_velocity = direction * 12.0 + Vector3.UP * 4.2
+    grenade.angular_velocity = Vector3(randf_range(-5.0, 5.0), randf_range(-7.0, 7.0), randf_range(-5.0, 5.0))
+    grenades -= 1
+    if hud and hud.has_method("set_grenades"):
+        hud.set_grenades(grenades)
+    if hud and hud.has_method("set_status"):
+        hud.set_status("FRAG GRENADE DEPLOYED")
 
 func _try_interact() -> void:
     var from := camera.global_position
