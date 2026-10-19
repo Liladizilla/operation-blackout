@@ -5,6 +5,7 @@ const SPRINT_SPEED := 7.5
 const CROUCH_SPEED := 2.0
 const PRONE_SPEED := 1.0
 const JUMP_VELOCITY := 4.2
+var gamepad_look_sensitivity := 2.2
 var mouse_sensitivity := 0.0018
 const MAG_SIZE := 30
 const MAX_STAMINA := 8.0
@@ -234,6 +235,13 @@ func _setup_footstep_audio() -> void:
 func _physics_process(delta: float) -> void:
     if get_tree().paused:
         return
+    # Right-stick look is time-scaled so camera speed remains stable across FPS.
+    var look_x := Input.get_axis("look_left", "look_right")
+    var look_y := Input.get_axis("look_up", "look_down")
+    if absf(look_x) > 0.12 or absf(look_y) > 0.12:
+        rotate_y(-look_x * gamepad_look_sensitivity * delta)
+        pitch = clampf(pitch - look_y * gamepad_look_sensitivity * delta, deg_to_rad(-85), deg_to_rad(85))
+        camera_pivot.rotation.x = pitch
     fire_cooldown = maxf(0.0, fire_cooldown - delta)
     damage_flash = maxf(0.0, damage_flash - delta)
     respawn_invulnerability = maxf(0.0, respawn_invulnerability - delta)
@@ -258,7 +266,7 @@ func _physics_process(delta: float) -> void:
         _start_reload()
     if Input.is_action_just_pressed("throw_grenade"):
         _throw_grenade()
-    ads = Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
+    ads = Input.is_action_pressed("aim")
     if Input.is_action_just_pressed("crouch"):
         is_crouched = not is_crouched
         if is_crouched:
@@ -313,7 +321,7 @@ func _physics_process(delta: float) -> void:
     var weapon_roll_target := (-0.22 if is_reloading else 0.0) - lean_amount * 0.16
     weapon_root.rotation.z = lerpf(weapon_root.rotation.z, weapon_roll_target, delta * 7.0)
     camera.rotation.z = lerpf(camera.rotation.z, -input_dir.x * 0.006 + sin(bob_time * 0.4) * 0.0015 - lean_amount * 0.12, delta * 4.0)
-    if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and fire_cooldown <= 0 and not is_reloading:
+    if Input.is_action_pressed("fire") and fire_cooldown <= 0 and not is_reloading:
         _fire()
 
 func _update_lean(delta: float, requested_axis: float) -> void:

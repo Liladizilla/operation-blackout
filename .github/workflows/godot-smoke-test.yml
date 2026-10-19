@@ -76,3 +76,6 @@ jobs:
 
       - name: Run tactical lean regression checks
         run: godot --headless --path . --script res://tests/test_tactical_lean.gd
+
+      - name: Run gamepad support regression checks
+        run: godot --headless --path . --script res://tests/test_gamepad_support.gd

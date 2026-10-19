@@ -15,6 +15,8 @@ var player_ref: Node
 var pause_panel: PanelContainer
 var sensitivity_slider: HSlider
 var sensitivity_value_label: Label
+var gamepad_sensitivity_slider: HSlider
+var gamepad_sensitivity_value_label: Label
 var briefing_panel: PanelContainer
 var briefing_backdrop: ColorRect
 var difficulty_selector: OptionButton
@@ -387,8 +389,8 @@ func show_briefing() -> void:
     var objectives := _label("01   ELIMINATE ALL HOSTILES\n02   HOLD F TO RECOVER INTEL\n03   REACH EXFIL AND HOLD F TO CONFIRM", 14, Color(0.89, 0.75, 0.52))
     objectives.custom_minimum_size = Vector2(520, 66)
     box.add_child(objectives)
-    var controls := _label("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   Q/E LEAN\nLMB FIRE   RMB AIM   R RELOAD   G GRENADE", 12, Color(0.65, 0.70, 0.65))
-    controls.custom_minimum_size = Vector2(520, 40)
+    var controls := _label("KEYBOARD: WASD MOVE / SHIFT SPRINT / CTRL CROUCH / Z PRONE / Q,E LEAN\nMOUSE: LMB FIRE / RMB AIM / R RELOAD / F INTERACT / G GRENADE\nCONTROLLER: LS MOVE / RS LOOK / RT FIRE / LT AIM / A JUMP / B CROUCH / X RELOAD / Y FRAG / LB USE", 11, Color(0.65, 0.70, 0.65))
+    controls.custom_minimum_size = Vector2(520, 58)
     box.add_child(controls)
 
     var difficulty_row := HBoxContainer.new()
@@ -449,7 +451,9 @@ func dismiss_briefing() -> void:
 func _input(event: InputEvent) -> void:
     if not is_briefing_open():
         return
-    if event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_ENTER or event.keycode == KEY_SPACE):
+    if event.is_action_pressed("jump") and not (event is InputEventKey and event.echo):
+        dismiss_briefing()
+    elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ENTER:
         dismiss_briefing()
 
 func hide_pause() -> void:
@@ -463,15 +467,15 @@ func show_pause() -> void:
     pause_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
     pause_panel.offset_left = -210
     pause_panel.offset_right = 210
-    pause_panel.offset_top = -180
-    pause_panel.offset_bottom = 180
+    pause_panel.offset_top = -255
+    pause_panel.offset_bottom = 255
     var box := VBoxContainer.new()
     box.add_theme_constant_override("separation", 8)
     pause_panel.add_child(box)
     var title := _label("PAUSED", 28, Color(0.9,0.82,0.65))
     title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     box.add_child(title)
-    var controls := _label("WASD MOVE  /  SHIFT SPRINT  /  CTRL CROUCH  /  Z PRONE  /  Q/E LEAN\nLMB FIRE  /  RMB AIM  /  R RELOAD  /  F INTERACT  /  G GRENADE", 12, Color(0.70,0.73,0.68))
+    var controls := _label("KEYBOARD: WASD MOVE / SHIFT SPRINT / CTRL CROUCH / Z PRONE / Q,E LEAN\nMOUSE: LMB FIRE / RMB AIM   R RELOAD / F INTERACT / G GRENADE\nPAD: LS MOVE / RS LOOK / RT FIRE / LT AIM / A JUMP / B CROUCH / X RELOAD / Y FRAG\nLB INTERACT / L3 SPRINT / R3 PRONE / START PAUSE", 11, Color(0.70,0.73,0.68))
     controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     box.add_child(controls)
     sensitivity_value_label = _label("MOUSE SENSITIVITY", 14, Color(0.82,0.84,0.78))
@@ -492,6 +496,25 @@ func show_pause() -> void:
         sensitivity_value_label.text = "MOUSE SENSITIVITY  %.1fx" % (value / 0.0018)
     )
     box.add_child(sensitivity_slider)
+
+    gamepad_sensitivity_value_label = _label("CONTROLLER LOOK SPEED", 14, Color(0.82,0.84,0.78))
+    box.add_child(gamepad_sensitivity_value_label)
+    gamepad_sensitivity_slider = HSlider.new()
+    gamepad_sensitivity_slider.min_value = 0.8
+    gamepad_sensitivity_slider.max_value = 4.0
+    gamepad_sensitivity_slider.step = 0.1
+    gamepad_sensitivity_slider.custom_minimum_size = Vector2(300, 24)
+    var current_gamepad_sensitivity: float = 2.2
+    if is_instance_valid(player_ref):
+        current_gamepad_sensitivity = float(player_ref.get("gamepad_look_sensitivity"))
+    gamepad_sensitivity_slider.value = clampf(current_gamepad_sensitivity, gamepad_sensitivity_slider.min_value, gamepad_sensitivity_slider.max_value)
+    gamepad_sensitivity_value_label.text = "CONTROLLER LOOK SPEED  %.1fx" % (gamepad_sensitivity_slider.value / 2.2)
+    gamepad_sensitivity_slider.value_changed.connect(func(value: float):
+        if is_instance_valid(player_ref):
+            player_ref.set("gamepad_look_sensitivity", value)
+        gamepad_sensitivity_value_label.text = "CONTROLLER LOOK SPEED  %.1fx" % (value / 2.2)
+    )
+    box.add_child(gamepad_sensitivity_slider)
     var resume := Button.new()
     resume.text = "RESUME"
     resume.custom_minimum_size = Vector2(300, 36)
