@@ -77,6 +77,8 @@ func _run_tests() -> void:
     _check(intel_marker.get_node_or_null("IntelInteractionArea") != null, "intel objective interaction area initializes in the scene tree")
     _check(intel_marker.get_node_or_null("IntelBeaconBeam") != null and intel_marker.get_node_or_null("IntelBeaconLight") != null, "intel objective has a visible beam and beacon light")
     var objective_script: Node = intel_marker
+    var saved_enemy_list: Array = scene.enemies.duplicate()
+    scene.enemies.clear()
     objective_script.player_inside = true
     objective_script.progress = 1.0
     Input.action_press("interact")
@@ -86,6 +88,7 @@ func _run_tests() -> void:
     var objective_beam_material := objective_script.beacon_beam.material_override as StandardMaterial3D
     _check(objective_beam_material.albedo_color.a > 0.28, "intel beacon beam brightens during collection")
     Input.action_release("interact")
+    scene.enemies.assign(saved_enemy_list)
     objective_script.player_inside = false
     objective_script.progress = 0.0
 
