@@ -6,10 +6,11 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 
 - Procedurally assembled 3D ruined-town arena and cover
 - First-person mouse look, WASD movement, sprint, jump, crouch, prone
-- Aim-down-sights field-of-view change and weapon sway/recoil
+- Aim-down-sights field-of-view change, breathing/strafe sway, recoil, and brief muzzle illumination
 - Assault rifle firing, raycast hit detection, ammunition and reloads
-- Basic hostile AI: line-of-sight detection, pursuit/strafe, hitscan return fire
-- Health feedback, HUD, hit confirmation, hold-to-recover objective gated behind enemy clearance, pause menu
+- Basic hostile AI: line-of-sight detection, pursuit/strafe, last-known-position investigation, cover repositioning, and hitscan return fire
+- Health and directional damage feedback, headshot-aware hit confirmation, hold-to-recover intel objective gated behind enemy clearance, pause menu, and mission-complete/replay screen
+- Layered window bays, facade trim, side-wall details, service doors, and lightweight drifting battlefield smoke
 - Godot Compatibility renderer for integrated graphics
 
 ## Requirements
@@ -41,7 +42,7 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 
 ## Current limits
 
-This is a foundation, not the finished game. Combatants use procedural meshes and inexpensive logic. Campaign missions, multiplayer, vehicles, advanced destruction, motion capture, console support, animation, audio, and cover-seeking AI are not implemented yet.
+This is a foundation, not the finished game. Combatants use procedural meshes and inexpensive logic. The vertical slice still needs authored high-detail assets, proper skeletal animations, spatial weapon/ambience audio, robust navigation and cover tactics, destructible environments, vehicles, additional missions, co-op, and multiplayer. Current geometry and enemy logic are intentionally lightweight placeholders for gameplay iteration.
 
 ## Performance
 
