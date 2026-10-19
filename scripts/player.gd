@@ -301,7 +301,7 @@ func _fire() -> void:
             damage_target = collider.get_parent()
             headshot = true
         confirmed_hit = is_instance_valid(damage_target) and damage_target.is_in_group("enemies")
-        if damage_target and damage_target.has_method("take_damage"):
+        if damage_target and damage_target.is_in_group("enemies") and damage_target.has_method("take_damage"):
             var killed: bool = damage_target.take_damage(34.0, hit.get("position", to), headshot)
             if hud and hud.has_method("flash_hitmarker"):
                 hud.flash_hitmarker(killed, headshot)
