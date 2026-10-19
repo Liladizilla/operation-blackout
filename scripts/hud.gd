@@ -22,6 +22,8 @@ var difficulty_description: Label
 var hitmarker_timer := 0.0
 var damage_direction_label: Label
 var damage_direction_timer := 0.0
+var last_hostile_fire_direction := ""
+var hostile_fire_repeat_count := 0
 var mission_panel: PanelContainer
 var mission_stats_label: Label
 var stamina_label: Label
@@ -272,10 +274,18 @@ func show_hostile_fire(player_position: Vector3, player_basis: Basis, source_pos
     if not is_instance_valid(damage_direction_label):
         return
     var local_source: Vector3 = player_basis.inverse() * (source_position - player_position)
+    var direction := ""
     if absf(local_source.x) > absf(local_source.z):
-        damage_direction_label.text = "HOSTILE FIRE  <" if local_source.x < 0.0 else "HOSTILE FIRE  >"
+        direction = "<" if local_source.x < 0.0 else ">"
     else:
-        damage_direction_label.text = "HOSTILE FIRE  v" if local_source.z > 0.0 else "HOSTILE FIRE  ^"
+        direction = "v" if local_source.z > 0.0 else "^"
+    # Repeated shots from the same quadrant indicate sustained pressure, not a fresh isolated warning.
+    if damage_direction_timer > 0.0 and direction == last_hostile_fire_direction:
+        hostile_fire_repeat_count = mini(hostile_fire_repeat_count + 1, 3)
+    else:
+        hostile_fire_repeat_count = 1
+    last_hostile_fire_direction = direction
+    damage_direction_label.text = "HOSTILE FIRE  %s" % direction if hostile_fire_repeat_count == 1 else "HOSTILE FIRE x%d  %s" % [hostile_fire_repeat_count, direction]
     damage_direction_label.add_theme_color_override("font_color", Color(1.0, 0.55, 0.22))
     damage_direction_timer = 0.7
 
