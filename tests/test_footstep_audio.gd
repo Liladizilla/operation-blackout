@@ -30,7 +30,7 @@ func _run_tests() -> void:
     await physics_frame
 
     var player: Node = scene.get_node("Player")
-    var audio: AudioStreamPlayer3D = player.get_node("FootstepAudio")
+    var audio := player.get_node("FootstepAudio") as AudioStreamPlayer3D
     _check(is_instance_valid(audio), "player has a dedicated positional footstep emitter")
     _check(audio.stream is AudioStreamWAV, "footsteps use generated WAV audio without external assets")
     _check(audio.stream.get_length() >= 0.1 and audio.max_distance >= 20.0, "footstep audio has a usable duration and hearing range")
