@@ -66,6 +66,24 @@ func _run_tests() -> void:
         _check(emitter.stream is AudioStreamWAV, "impact audio is synthesized without downloaded assets")
         _check(emitter.max_distance >= 25.0 and emitter.volume_db <= -6.0, "impact sound has a bounded, local hearing range")
 
+    # Hostile rounds striking hard cover reuse the same bounded impact system.
+    var hostile: Node = scene.enemies[0]
+    hostile.global_position = player.global_position + Vector3(0.0, 0.0, 6.0)
+    var hostile_wall := StaticBody3D.new()
+    hostile_wall.name = "HostileImpactTestWall"
+    var hostile_collision := CollisionShape3D.new()
+    var hostile_shape := BoxShape3D.new()
+    hostile_shape.size = Vector3(4.0, 4.0, 0.2)
+    hostile_collision.shape = hostile_shape
+    hostile_wall.add_child(hostile_collision)
+    scene.add_child(hostile_wall)
+    hostile_wall.global_position = player.global_position + Vector3(0.0, 1.2, 3.0)
+    await physics_frame
+    hostile.call("_try_shoot_player")
+    await physics_frame
+    _check(get_nodes_in_group("bullet_impacts").size() >= 2, "hostile rounds leave impact marks on solid cover")
+    _check(get_nodes_in_group("impact_audio").size() >= 2, "hostile rounds produce positional impact audio")
+
     if not casings.is_empty():
         var casing := casings[0] as RigidBody3D
         _check(casing.get_node_or_null("CasingMesh") is MeshInstance3D, "spent casing uses a visible lightweight cylinder")
