@@ -44,6 +44,10 @@ func _run_tests() -> void:
     root.add_child(scene)
     current_scene = scene
     await process_frame
+    _check(scene.hud.is_briefing_open(), "mission briefing appears before deployment")
+    _check(paused, "mission briefing pauses the operation before deployment")
+    scene.hud.dismiss_briefing()
+    _check(not paused, "deploying dismisses briefing and resumes the operation")
     await physics_frame
 
     _check(scene.get_node_or_null("Player") != null, "player spawns")
