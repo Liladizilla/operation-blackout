@@ -254,6 +254,11 @@ func _run_tests() -> void:
     _check(scene.hud.mission_stats_label != null and scene.hud.mission_stats_label.text.contains("HOSTILES NEUTRALIZED 5"), "mission debrief reports hostiles eliminated")
     _check(scene.hud.mission_stats_label.text.contains("FRAGS 1") and scene.hud.mission_stats_label.text.contains("AMMO CACHES 2"), "mission debrief reports grenade and resupply usage")
     _check(paused, "mission completion pauses gameplay behind the debrief")
+    var escape_event := InputEventKey.new()
+    escape_event.keycode = KEY_ESCAPE
+    escape_event.pressed = true
+    scene._input(escape_event)
+    _check(paused, "escape cannot bypass the mission-complete debrief")
 
     print("RESULT: ", passed, " checks passed; failed=", failed)
     quit(1 if failed else 0)
