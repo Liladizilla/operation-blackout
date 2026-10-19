@@ -58,3 +58,6 @@ jobs:
 
       - name: Run shot tracer regression checks
         run: godot --headless --path . --script res://tests/test_shot_tracers.gd
+
+      - name: Run road marking regression checks
+        run: godot --headless --path . --script res://tests/test_road_markings.gd
