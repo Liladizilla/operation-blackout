@@ -295,14 +295,24 @@ func _choose_cover(threat_position: Vector3) -> Vector3:
 
 func _try_shoot_player() -> void:
     _show_muzzle_flash()
-    var from := global_position + Vector3.UP*1.35
-    var to := player.global_position + Vector3.UP*1.2
+    var from := global_position + Vector3.UP * 1.35
+    var aim_point := player.global_position + Vector3.UP * 1.2
+    var spread := _shot_spread(from.distance_to(aim_point))
+    var to := aim_point + Vector3(
+        randf_range(-spread, spread),
+        randf_range(-spread * 0.65, spread * 0.65),
+        randf_range(-spread, spread)
+    )
     var query := PhysicsRayQueryParameters3D.create(from, to)
     query.exclude = [get_rid()]
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
     if not hit.is_empty() and hit.get("collider") == player:
         if player.has_method("apply_damage"):
             player.apply_damage(7.0, global_position)
+
+func _shot_spread(distance: float) -> float:
+    # Hostile fire gets less precise with range instead of tracking the player perfectly.
+    return lerpf(0.12, 0.9, clampf(distance / 30.0, 0.0, 1.0))
 
 func _show_muzzle_flash() -> void:
     enemy_muzzle_flash.visible = true
