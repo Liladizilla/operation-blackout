@@ -128,6 +128,8 @@ func _run_tests() -> void:
         Vector3(6, 0, 19), Vector3(-12, 0, 25), Vector3(13, 0, -1)
     ]
     _check(not solid_obstacle_centers.has(chosen_cover), "hostile cover goals sit beside obstacles instead of inside them")
+    var slow_steering: Vector3 = first_enemy._avoid_obstacles(Vector3(0.0, 0.0, -0.42))
+    _check(is_equal_approx(slow_steering.length(), 0.42), "obstacle steering preserves tactical movement speed")
     var survived: bool = first_enemy.take_damage(10.0)
     _check(not survived and is_equal_approx(first_enemy.health, 90.0), "enemy survives nonlethal damage")
     _check(first_enemy.hit_flash_timer > 0.0, "nonlethal hits trigger a temporary enemy hit reaction")
