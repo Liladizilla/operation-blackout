@@ -61,8 +61,10 @@ func _all_hostiles_down() -> bool:
 
 func _set_status(message: String) -> void:
     var scene := get_tree().current_scene
-    if scene and "hud" in scene and is_instance_valid(scene.hud) and scene.hud.has_method("set_status"):
-        scene.hud.set_status(message)
+    if scene:
+        var hud_node := scene.get("hud") as Node
+        if is_instance_valid(hud_node) and hud_node.has_method("set_status"):
+            hud_node.set_status(message)
 
 func _complete() -> void:
     if completed or not _all_hostiles_down():

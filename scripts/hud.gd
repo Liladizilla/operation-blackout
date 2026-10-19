@@ -20,7 +20,7 @@ func initialize(scene: Node, player: Node) -> void:
     player.set("hud", self)
     _build()
     set_ammo(int(player.get("ammo")), int(player.get("reserve")))
-    set_health(float(player.get("health")))
+    health_label.text = "HEALTH  %03d" % int(player.get("health"))
     if scene.has_method("get_remaining_enemies"):
         set_enemy_count(scene.get_remaining_enemies())
 
@@ -103,13 +103,8 @@ func _process(delta: float) -> void:
         var m := muzzle_flash.color
         m.a = maxf(0.0, m.a - delta * 8.0)
         muzzle_flash.color = m
-    if is_instance_valid(player_ref):
-        if player_ref.get("is_reloading"):
-            status_label.text = "RELOADING..."
-        elif objective_label.text.contains("RECOVER"):
-            status_label.text = "REACH THE MARKER AND HOLD F TO RECOVER INTEL"
-        else:
-            status_label.text = "WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   RMB AIM   LMB FIRE   R RELOAD   F INTERACT"
+    if is_instance_valid(player_ref) and player_ref.get("is_reloading"):
+        status_label.text = "RELOADING..."
 
 func flash_hitmarker(killed: bool = false) -> void:
     if not is_instance_valid(center_dot):

@@ -97,7 +97,7 @@ func _physics_process(delta: float) -> void:
             if hud and hud.has_method("set_ammo"):
                 hud.set_ammo(ammo, reserve)
             if hud and hud.has_method("set_status"):
-                hud.set_status("READY")
+                hud.set_status("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   RMB AIM   LMB FIRE   R RELOAD   F INTERACT")
     if Input.is_action_just_pressed("reload"):
         _start_reload()
     ads = Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
