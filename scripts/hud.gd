@@ -270,6 +270,11 @@ func notify_hostile_contact() -> void:
     status_label.text = "CONTACT  //  HOSTILES HAVE VISUAL"
     status_label.add_theme_color_override("font_color", Color(1.0, 0.32, 0.22))
 
+func notify_hostile_investigation(noise_type: String) -> void:
+    var source_label := "EXPLOSION" if noise_type == "GRENADE" else "GUNFIRE" if noise_type == "GUNSHOT" else "IMPACT"
+    status_label.text = "NOISE DETECTED  //  HOSTILES INVESTIGATING %s" % source_label
+    status_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.32))
+
 func set_status(message: String) -> void:
     status_label.text = message
 
