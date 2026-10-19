@@ -19,6 +19,9 @@ var cover_timer := 0.0
 var suppression_timer := 0.0
 var alert_memory_timer := 0.0
 var alert_broadcast_timer := 0.0
+var patrol_goal := Vector3.ZERO
+var patrol_index := -1
+var patrol_pause_timer := 0.0
 
 func _ready() -> void:
     var capsule := CapsuleShape3D.new()
@@ -121,6 +124,7 @@ func _ready() -> void:
     enemy_fire_audio.max_distance = 65.0
     add_child(enemy_fire_audio)
     add_to_group("enemies")
+    _initialize_patrol()
 
 func _physics_process(delta: float) -> void:
     if get_tree().paused:
@@ -172,13 +176,12 @@ func _physics_process(delta: float) -> void:
             alert_memory_timer = 5.0
         elif alert_memory_timer > 0.0:
             state = "INVESTIGATE"
-        elif distance < 42.0:
-            state = "INVESTIGATE"
         else:
+            # Distance alone does not reveal the player's position; use sight or sound.
             state = "SEARCH"
         if distance < 15.0 and randf() < 0.28:
             strafe_sign *= -1.0
-        if not sees_player and suppression_timer <= 0.0 and cover_timer <= 0.0:
+        if state == "INVESTIGATE" and not sees_player and suppression_timer <= 0.0 and cover_timer <= 0.0:
             cover_goal = _choose_cover(last_known_position if last_known_position != Vector3.ZERO else player.global_position)
             cover_timer = randf_range(2.5, 4.0)
     var target_dir := Vector3.ZERO
@@ -219,6 +222,17 @@ func _physics_process(delta: float) -> void:
         else:
             state = "SEARCH"
             alert_memory_timer = 0.0
+    elif state == "SEARCH":
+        if patrol_pause_timer > 0.0:
+            patrol_pause_timer = maxf(0.0, patrol_pause_timer - delta)
+        else:
+            var to_patrol := patrol_goal - global_position
+            to_patrol.y = 0.0
+            if patrol_goal == Vector3.ZERO or to_patrol.length() < 1.4:
+                _choose_next_patrol_goal()
+            else:
+                target_dir = to_patrol.normalized() * 0.48
+                look_at(Vector3(patrol_goal.x, global_position.y, patrol_goal.z), Vector3.UP)
     target_dir = _avoid_obstacles(target_dir)
     if not is_on_floor():
         velocity.y -= 9.8 * delta
@@ -262,6 +276,72 @@ func _steering_ray(space: PhysicsDirectSpaceState3D, origin: Vector3, direction:
     query.exclude = [get_rid()]
     query.collision_mask = 1
     return space.intersect_ray(query)
+
+func _get_patrol_points() -> Array[Node3D]:
+    var points: Array[Node3D] = []
+    for node in get_tree().get_nodes_in_group("enemy_patrol_points"):
+        var marker := node as Node3D
+        if is_instance_valid(marker):
+            points.append(marker)
+    return points
+
+func _has_clear_patrol_path(target: Node3D) -> bool:
+    var query := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 1.0, target.global_position + Vector3.UP * 1.0)
+    var exclusions: Array[RID] = [get_rid()]
+    if is_instance_valid(player):
+        exclusions.append(player.get_rid())
+    for ally in get_tree().get_nodes_in_group("enemies"):
+        var ally_body := ally as CollisionObject3D
+        if is_instance_valid(ally_body):
+            exclusions.append(ally_body.get_rid())
+    query.exclude = exclusions
+    query.collision_mask = 1
+    return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+
+func _initialize_patrol() -> void:
+    var points := _get_patrol_points()
+    if points.is_empty():
+        return
+    var nearest_index := 0
+    var nearest_distance := INF
+    var clear_index := -1
+    var clear_distance := INF
+    for index in range(points.size()):
+        var distance := global_position.distance_to(points[index].global_position)
+        if distance < nearest_distance:
+            nearest_distance = distance
+            nearest_index = index
+        if distance < 26.0 and distance < clear_distance and _has_clear_patrol_path(points[index]):
+            clear_distance = distance
+            clear_index = index
+    patrol_index = clear_index if clear_index >= 0 else nearest_index
+    patrol_goal = points[patrol_index].global_position
+    patrol_pause_timer = randf_range(0.2, 0.65)
+
+func _choose_next_patrol_goal() -> void:
+    var points := _get_patrol_points()
+    if points.size() < 2:
+        return
+    var candidates: Array[int] = []
+    for index in range(points.size()):
+        if index == patrol_index:
+            continue
+        var distance := global_position.distance_to(points[index].global_position)
+        if distance < 3.0 or distance > 24.0:
+            continue
+        if _has_clear_patrol_path(points[index]):
+            candidates.append(index)
+    if candidates.is_empty():
+        for index in range(points.size()):
+            if index == patrol_index:
+                continue
+            if global_position.distance_to(points[index].global_position) <= 30.0:
+                candidates.append(index)
+    if candidates.is_empty():
+        return
+    patrol_index = candidates[randi_range(0, candidates.size() - 1)]
+    patrol_goal = points[patrol_index].global_position
+    patrol_pause_timer = randf_range(0.45, 1.25)
 
 func _nearest_grenade_threat() -> Node3D:
     var nearest: Node3D = null
