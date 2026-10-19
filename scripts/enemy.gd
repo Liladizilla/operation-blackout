@@ -181,6 +181,11 @@ func _combat_fire_interval_scale() -> float:
         _:
             return 1.0
 
+func _combat_can_engage(distance: float) -> bool:
+    # Keep firing distance aligned with each role's movement doctrine.
+    var engagement := _combat_engagement_ranges()
+    return distance <= engagement.y + 2.5
+
 func set_difficulty(value: String) -> void:
     difficulty = value.strip_edges().to_upper()
     match difficulty:
@@ -499,7 +504,7 @@ func _physics_process(delta: float) -> void:
             else:
                 target_dir = Vector3(-to_player.z, 0.0, to_player.x).normalized() * strafe_sign * 0.42
         look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
-        if distance_to_player < maxf(10.0, detection_range - 5.0) and fire_timer <= 0:
+        if _combat_can_engage(distance_to_player) and fire_timer <= 0:
             fire_timer = randf_range(fire_interval_min, fire_interval_max) * _combat_fire_interval_scale()
             _try_shoot_player()
     elif state == "REPOSITION":
