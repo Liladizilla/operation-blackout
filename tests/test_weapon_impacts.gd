@@ -75,11 +75,11 @@ func _run_tests() -> void:
 
     for index in range(15):
         player._spawn_bullet_impact(Vector3(float(index), 1.0, -2.0), Vector3.UP)
-    _check(get_nodes_in_group("bullet_impacts").size() <= player.MAX_BULLET_IMPACTS, "impact mark count stays within the visual budget")
+    _check(get_nodes_in_group("bullet_impacts").size() <= 12, "impact mark count stays within the visual budget")
 
     for index in range(12):
         player._spawn_spent_casing()
-    _check(get_nodes_in_group("spent_casings").size() <= player.MAX_SPENT_CASINGS, "spent casing count stays bounded during sustained fire")
+    _check(get_nodes_in_group("spent_casings").size() <= 8, "spent casing count stays bounded during sustained fire")
 
     var expiring_casing: Node = get_nodes_in_group("spent_casings")[0]
     expiring_casing.call("_process", 4.0)
