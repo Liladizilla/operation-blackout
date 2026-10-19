@@ -13,6 +13,9 @@ var owner_scene: Node
 var player_ref: Node
 var pause_panel: PanelContainer
 var hitmarker_timer := 0.0
+var damage_direction_label: Label
+var damage_direction_timer := 0.0
+var mission_panel: PanelContainer
 
 func initialize(scene: Node, player: Node) -> void:
     owner_scene = scene
@@ -70,6 +73,17 @@ func _build() -> void:
     center_dot.offset_bottom = 22
     center_dot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     root.add_child(center_dot)
+    damage_direction_label = _label("", 18, Color(0.92,0.24,0.16))
+    damage_direction_label.anchor_left = 0.5
+    damage_direction_label.anchor_right = 0.5
+    damage_direction_label.anchor_top = 0.5
+    damage_direction_label.anchor_bottom = 0.5
+    damage_direction_label.offset_left = -100
+    damage_direction_label.offset_right = 100
+    damage_direction_label.offset_top = 34
+    damage_direction_label.offset_bottom = 62
+    damage_direction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    root.add_child(damage_direction_label)
     status_label = _label("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   RMB AIM   LMB FIRE   R RELOAD   F INTERACT", 13, Color(0.70,0.72,0.68))
     status_label.anchor_top = 1
     status_label.anchor_bottom = 1
@@ -90,6 +104,10 @@ func _label(text: String, font_size: int, color: Color) -> Label:
     return label
 
 func _process(delta: float) -> void:
+    if damage_direction_timer > 0.0:
+        damage_direction_timer = maxf(0.0, damage_direction_timer - delta)
+        if damage_direction_timer == 0.0 and is_instance_valid(damage_direction_label):
+            damage_direction_label.text = ""
     if hitmarker_timer > 0.0:
         hitmarker_timer = maxf(0.0, hitmarker_timer - delta)
         if hitmarker_timer == 0.0 and is_instance_valid(center_dot):
@@ -106,12 +124,12 @@ func _process(delta: float) -> void:
     if is_instance_valid(player_ref) and player_ref.get("is_reloading"):
         status_label.text = "RELOADING..."
 
-func flash_hitmarker(killed: bool = false) -> void:
+func flash_hitmarker(killed: bool = false, headshot: bool = false) -> void:
     if not is_instance_valid(center_dot):
         return
-    center_dot.text = "X" if killed else "+"
-    center_dot.add_theme_color_override("font_color", Color(0.95,0.30,0.18) if killed else Color(0.95,0.92,0.80))
-    hitmarker_timer = 0.18 if killed else 0.11
+    center_dot.text = "X" if killed else ("x" if headshot else "+")
+    center_dot.add_theme_color_override("font_color", Color(0.95,0.30,0.18) if killed else (Color(1.0,0.68,0.24) if headshot else Color(0.95,0.92,0.80)))
+    hitmarker_timer = 0.22 if killed or headshot else 0.11
 
 func set_ammo(current: int, reserve: int) -> void:
     ammo_label.text = "%02d / %03d" % [current, reserve]
@@ -133,6 +151,51 @@ func set_status(message: String) -> void:
 func set_mission_state(message: String) -> void:
     objective_label.text = message
     status_label.text = "MISSION UPDATE"
+    if message.contains("EXFILTRATION COMPLETE"):
+        _show_mission_complete()
+
+func show_damage_direction(player_position: Vector3, player_basis: Basis, source_position: Vector3) -> void:
+    if not is_instance_valid(damage_direction_label):
+        return
+    var local_source: Vector3 = player_basis.inverse() * (source_position - player_position)
+    if absf(local_source.x) > absf(local_source.z):
+        damage_direction_label.text = "<  INCOMING" if local_source.x < 0.0 else "INCOMING  >"
+    else:
+        damage_direction_label.text = "v INCOMING" if local_source.z > 0.0 else "^ INCOMING"
+    damage_direction_timer = 0.55
+
+func _show_mission_complete() -> void:
+    if is_instance_valid(mission_panel):
+        return
+    mission_panel = PanelContainer.new()
+    mission_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+    mission_panel.offset_left = -230
+    mission_panel.offset_right = 230
+    mission_panel.offset_top = -125
+    mission_panel.offset_bottom = 125
+    var box := VBoxContainer.new()
+    box.add_theme_constant_override("separation", 14)
+    mission_panel.add_child(box)
+    var title := _label("OPERATION COMPLETE", 28, Color(0.88,0.72,0.43))
+    title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    box.add_child(title)
+    var detail := _label("INTEL SECURED  /  TALON ACTUAL, OUT", 14, Color(0.82,0.83,0.78))
+    detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    box.add_child(detail)
+    var redeploy := Button.new()
+    redeploy.text = "REDEPLOY  /  REPLAY MISSION"
+    redeploy.custom_minimum_size = Vector2(250, 42)
+    redeploy.pressed.connect(func():
+        get_tree().paused = false
+        get_tree().reload_current_scene()
+    )
+    box.add_child(redeploy)
+    var quit := Button.new()
+    quit.text = "QUIT TO DESKTOP"
+    quit.custom_minimum_size = Vector2(250, 36)
+    quit.pressed.connect(func(): get_tree().quit())
+    box.add_child(quit)
+    root.add_child(mission_panel)
 
 func flash_muzzle() -> void:
     var c := muzzle_flash.color
