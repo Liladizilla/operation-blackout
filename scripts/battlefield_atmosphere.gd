@@ -28,6 +28,7 @@ func _build_drifting_ash() -> void:
     var ash := CPUParticles3D.new()
     ash.name = "DriftingAsh"
     ash.amount = ASH_PARTICLE_COUNT
+    ash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     ash.lifetime = 8.0
     ash.preprocess = 2.0
     ash.emitting = true
