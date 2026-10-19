@@ -156,6 +156,10 @@ func _run_tests() -> void:
     gated_objective._process(1.0)
     Input.action_release("interact")
     _check(not gated_objective.completed and is_equal_approx(gated_objective.progress, 0.0), "intel recovery stays locked while hostiles remain")
+    gated_objective.progress = 1.0
+    gated_objective._on_exit(player)
+    _check(is_equal_approx(gated_objective.progress, 0.0), "leaving the intel zone cancels partial recovery progress")
+    _check(scene.hud.status_label.text == "INTEL RECOVERY INTERRUPTED", "leaving the intel zone reports interrupted recovery")
 
     var first_enemy: Node = scene.enemies[0]
     var chosen_cover: Vector3 = first_enemy._choose_cover(player.global_position)
@@ -200,6 +204,12 @@ func _run_tests() -> void:
         _check(exfil.get_node_or_null("ExfilBeacon") != null, "extraction zone has a visible beacon")
         scene.hud._update_navigation()
         _check(scene.hud.navigation_label.text.begins_with("EXFIL"), "HUD switches navigation from intel to extraction")
+        exfil.progress = 1.0
+        exfil._on_exit(player)
+        _check(is_equal_approx(exfil.progress, 0.0), "leaving the extraction zone cancels partial extraction progress")
+        _check(scene.hud.status_label.text == "EXTRACTION INTERRUPTED. RETURN TO THE BEACON.", "extraction interruption is surfaced to the player")
+        exfil._process(0.1)
+        _check(scene.hud.status_label.text == "EXTRACTION INTERRUPTED. RETURN TO THE BEACON.", "interruption feedback persists instead of disappearing next frame")
     if exfil:
         scene.player.global_position = Vector3(0.0, 1.2, 39.0)
         exfil.player_inside = true
