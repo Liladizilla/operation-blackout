@@ -73,6 +73,22 @@ func _run_tests() -> void:
     _check(mesh_count < 650, "procedural scene stays within mesh budget")
 
     var player := scene.get_node("Player")
+    _check(player.grenades == 2 and scene.hud.grenade_label.text == "FRAG  02", "player starts with two grenades and HUD inventory")
+    var grenades_before: int = player.grenades
+    player._throw_grenade()
+    var test_grenade: Node = scene.get_node_or_null("FragGrenade")
+    _check(player.grenades == grenades_before - 1 and scene.hud.grenade_label.text == "FRAG  01", "throwing a grenade consumes one inventory slot")
+    _check(is_instance_valid(test_grenade) and is_equal_approx(test_grenade._damage_for_distance(0.0), 85.0), "grenade uses full damage at the blast center")
+    _check(is_equal_approx(test_grenade._damage_for_distance(3.0), 42.5), "grenade damage falls off with distance")
+    if is_instance_valid(test_grenade):
+        test_grenade.set_process(false)
+        test_grenade.set_physics_process(false)
+        test_grenade.queue_free()
+    player.grenades = 0
+    player._throw_grenade()
+    _check(scene.get_node_or_null("FragGrenade") == null, "player cannot throw grenades after inventory is depleted")
+    player.grenades = 2
+    scene.hud.set_grenades(2)
     var ammo_caches: Array = scene.get_tree().get_nodes_in_group("ammo_caches")
     var first_cache: Node = ammo_caches[0]
     player.reserve = 0
