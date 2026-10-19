@@ -27,6 +27,9 @@ var recoil := 0.0
 var ads := false
 var damage_flash := 0.0
 var recoil_recovery := 0.0
+var muzzle_light: OmniLight3D
+var muzzle_flash_mesh: MeshInstance3D
+var muzzle_flash_timer := 0.0
 
 func _ready() -> void:
     var capsule := CapsuleShape3D.new()
@@ -61,6 +64,29 @@ func _build_view_weapon() -> void:
     mat.roughness = 0.48
     body.material_override = mat
     weapon_root.add_child(body)
+    muzzle_light = OmniLight3D.new()
+    muzzle_light.name = "MuzzleFlashLight"
+    muzzle_light.position = Vector3(0.0, 0.0, -0.88)
+    muzzle_light.light_color = Color(1.0, 0.62, 0.28)
+    muzzle_light.light_energy = 0.0
+    muzzle_light.omni_range = 4.5
+    muzzle_light.shadow_enabled = false
+    weapon_root.add_child(muzzle_light)
+    muzzle_flash_mesh = MeshInstance3D.new()
+    muzzle_flash_mesh.name = "MuzzleFlashGeometry"
+    var flash_mesh := SphereMesh.new()
+    flash_mesh.radius = 0.055
+    flash_mesh.height = 0.14
+    muzzle_flash_mesh.mesh = flash_mesh
+    muzzle_flash_mesh.position = Vector3(0.0, 0.0, -0.88)
+    var flash_mat := StandardMaterial3D.new()
+    flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    flash_mat.albedo_color = Color(1.0, 0.72, 0.34)
+    flash_mat.emission_enabled = true
+    flash_mat.emission = Color(1.0, 0.42, 0.12)
+    muzzle_flash_mesh.material_override = flash_mat
+    muzzle_flash_mesh.visible = false
+    weapon_root.add_child(muzzle_flash_mesh)
     var barrel := MeshInstance3D.new()
     var barrel_mesh := BoxMesh.new()
     barrel_mesh.size = Vector3(0.055,0.055,0.48)
@@ -116,6 +142,11 @@ func _physics_process(delta: float) -> void:
         return
     fire_cooldown = maxf(0.0, fire_cooldown - delta)
     damage_flash = maxf(0.0, damage_flash - delta)
+    if muzzle_flash_timer > 0.0:
+        muzzle_flash_timer = maxf(0.0, muzzle_flash_timer - delta)
+        if muzzle_flash_timer == 0.0:
+            muzzle_light.light_energy = 0.0
+            muzzle_flash_mesh.visible = false
     if is_reloading:
         reload_time -= delta
         if reload_time <= 0:
@@ -170,7 +201,8 @@ func _physics_process(delta: float) -> void:
     recoil = lerpf(recoil, 0.0, delta * 7.0)
     weapon_root.position = Vector3(0.28, -0.28 + sin(bob_time*0.5)*0.008 + recoil * 0.65, -0.55 + recoil * 1.8)
     weapon_root.rotation.x = recoil
-    weapon_root.rotation.y = lerpf(weapon_root.rotation.y, 0.0, delta * 8.0)
+    weapon_root.rotation.y = lerpf(weapon_root.rotation.y, -input_dir.x * 0.035, delta * 8.0)
+    camera.rotation.z = lerpf(camera.rotation.z, -input_dir.x * 0.006 + sin(bob_time * 0.4) * 0.0015, delta * 4.0)
     if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and fire_cooldown <= 0 and not is_reloading:
         _fire()
 
@@ -226,6 +258,9 @@ func _fire() -> void:
         _impact_spark(hit.get("position", to), hit.get("normal", Vector3.UP))
     if hud and hud.has_method("set_ammo"):
         hud.set_ammo(ammo, reserve)
+    muzzle_light.light_energy = randf_range(1.4, 2.2)
+    muzzle_flash_mesh.visible = true
+    muzzle_flash_timer = 0.045
     if hud and hud.has_method("flash_muzzle"):
         hud.flash_muzzle()
 
