@@ -37,3 +37,6 @@ jobs:
 
       - name: Run tactical combat regression checks
         run: godot --headless --path . --script res://tests/test_tactical_combat.gd
+
+      - name: Run tactical minimap regression checks
+        run: godot --headless --path . --script res://tests/test_tactical_minimap.gd

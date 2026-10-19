@@ -141,7 +141,8 @@ func _build_arena() -> void:
     _building(Vector3(-7, 0, -34), Vector3(12, 6, 7), Color(0.34, 0.30, 0.25))
     _building(Vector3(9, 0, 33), Vector3(15, 7, 8), Color(0.29, 0.30, 0.28))
     for p in [Vector3(-7,0,-10), Vector3(7,0,-18), Vector3(-5,0,7), Vector3(6,0,19), Vector3(-12,0,25), Vector3(13,0,-1)]:
-        _box("ConcreteBarrier", p + Vector3(0,0.65,0), Vector3(3.4,1.3,0.7), Color(0.39,0.38,0.33), true)
+        var barrier := _box("ConcreteBarrier", p + Vector3(0,0.65,0), Vector3(3.4,1.3,0.7), Color(0.39,0.38,0.33), true)
+        barrier.add_to_group("arena_cover")
     _car(Vector3(-3,0,-25), -12)
     _car(Vector3(4,0,10), 15)
     _car(Vector3(-10,0,17), 80)
@@ -209,7 +210,8 @@ func _material(color: Color) -> StandardMaterial3D:
     return mat
 
 func _building(pos: Vector3, size: Vector3, color: Color) -> void:
-    _box("Building", pos + Vector3(0,size.y/2,0), size, color, true)
+    var building := _box("Building", pos + Vector3(0,size.y/2,0), size, color, true)
+    building.add_to_group("arena_buildings")
     _box("RoofRubble", pos + Vector3(0,size.y + 0.3,0), Vector3(size.x*0.45,0.6,size.z*0.5), color.darkened(0.18), true)
     # Repeated window bays with recessed glass, chipped concrete surrounds, and sill lines.
     var columns := maxi(2, int(size.x / 3.0))
