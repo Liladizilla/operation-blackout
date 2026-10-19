@@ -69,6 +69,13 @@ func _run_tests() -> void:
     scene.hud.set_ammo(5, 30)
     _check(scene.hud.ammo_label.text == "05 / 030", "ammo HUD formats low ammunition")
     _check(scene.get_node_or_null("EnvironmentDetails") != null, "outer district dressing is attached")
+    var skyline_nodes := scene.get_tree().get_nodes_in_group("distant_skyline")
+    _check(skyline_nodes.size() == 18, "distant skyline uses layered buildings beyond the playable arena")
+    _check(scene.get_node_or_null("DistantCityHorizon") != null, "battlefield has a separate distant city horizon")
+    var environment_node: WorldEnvironment = scene.world_environment as WorldEnvironment
+    _check(environment_node != null and environment_node.environment.fog_enabled and environment_node.environment.fog_density >= 0.008, "depth fog softens the distant skyline")
+    var sun_lights := scene.find_children("*", "DirectionalLight3D", true, false)
+    _check(not sun_lights.is_empty() and (sun_lights[0] as DirectionalLight3D).shadow_enabled, "battlefield uses directional sunlight with shadows")
     var ground_node := scene.find_child("Ground", true, false)
     var ground_mesh := ground_node.get_child(0) as MeshInstance3D if ground_node != null and ground_node.get_child_count() > 0 else null
     _check(ground_mesh != null and ground_mesh.material_override is ShaderMaterial, "terrain uses the procedural weathered surface shader")
