@@ -389,8 +389,13 @@ func _run_tests() -> void:
     _check(scene.mission_complete and scene.hud.objective_label.text.contains("EXFILTRATION COMPLETE"), "extraction completes the mission and updates HUD")
     _check(scene.mission_phase == "COMPLETE", "successful extraction moves mission into its terminal phase")
     var completed_objective_text: String = scene.hud.objective_label.text
+    var completion_panel: Control = scene.hud.mission_panel
+    var completion_time: float = scene.mission_elapsed
+    scene._process(10.0)
+    _check(is_equal_approx(scene.mission_elapsed, completion_time), "mission timer stops after extraction completes")
     scene.exfiltration_complete()
     _check(scene.mission_phase == "COMPLETE" and scene.hud.objective_label.text == completed_objective_text, "duplicate extraction callback cannot replay or alter completed mission state")
+    _check(scene.hud.mission_panel == completion_panel, "duplicate extraction callback preserves the existing debrief panel")
     _check(scene.hud.mission_stats_label != null and scene.hud.mission_stats_label.text.contains("HOSTILES NEUTRALIZED 5"), "mission debrief reports hostiles eliminated")
     var mission_summary: Dictionary = scene.get_mission_summary()
     _check(int(mission_summary.get("hostiles_eliminated", -1)) == 5, "mission summary agrees with the completed hostile count")
