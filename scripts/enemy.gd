@@ -598,7 +598,7 @@ func _physics_process(delta: float) -> void:
                 burst_shots_remaining = _combat_burst_size()
             _try_shoot_player()
             burst_shots_remaining -= 1
-            var interval_scale := _combat_fire_interval_scale()
+            var interval_scale := _combat_fire_interval_scale() / _combat_suppression_weight()
             if burst_shots_remaining > 0:
                 # Short controlled bursts, with role-specific cadence between rounds.
                 fire_timer = randf_range(fire_interval_min, fire_interval_max) * interval_scale * 0.52
