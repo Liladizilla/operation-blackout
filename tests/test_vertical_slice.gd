@@ -73,6 +73,16 @@ func _run_tests() -> void:
     _check(mesh_count < 650, "procedural scene stays within mesh budget")
 
     var player := scene.get_node("Player")
+    player.stamina = 4.0
+    player.stamina_regen_delay = 0.0
+    player._update_stamina(0.5, true)
+    _check(is_equal_approx(player.stamina, 3.5) and is_equal_approx(player.stamina_regen_delay, 1.0), "sprinting drains stamina and starts a recovery delay")
+    player._update_stamina(0.75, false)
+    _check(is_equal_approx(player.stamina, 3.5) and is_equal_approx(player.stamina_regen_delay, 0.25), "stamina recovery waits for the full delay")
+    player._update_stamina(0.5, false)
+    _check(is_equal_approx(player.stamina, 3.85), "stamina recovery begins only after the delay expires")
+    player.stamina = player.MAX_STAMINA
+    player.stamina_regen_delay = 0.0
     var ammo_caches: Array = scene.get_tree().get_nodes_in_group("ammo_caches")
     var first_cache: Node = ammo_caches[0]
     player.reserve = 0
@@ -122,6 +132,21 @@ func _run_tests() -> void:
     _check(avoidance_enemy._avoid_obstacles(Vector3.ZERO) == Vector3.ZERO, "hostile steering safely handles a zero direction")
     avoidance_enemy.global_position = saved_enemy_position
     avoidance_enemy.set_physics_process(true)
+
+    var alert_source: Node = scene.enemies[0]
+    var alert_receiver: Node = scene.enemies[1]
+    alert_receiver.set_physics_process(false)
+    alert_receiver.state = "SEARCH"
+    alert_receiver.alert_memory_timer = 0.0
+    var first_alert_position := Vector3(2.0, 0.0, 4.0)
+    alert_receiver.hear_alert(first_alert_position)
+    _check(alert_receiver.state == "INVESTIGATE" and alert_receiver.last_known_position.is_equal_approx(first_alert_position), "nearby hostiles investigate a teammate's alert")
+    _check(alert_receiver.alert_memory_timer > 0.0, "enemy alert preserves a last-known threat position")
+    alert_source.alert_broadcast_timer = 0.0
+    var second_alert_position := Vector3(4.0, 0.0, 6.0)
+    alert_source._broadcast_alert(second_alert_position)
+    _check(alert_receiver.last_known_position.is_equal_approx(second_alert_position), "enemy alert broadcasts update nearby allies")
+    alert_receiver.set_physics_process(true)
 
     # Place a target in the camera's forward line and exercise the actual hitscan path.
     var firing_target: Node = scene.enemies[1]
