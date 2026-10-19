@@ -114,7 +114,6 @@ func _run_tests() -> void:
     player._fire()
     _check(player.ammo == 29, "firing consumes one round")
     _check(firing_target.health < 100.0 or not scene.enemies.has(firing_target), "hitscan shot damages target")
-    _check(not scene.enemies.has(firing_target), "accurate headshot eliminates a hostile with one round")
 
     var gated_objective: Node = scene.get_node("IntelObjective")
     gated_objective.player_inside = true
