@@ -67,3 +67,6 @@ jobs:
 
       - name: Run reload animation regression checks
         run: godot --headless --path . --script res://tests/test_reload_animation.gd
+
+      - name: Run brass casing regression checks
+        run: godot --headless --path . --script res://tests/test_brass_casings.gd
