@@ -316,6 +316,9 @@ func _run_tests() -> void:
     _check(survived, "enemy death is reported")
     await process_frame
     _check(scene.get_remaining_enemies() == 4, "enemy death updates remaining-hostile count")
+    _check(scene.hostiles_eliminated == 1, "first hostile death increments the debrief kill counter once")
+    scene.enemy_killed(first_enemy)
+    _check(scene.hostiles_eliminated == 1 and scene.get_remaining_enemies() == 4, "duplicate hostile-death callback cannot inflate kill statistics")
 
     for enemy in scene.enemies.duplicate():
         enemy.take_damage(1000.0)
@@ -389,6 +392,10 @@ func _run_tests() -> void:
     scene.exfiltration_complete()
     _check(scene.mission_phase == "COMPLETE" and scene.hud.objective_label.text == completed_objective_text, "duplicate extraction callback cannot replay or alter completed mission state")
     _check(scene.hud.mission_stats_label != null and scene.hud.mission_stats_label.text.contains("HOSTILES NEUTRALIZED 5"), "mission debrief reports hostiles eliminated")
+    var mission_summary: Dictionary = scene.get_mission_summary()
+    _check(int(mission_summary.get("hostiles_eliminated", -1)) == 5, "mission summary agrees with the completed hostile count")
+    _check(int(mission_summary.get("grenades_used", -1)) == 1 and int(mission_summary.get("ammo_caches_used", -1)) == 2, "mission summary agrees with debrief equipment usage")
+    _check(float(mission_summary.get("accuracy", -1.0)) >= 0.0 and float(mission_summary.get("accuracy", -1.0)) <= 100.0, "mission summary reports accuracy within valid percentage bounds")
     _check(scene.hud.mission_stats_label.text.contains("FRAGS 1") and scene.hud.mission_stats_label.text.contains("AMMO CACHES 2"), "mission debrief reports grenade and resupply usage")
     _check(paused, "mission completion pauses gameplay behind the debrief")
     var escape_event := InputEventKey.new()
