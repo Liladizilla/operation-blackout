@@ -108,6 +108,13 @@ func _run_tests() -> void:
     var flank_radius: float = Vector2(flank_goal.x - player.global_position.x, flank_goal.z - player.global_position.z).length()
     _check(flank_radius >= 7.4 and flank_radius <= 10.1, "flank goal keeps a useful engagement distance")
     _check(flank_goal.distance_to(alert_receiver.global_position) > 1.5, "flank goal breaks the current firing lane")
+    alert_source.flank_goal = flank_goal
+    _check(alert_receiver._flank_ally_spacing_penalty(flank_goal) > alert_receiver._flank_ally_spacing_penalty(Vector3(40.0, 0.0, 40.0)), "flank selection discourages teammates from converging on the same flank goal")
+    alert_receiver.global_position = alert_source.global_position + Vector3(1.0, 0.0, 0.0)
+    var separation_direction: Vector3 = alert_receiver._apply_ally_separation(Vector3.FORWARD)
+    _check(separation_direction.dot(Vector3.RIGHT) > 0.0, "movement steering creates lateral separation from a nearby teammate")
+    alert_receiver.global_position = saved_receiver_position
+    alert_source.flank_goal = Vector3.ZERO
 
     alert_receiver.global_position = saved_receiver_position
     alert_receiver.set_physics_process(true)
