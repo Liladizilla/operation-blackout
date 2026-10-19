@@ -46,7 +46,7 @@ This is a foundation, not the finished game. Combatants use procedural meshes an
 
 ## Performance
 
-The project uses the Compatibility renderer, shared repeated materials, modest geometry, reduced CPU smoke counts, no imported textures, and no real-time global illumination. A headless scene-budget check tracks total nodes and mesh instances; interactive FPS and GPU load still need to be measured on target hardware.
+The project uses the Compatibility renderer, shared repeated materials, modest geometry, reduced CPU smoke counts, no imported textures, and no real-time global illumination. The current Godot 4.4.1 headless scene profile reports **730 nodes and 338 mesh instances**; automated budget checks guard against runaway growth. Interactive FPS and GPU load still need to be measured on target hardware.
 
 ## Verification
 
