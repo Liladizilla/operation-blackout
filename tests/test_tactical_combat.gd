@@ -81,6 +81,14 @@ func _run_tests() -> void:
     var second_cover: Vector3 = alert_receiver._choose_cover(suppression_source)
     _check(not first_cover.is_equal_approx(second_cover), "cover selection discourages immediately reusing the previous position")
 
+    # Combat movement chooses a lateral route around the player, not just a fixed strafe.
+    alert_receiver.player = player
+    alert_receiver.global_position = player.global_position + Vector3(0.0, 0.0, 9.0)
+    var flank_goal: Vector3 = alert_receiver._choose_flank_goal()
+    var flank_radius: float = Vector2(flank_goal.x - player.global_position.x, flank_goal.z - player.global_position.z).length()
+    _check(flank_radius >= 7.4 and flank_radius <= 10.1, "flank goal keeps a useful engagement distance")
+    _check(flank_goal.distance_to(alert_receiver.global_position) > 1.5, "flank goal breaks the current firing lane")
+
     alert_receiver.global_position = saved_receiver_position
     alert_receiver.set_physics_process(true)
 
