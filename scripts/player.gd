@@ -1,5 +1,7 @@
 extends CharacterBody3D
 
+const BRASS_CASING_SCRIPT = preload("res://scripts/brass_casing.gd")
+
 const WALK_SPEED := 4.5
 const SPRINT_SPEED := 7.5
 const CROUCH_SPEED := 2.0
@@ -330,6 +332,7 @@ func _fire() -> void:
     if is_instance_valid(active_scene) and active_scene.has_method("report_noise"):
         active_scene.report_noise(global_position, 58.0, "GUNSHOT", self)
     ammo -= 1
+    _spawn_brass_casing()
     fire_cooldown = 0.095
     recoil = 0.055 if ads else 0.09
     weapon_root.rotation.y = randf_range(-0.018, 0.018)
@@ -370,6 +373,19 @@ func _fire() -> void:
     muzzle_flash_timer = 0.045
     if hud and hud.has_method("flash_muzzle"):
         hud.flash_muzzle()
+
+func _spawn_brass_casing() -> void:
+    var active_scene := get_tree().current_scene
+    if not is_instance_valid(active_scene):
+        return
+    var casing := Node3D.new()
+    casing.set_script(BRASS_CASING_SCRIPT)
+    active_scene.add_child(casing)
+    var right: Vector3 = camera.global_transform.basis.x
+    var forward: Vector3 = -camera.global_transform.basis.z
+    var origin := camera.global_position + right * 0.23 - camera.global_transform.basis.y * 0.12 + forward * 0.30
+    var ejection_velocity := right * randf_range(1.1, 1.8) + Vector3.UP * randf_range(1.2, 1.8) + forward * randf_range(-0.15, 0.35)
+    casing.call("configure", origin, ejection_velocity)
 
 func _impact_spark(pos: Vector3, normal: Vector3) -> void:
     var marker := MeshInstance3D.new()
