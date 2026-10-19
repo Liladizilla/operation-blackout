@@ -77,6 +77,10 @@ func _run_tests() -> void:
     _check(alert_receiver.state == "REPOSITION", "suppressed hostiles break from their current firing lane")
     _check(alert_receiver.last_known_position.is_equal_approx(suppression_source), "suppressed hostiles remember the source of incoming fire")
 
+    var first_cover: Vector3 = alert_receiver._choose_cover(suppression_source)
+    var second_cover: Vector3 = alert_receiver._choose_cover(suppression_source)
+    _check(not first_cover.is_equal_approx(second_cover), "cover selection discourages immediately reusing the previous position")
+
     alert_receiver.global_position = saved_receiver_position
     alert_receiver.set_physics_process(true)
 
