@@ -56,6 +56,22 @@ func _run_tests() -> void:
     _check(is_equal_approx(visual_test_enemy._shot_spread(0.0), 0.12) and is_equal_approx(visual_test_enemy._shot_spread(30.0), 0.9), "hostile shot spread remains within intended close and long-range limits")
     var cover_test_goal: Vector3 = visual_test_enemy._choose_cover(scene.get_node("Player").global_position)
     _check(absf(cover_test_goal.x) <= 50.0 and absf(cover_test_goal.z) <= 50.0, "hostile cover selection stays within the playable district")
+    var flank_test_enemy: Node = scene.enemies[0]
+    var saved_flank_position: Vector3 = flank_test_enemy.global_position
+    flank_test_enemy.global_position = Vector3(200.0, 0.95, 200.0)
+    var flank_allies: Array[Node3D] = []
+    for ally_position in [Vector3(198.0, 0.95, 200.0), Vector3(197.0, 0.95, 201.0), Vector3(202.0, 0.95, 200.0)]:
+        var flank_ally := Node3D.new()
+        flank_ally.add_to_group("enemies")
+        scene.add_child(flank_ally)
+        flank_ally.global_position = ally_position
+        flank_allies.append(flank_ally)
+    var coordinated_flank: float = flank_test_enemy._choose_flank_sign(Vector3(200.0, 0.95, 210.0))
+    _check(is_equal_approx(coordinated_flank, -1.0), "hostiles choose the less crowded flank instead of stacking on one side")
+    for flank_ally in flank_allies:
+        flank_ally.remove_from_group("enemies")
+        flank_ally.queue_free()
+    flank_test_enemy.global_position = saved_flank_position
     visual_test_enemy.state = "SEARCH"
     visual_test_enemy.last_known_position = Vector3.ZERO
     visual_test_enemy.global_position = Vector3(-18.0, 0.95, -38.0)
