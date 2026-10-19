@@ -86,8 +86,9 @@ func _run_tests() -> void:
         test_grenade.queue_free()
     await process_frame
     player.grenades = 0
+    scene.hud.set_grenades(0)
     player._throw_grenade()
-    _check(scene.get_node_or_null("FragGrenade") == null, "player cannot throw grenades after inventory is depleted")
+    _check(player.grenades == 0 and scene.hud.grenade_label.text == "FRAG  00", "player cannot throw grenades after inventory is depleted")
     player.grenades = 2
     scene.hud.set_grenades(2)
     var ammo_caches: Array = scene.get_tree().get_nodes_in_group("ammo_caches")
