@@ -65,8 +65,11 @@ func _on_enter(body: Node3D) -> void:
 
 func _on_exit(body: Node3D) -> void:
     if body.name == "Player":
+        var was_collecting := progress > 0.0
         player_inside = false
         progress = 0.0
+        if was_collecting and not completed:
+            _set_status("INTEL RECOVERY INTERRUPTED  //  RETURN TO THE BEACON")
 
 func interact(_player: Node) -> void:
     # Kept as an interaction hook for future controller/input variants.
