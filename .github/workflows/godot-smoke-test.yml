@@ -31,3 +31,6 @@ jobs:
 
       - name: Run main scene for 300 frames
         run: godot --headless --path . --quit-after 300
+
+      - name: Run vertical-slice gameplay checks
+        run: godot --headless --path . --script res://tests/test_vertical_slice.gd
