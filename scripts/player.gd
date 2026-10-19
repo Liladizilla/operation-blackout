@@ -201,9 +201,13 @@ func _physics_process(delta: float) -> void:
     camera_pivot.position.y = lerpf(camera_pivot.position.y, (0.72 if is_prone else (1.12 if is_crouched else 1.58)) + sin(bob_time) * bob_scale, delta * 9.0)
     camera.fov = lerpf(camera.fov, 62.0 if ads else 78.0, delta * 10.0)
     recoil = lerpf(recoil, 0.0, delta * 7.0)
-    weapon_root.position = Vector3(0.28, -0.28 + sin(bob_time*0.5)*0.008 + recoil * 0.65, -0.55 + recoil * 1.8)
-    weapon_root.rotation.x = recoil
+    var reload_duration := 2.7 if ammo <= 0 else 2.0
+    var reload_progress := clampf(1.0 - reload_time / reload_duration, 0.0, 1.0) if is_reloading else 0.0
+    var reload_drop := sin(reload_progress * PI) * 0.14
+    weapon_root.position = Vector3(0.28, -0.28 + sin(bob_time * 0.5) * 0.008 + recoil * 0.65 - reload_drop, -0.55 + recoil * 1.8 + reload_drop * 0.3)
+    weapon_root.rotation.x = recoil + reload_drop * 1.4
     weapon_root.rotation.y = lerpf(weapon_root.rotation.y, -input_dir.x * 0.035, delta * 8.0)
+    weapon_root.rotation.z = lerpf(weapon_root.rotation.z, -0.22 if is_reloading else 0.0, delta * 7.0)
     camera.rotation.z = lerpf(camera.rotation.z, -input_dir.x * 0.006 + sin(bob_time * 0.4) * 0.0015, delta * 4.0)
     if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and fire_cooldown <= 0 and not is_reloading:
         _fire()
