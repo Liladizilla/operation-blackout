@@ -133,7 +133,19 @@ func _run_tests() -> void:
         Input.action_release("interact")
     await process_frame
     _check(scene.get_node_or_null("IntelObjective") == null, "intel objective completes and is removed")
-    _check(scene.hud.objective_label.text.contains("EXFILTRATION COMPLETE"), "mission completion reaches HUD")
+    _check(scene.get_node_or_null("ExfilZone") != null, "recovering intel activates the extraction zone")
+    _check(not scene.mission_complete and scene.hud.objective_label.text.contains("MOVE TO EXFIL"), "intel recovery starts a separate extraction phase")
+
+    var exfil: Node = scene.get_node_or_null("ExfilZone")
+    if exfil:
+        scene.player.global_position = Vector3(0.0, 1.2, 39.0)
+        exfil.player_inside = true
+        Input.action_press("interact")
+        exfil._process(2.1)
+        Input.action_release("interact")
+    await process_frame
+    _check(scene.get_node_or_null("ExfilZone") == null, "holding interact completes extraction and removes the zone")
+    _check(scene.mission_complete and scene.hud.objective_label.text.contains("EXFILTRATION COMPLETE"), "extraction completes the mission and updates HUD")
 
     print("RESULT: ", passed, " checks passed; failed=", failed)
     quit(1 if failed else 0)
