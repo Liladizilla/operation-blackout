@@ -145,11 +145,48 @@ func _physics_process(delta: float) -> void:
             look_at(Vector3(last_known_position.x, global_position.y, last_known_position.z), Vector3.UP)
         else:
             state = "SEARCH"
+    target_dir = _avoid_obstacles(target_dir)
     if not is_on_floor():
         velocity.y -= 9.8 * delta
     velocity.x = move_toward(velocity.x, target_dir.x * 2.1, delta * 4.0)
     velocity.z = move_toward(velocity.z, target_dir.z * 2.1, delta * 4.0)
     move_and_slide()
+
+func _avoid_obstacles(direction: Vector3) -> Vector3:
+    var forward := direction
+    forward.y = 0.0
+    if forward.length_squared() < 0.01:
+        return Vector3.ZERO
+    forward = forward.normalized()
+    var origin := global_position + Vector3.UP * 0.85
+    var space := get_world_3d().direct_space_state
+    var forward_hit := _steering_ray(space, origin, forward)
+    if forward_hit.is_empty() or forward_hit.get("collider") == player:
+        return forward
+
+    # Try either side of the obstruction before committing to a new cover goal.
+    var left := forward.rotated(Vector3.UP, -0.72)
+    var right := forward.rotated(Vector3.UP, 0.72)
+    var left_hit := _steering_ray(space, origin, left)
+    var right_hit := _steering_ray(space, origin, right)
+    if left_hit.is_empty() and right_hit.is_empty():
+        return left if global_position.x <= cover_goal.x else right
+    if left_hit.is_empty():
+        return left
+    if right_hit.is_empty():
+        return right
+
+    var wall_normal: Vector3 = forward_hit.get("normal", Vector3.ZERO)
+    wall_normal.y = 0.0
+    if wall_normal.length_squared() > 0.01:
+        return (wall_normal.normalized() + left * 0.45).normalized()
+    return left
+
+func _steering_ray(space: PhysicsDirectSpaceState3D, origin: Vector3, direction: Vector3) -> Dictionary:
+    var query := PhysicsRayQueryParameters3D.create(origin, origin + direction * 2.0)
+    query.exclude = [get_rid()]
+    query.collision_mask = 1
+    return space.intersect_ray(query)
 
 func _choose_cover(threat_position: Vector3) -> Vector3:
     # Candidate positions sit near concrete barriers and wreckage in the arena.
