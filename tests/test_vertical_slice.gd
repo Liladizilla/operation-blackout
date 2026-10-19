@@ -71,6 +71,7 @@ func _run_tests() -> void:
     _check(scene.get_node_or_null("EnvironmentDetails") != null, "outer district dressing is attached")
     var ground_node := scene.find_child("Ground", true, false)
     var ground_mesh := ground_node.find_child("MeshInstance3D", true, false) as MeshInstance3D if ground_node != null else null
+    print("SURFACE DEBUG ground=", ground_node, " mesh=", ground_mesh, " material=", ground_mesh.material_override if ground_mesh != null else null, " kind=", scene._surface_kind_for_name("Ground"))
     _check(ground_mesh != null and ground_mesh.material_override is ShaderMaterial, "terrain uses the procedural weathered surface shader")
     var ground_collision := ground_node.find_child("CollisionShape3D", true, false) as CollisionShape3D if ground_node != null else null
     if ground_collision == null and ground_node != null:
