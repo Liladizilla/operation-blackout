@@ -81,6 +81,17 @@ func _run_tests() -> void:
     player._physics_process(0.02)
     _check(not player.is_reloading and player.ammo == 30 and player.reserve == 5, "reload transfers ammunition and exits state")
 
+    var avoidance_enemy: Node = scene.enemies[0]
+    var saved_enemy_position: Vector3 = avoidance_enemy.global_position
+    avoidance_enemy.set_physics_process(false)
+    avoidance_enemy.global_position = Vector3(-3.2, 0.95, -10.0)
+    await physics_frame
+    var steered_direction: Vector3 = avoidance_enemy._avoid_obstacles(Vector3.LEFT)
+    _check(steered_direction.dot(Vector3.LEFT) < 0.99, "hostile steering diverts around a concrete barrier")
+    _check(avoidance_enemy._avoid_obstacles(Vector3.ZERO) == Vector3.ZERO, "hostile steering safely handles a zero direction")
+    avoidance_enemy.global_position = saved_enemy_position
+    avoidance_enemy.set_physics_process(true)
+
     # Place a target in the camera's forward line and exercise the actual hitscan path.
     var firing_target: Node = scene.enemies[1]
     firing_target.set_physics_process(false)
