@@ -13,6 +13,7 @@ var player: Node3D
 var state := "SEARCH"
 var think_timer := 0.0
 var fire_timer := 0.7
+var burst_shots_remaining := 0
 var strafe_sign := 1.0
 var flank_timer := 0.0
 var flank_goal := Vector3.ZERO
@@ -180,6 +181,39 @@ func _combat_fire_interval_scale() -> float:
             return 0.92
         _:
             return 1.0
+
+func _combat_burst_size() -> int:
+    match combat_role:
+        "SUPPORT":
+            return 4
+        "FLANKER":
+            return 2
+        "ASSAULT":
+            return 3
+        _:
+            return 3
+
+func _combat_burst_pause() -> float:
+    match combat_role:
+        "SUPPORT":
+            return 0.72
+        "FLANKER":
+            return 0.28
+        "ASSAULT":
+            return 0.38
+        _:
+            return 0.5
+
+func _combat_reacquire_delay() -> float:
+    match combat_role:
+        "SUPPORT":
+            return 0.5
+        "FLANKER":
+            return 0.18
+        "ASSAULT":
+            return 0.25
+        _:
+            return 0.35
 
 func _combat_can_engage(distance: float) -> bool:
     # Keep firing distance aligned with each role's movement doctrine.
@@ -473,6 +507,9 @@ func _physics_process(delta: float) -> void:
         elif sees_player:
             if state != "COMBAT":
                 _broadcast_alert(player.global_position)
+                # Reacquire deliberately after losing sight or leaving cover.
+                fire_timer = maxf(fire_timer, _combat_reacquire_delay())
+                burst_shots_remaining = 0
             state = "COMBAT"
             last_known_position = player.global_position
             alert_memory_timer = 5.0
@@ -517,8 +554,17 @@ func _physics_process(delta: float) -> void:
                 target_dir = Vector3(-to_player.z, 0.0, to_player.x).normalized() * strafe_sign * 0.42
         look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
         if _combat_can_engage(distance_to_player) and fire_timer <= 0:
-            fire_timer = randf_range(fire_interval_min, fire_interval_max) * _combat_fire_interval_scale()
+            if burst_shots_remaining <= 0:
+                burst_shots_remaining = _combat_burst_size()
             _try_shoot_player()
+            burst_shots_remaining -= 1
+            var interval_scale := _combat_fire_interval_scale()
+            if burst_shots_remaining > 0:
+                # Short controlled bursts, with role-specific cadence between rounds.
+                fire_timer = randf_range(fire_interval_min, fire_interval_max) * interval_scale * 0.52
+            else:
+                # Pause to settle and reacquire before the next burst.
+                fire_timer = _combat_burst_pause() + randf_range(fire_interval_min, fire_interval_max) * interval_scale
     elif state == "REPOSITION":
         var to_cover := cover_goal - global_position
         to_cover.y = 0.0
