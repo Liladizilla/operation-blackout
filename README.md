@@ -5,7 +5,7 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 ## Current milestone
 
 - Procedurally assembled 3D ruined-town arena and cover
-- First-person mouse look, WASD movement, sprint, jump, crouch, prone
+- First-person mouse look, WASD movement, sprint, jump, crouch, prone, and collision-aware Q/E shoulder leaning
 - Aim-down-sights field-of-view change, breathing/strafe sway, recoil, and brief muzzle illumination; low-cost first-person forearms and gloves follow weapon handling, with a visible magazine removal/reinsertion animation during reloads
 - Assault rifle firing, raycast hit detection, ammunition and animated reloads, capped brass casing ejection, fading bullet impact marks on solid surfaces, plus lightweight procedural positional gunshot and grenade-blast audio without external asset downloads
 - Hostile AI: line-of-sight detection, district patrols, pursuit/strafe, last-known-position investigation, cover-aware repositioning, grenade evasion, obstacle steering, coordinated alerts, visible shot tracers, and hitscan return fire; procedural arms and legs animate with movement, and lethal hits trigger a short collision-safe collapse
@@ -40,6 +40,7 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 - **Shift**: sprint
 - **Ctrl**: crouch toggle
 - **Z**: prone toggle
+- **Q / E**: lean left / right when the side is clear
 - **Space**: jump
 - **R**: reload
 - **F**: interact / recover intel
@@ -56,7 +57,7 @@ The project uses the Compatibility renderer, shared repeated materials, modest g
 
 ## Verification
 
-- **Automated gameplay checks:** test firing/hitscan damage, player damage and respawn, reload ammunition transfer, enemy damage/death, suppression response, enemy-count updates, the intel gate, mission-complete HUD state, the separate intel-to-exfil mission flow, respawn-protection checks, ammo-cache pickup/cap/HUD updates, grenade inventory/throw/damage-falloff/knockback checks, stamina and ammunition HUD updates, intel rangefinder presence, hostile obstacle steering and cover-goal checks, deployment-briefing pause/resume checks, mission-debrief/stat tracking and Escape-guard checks, pause-menu sensitivity checks, procedural audio stream and weapon-audio wiring checks, intel interaction-area/beacon initialization checks, extraction beacon smoke/bollard checks, facade rubble distribution, enemy muzzle-flash/hit-reaction feedback, viewport-anchored HUD layout, outer-district environment props, and difficulty-profile selection/balance, first-person arm/hand view-model wiring, hostile limb geometry and gait animation, and timed enemy death-collapse cleanup, bounded spent-casing ejection, and collisionless bullet-impact mark placement/lifetime caps.
+- **Automated gameplay checks:** test firing/hitscan damage, player damage and respawn, reload ammunition transfer, enemy damage/death, suppression response, enemy-count updates, the intel gate, mission-complete HUD state, the separate intel-to-exfil mission flow, respawn-protection checks, ammo-cache pickup/cap/HUD updates, grenade inventory/throw/damage-falloff/knockback checks, stamina and ammunition HUD updates, intel rangefinder presence, hostile obstacle steering and cover-goal checks, deployment-briefing pause/resume checks, mission-debrief/stat tracking and Escape-guard checks, pause-menu sensitivity checks, procedural audio stream and weapon-audio wiring checks, intel interaction-area/beacon initialization checks, extraction beacon smoke/bollard checks, facade rubble distribution, enemy muzzle-flash/hit-reaction feedback, viewport-anchored HUD layout, outer-district environment props, and difficulty-profile selection/balance, first-person arm/hand view-model wiring, hostile limb geometry and gait animation, and timed enemy death-collapse cleanup, bounded spent-casing ejection, and collisionless bullet-impact mark placement/lifetime caps, and collision-aware Q/E lean limits and recentering.
 - **Headless smoke test:** GitHub Actions imports the project and runs the main scene for 300 frames on Godot 4.7.2 before executing gameplay regressions.
 - **Still requires local verification:** visual quality, enemy behaviour in a live fight, mouse capture, pause-menu interaction, actual FPS, and GPU load.
 - GitHub Actions runs the headless scene test and gameplay regression suite on pushes and pull requests.

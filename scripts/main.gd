@@ -81,6 +81,8 @@ func _setup_input() -> void:
     _key_action("sprint", KEY_SHIFT)
     _key_action("crouch", KEY_CTRL)
     _key_action("prone", KEY_Z)
+    _key_action("lean_left", KEY_Q)
+    _key_action("lean_right", KEY_E)
     _key_action("jump", KEY_SPACE)
     _key_action("reload", KEY_R)
     _key_action("interact", KEY_F)
