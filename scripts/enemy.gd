@@ -193,21 +193,25 @@ func _physics_process(delta: float) -> void:
         # Distant units should advance cautiously instead of remaining idle
         # until the player happens to enter their detection radius.
         var search_target := last_known_position if last_known_position != Vector3.ZERO else player.global_position
-        var to_search := search_target - global_position
-        to_search.y = 0.0
-        if to_search.length() > 3.0:
-            target_dir = to_search.normalized() * 0.48
+        target_dir = _search_direction(search_target)
+        if target_dir.length_squared() > 0.01:
             look_at(Vector3(search_target.x, global_position.y, search_target.z), Vector3.UP)
-        else:
-            # Once close to the search point, drift laterally to avoid a frozen
-            # firing line while waiting for a new sighting.
-            target_dir = Vector3(-to_search.z, 0.0, to_search.x).normalized() * strafe_sign * 0.22
     target_dir = _avoid_obstacles(target_dir)
     if not is_on_floor():
         velocity.y -= 9.8 * delta
     velocity.x = move_toward(velocity.x, target_dir.x * 2.1, delta * 4.0)
     velocity.z = move_toward(velocity.z, target_dir.z * 2.1, delta * 4.0)
     move_and_slide()
+
+func _search_direction(search_target: Vector3) -> Vector3:
+    var to_search := search_target - global_position
+    to_search.y = 0.0
+    if to_search.length() > 3.0:
+        return to_search.normalized() * 0.48
+    # Near the search point, drift laterally while waiting for another sighting.
+    if to_search.length_squared() > 0.01:
+        return Vector3(-to_search.z, 0.0, to_search.x).normalized() * strafe_sign * 0.22
+    return Vector3.ZERO
 
 func _avoid_obstacles(direction: Vector3) -> Vector3:
     var forward := direction
