@@ -141,6 +141,57 @@ func _build_view_weapon() -> void:
     front_sight.position = Vector3(0, 0.075, -0.52)
     front_sight.material_override = mat
     weapon_root.add_child(front_sight)
+    _build_view_arms()
+
+func _build_view_arms() -> void:
+    var sleeve_material := StandardMaterial3D.new()
+    sleeve_material.albedo_color = Color(0.19, 0.22, 0.18)
+    sleeve_material.roughness = 0.96
+    var glove_material := StandardMaterial3D.new()
+    glove_material.albedo_color = Color(0.055, 0.06, 0.055)
+    glove_material.roughness = 1.0
+
+    var left_forearm := MeshInstance3D.new()
+    left_forearm.name = "LeftFirstPersonForearm"
+    var left_mesh := CapsuleMesh.new()
+    left_mesh.radius = 0.075
+    left_mesh.height = 0.52
+    left_forearm.mesh = left_mesh
+    left_forearm.position = Vector3(-0.17, -0.15, -0.23)
+    left_forearm.rotation = Vector3(-1.08, 0.0, -0.28)
+    left_forearm.material_override = sleeve_material
+    weapon_root.add_child(left_forearm)
+
+    var right_forearm := MeshInstance3D.new()
+    right_forearm.name = "RightFirstPersonForearm"
+    var right_mesh := CapsuleMesh.new()
+    right_mesh.radius = 0.078
+    right_mesh.height = 0.46
+    right_forearm.mesh = right_mesh
+    right_forearm.position = Vector3(0.17, -0.17, 0.11)
+    right_forearm.rotation = Vector3(-0.78, 0.0, 0.24)
+    right_forearm.material_override = sleeve_material
+    weapon_root.add_child(right_forearm)
+
+    var left_hand := MeshInstance3D.new()
+    left_hand.name = "LeftFirstPersonGlove"
+    var left_hand_mesh := BoxMesh.new()
+    left_hand_mesh.size = Vector3(0.13, 0.09, 0.14)
+    left_hand.mesh = left_hand_mesh
+    left_hand.position = Vector3(-0.055, -0.075, -0.43)
+    left_hand.rotation.z = -0.16
+    left_hand.material_override = glove_material
+    weapon_root.add_child(left_hand)
+
+    var right_hand := MeshInstance3D.new()
+    right_hand.name = "RightFirstPersonGlove"
+    var right_hand_mesh := BoxMesh.new()
+    right_hand_mesh.size = Vector3(0.13, 0.09, 0.14)
+    right_hand.mesh = right_hand_mesh
+    right_hand.position = Vector3(0.095, -0.105, 0.015)
+    right_hand.rotation.z = 0.18
+    right_hand.material_override = glove_material
+    weapon_root.add_child(right_hand)
 
 func _input(event: InputEvent) -> void:
     # Read mouse motion before full-screen HUD Controls can consume it.
