@@ -286,39 +286,65 @@ func _add_road_markings() -> void:
         alley_mark.add_to_group("service_lane_markings")
 
 func _street_furniture() -> void:
-    # Reusable, low-cost street details: gutters, damaged asphalt, and battered lamps.
+    # Roadside infrastructure now has collision bodies separate from its visible meshes.
     for side in [-1.0, 1.0]:
-        _box("RoadGutter", Vector3(side * 7.25, 0.035, -3.0), Vector3(0.28, 0.07, 76.0), Color(0.075, 0.08, 0.075), false)
-        var pole := Node3D.new()
-        pole.name = "DamagedStreetLamp"
-        pole.position = Vector3(side * 8.4, 0.0, -12.0 if side < 0.0 else 15.0)
-        add_child(pole)
-        var shaft := MeshInstance3D.new()
-        var shaft_mesh := CylinderMesh.new()
-        shaft_mesh.top_radius = 0.075
-        shaft_mesh.bottom_radius = 0.12
-        shaft_mesh.height = 5.4
-        shaft.mesh = shaft_mesh
-        shaft.position.y = 2.7
-        shaft.material_override = _material(Color(0.12, 0.13, 0.12))
-        pole.add_child(shaft)
-        var arm := MeshInstance3D.new()
-        var arm_mesh := BoxMesh.new()
-        arm_mesh.size = Vector3(1.2, 0.08, 0.08)
-        arm.mesh = arm_mesh
-        arm.position = Vector3(-side * 0.48, 5.25, 0.0)
-        arm.material_override = _material(Color(0.12, 0.13, 0.12))
-        pole.add_child(arm)
-        var fixture := MeshInstance3D.new()
-        var fixture_mesh := BoxMesh.new()
-        fixture_mesh.size = Vector3(0.34, 0.12, 0.22)
-        fixture.mesh = fixture_mesh
-        fixture.position = Vector3(-side * 0.95, 5.18, 0.0)
-        var fixture_mat := _material(Color(0.48, 0.34, 0.18))
-        fixture_mat.emission_enabled = true
-        fixture_mat.emission = Color(0.22, 0.10, 0.035)
-        fixture.material_override = fixture_mat
-        pole.add_child(fixture)
+        _box("RoadGutter", Vector3(side * 7.25, 0.035, -3.0), Vector3(0.28, 0.07, 76.0), Color(0.075, 0.08, 0.075), true)
+        for lamp_index in range(4):
+            var lamp_z := -29.0 + float(lamp_index) * 20.0
+            var pole := StaticBody3D.new()
+            pole.name = "DamagedStreetLamp"
+            pole.position = Vector3(side * 8.4, 0.0, lamp_z)
+            pole.add_to_group("street_lamp_collisions")
+            add_child(pole)
+
+            var shaft := MeshInstance3D.new()
+            var shaft_mesh := CylinderMesh.new()
+            shaft_mesh.top_radius = 0.075
+            shaft_mesh.bottom_radius = 0.12
+            shaft_mesh.height = 5.4
+            shaft.mesh = shaft_mesh
+            shaft.position.y = 2.7
+            shaft.material_override = _material(Color(0.12, 0.13, 0.12))
+            pole.add_child(shaft)
+            var shaft_collision := CollisionShape3D.new()
+            var shaft_shape := CapsuleShape3D.new()
+            shaft_shape.radius = 0.13
+            shaft_shape.height = 5.5
+            shaft_collision.shape = shaft_shape
+            shaft_collision.position.y = 2.75
+            pole.add_child(shaft_collision)
+
+            var arm := MeshInstance3D.new()
+            var arm_mesh := BoxMesh.new()
+            arm_mesh.size = Vector3(1.2, 0.08, 0.08)
+            arm.mesh = arm_mesh
+            arm.position = Vector3(-side * 0.48, 5.25, 0.0)
+            arm.material_override = _material(Color(0.12, 0.13, 0.12))
+            pole.add_child(arm)
+            var arm_collision := CollisionShape3D.new()
+            var arm_shape := BoxShape3D.new()
+            arm_shape.size = Vector3(1.2, 0.08, 0.08)
+            arm_collision.shape = arm_shape
+            arm_collision.position = arm.position
+            pole.add_child(arm_collision)
+
+            var fixture := MeshInstance3D.new()
+            var fixture_mesh := BoxMesh.new()
+            fixture_mesh.size = Vector3(0.34, 0.12, 0.22)
+            fixture.mesh = fixture_mesh
+            fixture.position = Vector3(-side * 0.95, 5.18, 0.0)
+            var fixture_mat := _material(Color(0.48, 0.34, 0.18))
+            fixture_mat.emission_enabled = true
+            fixture_mat.emission = Color(0.22, 0.10, 0.035)
+            fixture.material_override = fixture_mat
+            pole.add_child(fixture)
+
+            if lamp_index < 3:
+                var next_z := lamp_z + 20.0
+                var cable_material := _material(Color(0.055, 0.06, 0.055))
+                _cable_segment(Vector3(side * 8.4, 5.72, lamp_z), Vector3(side * 8.4, 5.35, lamp_z + 10.0), 0.018, cable_material)
+                _cable_segment(Vector3(side * 8.4, 5.35, lamp_z + 10.0), Vector3(side * 8.4, 5.72, next_z), 0.018, cable_material)
+
     for patch in [Vector3(-4.8, 0.035, -21.0), Vector3(4.2, 0.035, -5.5), Vector3(-3.1, 0.035, 12.0), Vector3(4.8, 0.035, 29.0)]:
         var asphalt := _box("BrokenAsphalt", patch, Vector3(1.8, 0.025, 2.4), Color(0.14, 0.145, 0.135), false)
         asphalt.rotation_degrees.y = randf_range(-18.0, 18.0)
@@ -327,6 +353,21 @@ func _street_furniture() -> void:
         var z := -34.0 + float((i * 19) % 68)
         var debris := _box("StreetDebris", Vector3(x, 0.12, z), Vector3(0.25 + float(i % 3) * 0.12, 0.18, 0.22 + float(i % 2) * 0.14), Color(0.25, 0.24, 0.21), false)
         debris.rotation_degrees.y = float((i * 37) % 90)
+
+func _cable_segment(start: Vector3, finish: Vector3, radius: float, material: Material) -> void:
+    var delta := finish - start
+    var cable := MeshInstance3D.new()
+    cable.name = "SaggingUtilityCable"
+    var mesh := CylinderMesh.new()
+    mesh.top_radius = radius
+    mesh.bottom_radius = radius
+    mesh.height = delta.length()
+    cable.mesh = mesh
+    cable.position = (start + finish) * 0.5
+    cable.basis = Basis(Vector3.UP, delta.normalized())
+    cable.material_override = material
+    add_child(cable)
+    cable.add_to_group("utility_cables")
 
 func _material(color: Color) -> StandardMaterial3D:
     var key := color.to_html(true)
