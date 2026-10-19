@@ -140,6 +140,7 @@ func _ready() -> void:
     enemy_muzzle_light.shadow_enabled = false
     visual_root.add_child(enemy_muzzle_light)
     _build_limb_meshes()
+    _build_equipment_details()
 
     player = get_tree().get_first_node_in_group("player")
     if not player:
@@ -200,6 +201,88 @@ func set_difficulty(value: String) -> void:
             fire_interval_min = 0.65
             fire_interval_max = 1.25
     fire_timer = fire_interval_max
+
+func _build_equipment_details() -> void:
+    var helmet_material := StandardMaterial3D.new()
+    helmet_material.albedo_color = Color(0.19, 0.22, 0.18)
+    helmet_material.roughness = 0.92
+    var rubber_material := StandardMaterial3D.new()
+    rubber_material.albedo_color = Color(0.045, 0.052, 0.047)
+    rubber_material.roughness = 0.72
+    var fabric_material := StandardMaterial3D.new()
+    fabric_material.albedo_color = Color(0.16, 0.18, 0.14)
+    fabric_material.roughness = 1.0
+    var buckle_material := StandardMaterial3D.new()
+    buckle_material.albedo_color = Color(0.31, 0.29, 0.22)
+    buckle_material.metallic = 0.18
+    buckle_material.roughness = 0.82
+
+    var helmet := MeshInstance3D.new()
+    helmet.name = "Helmet"
+    var helmet_mesh := SphereMesh.new()
+    helmet_mesh.radius = 0.205
+    helmet_mesh.height = 0.25
+    helmet.mesh = helmet_mesh
+    helmet.position = Vector3(0.0, 2.025, 0.015)
+    helmet.material_override = helmet_material
+    visual_root.add_child(helmet)
+    _add_equipment_box("HelmetBrim", Vector3(0.0, 1.985, -0.055), Vector3(0.43, 0.055, 0.32), helmet_material)
+    _add_equipment_box("HelmetMount", Vector3(0.0, 2.105, -0.155), Vector3(0.105, 0.07, 0.07), rubber_material)
+    _add_equipment_box("BallisticGoggles", Vector3(0.0, 1.885, -0.166), Vector3(0.29, 0.085, 0.045), rubber_material)
+    _add_equipment_box("GoggleLens", Vector3(0.0, 1.888, -0.191), Vector3(0.235, 0.038, 0.012), buckle_material)
+
+    _add_equipment_box("TacticalBackpack", Vector3(0.0, 1.22, 0.19), Vector3(0.43, 0.54, 0.22), fabric_material)
+    _add_equipment_box("BackpackTopFlap", Vector3(0.0, 1.48, 0.19), Vector3(0.36, 0.12, 0.235), helmet_material)
+    _add_equipment_box("WaistBelt", Vector3(0.0, 0.79, -0.005), Vector3(0.55, 0.105, 0.29), rubber_material)
+    _add_equipment_box("BeltBuckle", Vector3(0.0, 0.79, -0.165), Vector3(0.09, 0.075, 0.025), buckle_material)
+
+    for index in range(4):
+        var pouch_x := -0.205 + float(index) * 0.137
+        _add_equipment_box("MagazinePouch_%02d" % index, Vector3(pouch_x, 0.91, -0.155), Vector3(0.105, 0.17, 0.09), fabric_material)
+        _add_equipment_box("PouchFlap_%02d" % index, Vector3(pouch_x, 0.96, -0.205), Vector3(0.085, 0.055, 0.018), helmet_material)
+
+    for side in [-1.0, 1.0]:
+        var shoulder := MeshInstance3D.new()
+        shoulder.name = "ShoulderPadLeft" if side < 0.0 else "ShoulderPadRight"
+        var shoulder_mesh := SphereMesh.new()
+        shoulder_mesh.radius = 0.145
+        shoulder_mesh.height = 0.22
+        shoulder.mesh = shoulder_mesh
+        shoulder.position = Vector3(side * 0.365, 1.38, -0.025)
+        shoulder.material_override = helmet_material
+        visual_root.add_child(shoulder)
+        _add_equipment_box("ShoulderWebbingLeft" if side < 0.0 else "ShoulderWebbingRight", Vector3(side * 0.28, 1.40, -0.16), Vector3(0.075, 0.29, 0.035), fabric_material)
+
+    _add_equipment_box("RifleMagazine", Vector3(0.32, 1.105, -0.13), Vector3(0.09, 0.22, 0.14), rubber_material)
+    _add_equipment_box("RifleStock", Vector3(0.32, 1.24, 0.18), Vector3(0.10, 0.105, 0.25), fabric_material)
+    _add_equipment_box("RifleOptic", Vector3(0.32, 1.325, -0.21), Vector3(0.12, 0.085, 0.13), rubber_material)
+    _add_equipment_box("RifleGrip", Vector3(0.32, 1.17, -0.005), Vector3(0.075, 0.15, 0.09), rubber_material)
+    var barrel := MeshInstance3D.new()
+    barrel.name = "RifleBarrel"
+    var barrel_mesh := CylinderMesh.new()
+    barrel_mesh.top_radius = 0.022
+    barrel_mesh.bottom_radius = 0.028
+    barrel_mesh.height = 0.32
+    barrel.mesh = barrel_mesh
+    barrel.position = Vector3(0.32, 1.25, -0.67)
+    barrel.rotation.x = PI * 0.5
+    barrel.material_override = buckle_material
+    visual_root.add_child(barrel)
+
+    _add_limb_end(left_leg_pivot, "LeftKneePad", Vector3(0.0, -0.31, -0.105), Vector3(0.23, 0.19, 0.12), rubber_material)
+    _add_limb_end(right_leg_pivot, "RightKneePad", Vector3(0.0, -0.31, -0.105), Vector3(0.23, 0.19, 0.12), rubber_material)
+    _add_limb_end(left_leg_pivot, "LeftBootToeCap", Vector3(0.0, -0.69, -0.19), Vector3(0.19, 0.10, 0.12), rubber_material)
+    _add_limb_end(right_leg_pivot, "RightBootToeCap", Vector3(0.0, -0.69, -0.19), Vector3(0.19, 0.10, 0.12), rubber_material)
+
+func _add_equipment_box(label: String, local_position: Vector3, size: Vector3, material: Material) -> void:
+    var piece := MeshInstance3D.new()
+    piece.name = label
+    var mesh := BoxMesh.new()
+    mesh.size = size
+    piece.mesh = mesh
+    piece.position = local_position
+    piece.material_override = material
+    visual_root.add_child(piece)
 
 func _build_limb_meshes() -> void:
     var arm_material := StandardMaterial3D.new()
