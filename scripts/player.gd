@@ -10,6 +10,7 @@ const MAG_SIZE := 30
 
 var camera_pivot: Node3D
 var camera: Camera3D
+var weapon_audio: AudioStreamPlayer3D
 var weapon_root: Node3D
 var hud: Node
 var pitch := 0.0
@@ -50,6 +51,7 @@ func _ready() -> void:
     camera.current = true
     camera_pivot.add_child(camera)
     _build_view_weapon()
+    _setup_weapon_audio()
     Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _build_view_weapon() -> void:
@@ -140,6 +142,16 @@ func _input(event: InputEvent) -> void:
         rotate_y(-event.relative.x * mouse_sensitivity)
         pitch = clamp(pitch - event.relative.y * mouse_sensitivity, deg_to_rad(-85), deg_to_rad(85))
         camera_pivot.rotation.x = pitch
+
+func _setup_weapon_audio() -> void:
+    weapon_audio = AudioStreamPlayer3D.new()
+    weapon_audio.name = "WeaponFireAudio"
+    var audio_fx = load("res://scripts/audio_fx.gd")
+    weapon_audio.stream = audio_fx.create_gunshot()
+    weapon_audio.volume_db = -5.0
+    weapon_audio.unit_size = 5.0
+    weapon_audio.max_distance = 55.0
+    add_child(weapon_audio)
 
 func _physics_process(delta: float) -> void:
     if get_tree().paused:
@@ -243,6 +255,8 @@ func _fire() -> void:
     if ammo <= 0:
         _start_reload()
         return
+    if is_instance_valid(weapon_audio):
+        weapon_audio.play()
     ammo -= 1
     fire_cooldown = 0.095
     recoil = 0.055 if ads else 0.09
