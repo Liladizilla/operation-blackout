@@ -63,6 +63,7 @@ func _run_tests() -> void:
     _check(scene.get_node_or_null("EnvironmentDetails") != null, "outer district dressing is attached")
     _check(scene.get_tree().get_nodes_in_group("district_buildings").size() == 8, "eight perimeter buildings are generated")
     _check(scene.get_tree().get_nodes_in_group("service_alley_crates").size() == 5, "service alley utility crates are generated")
+    _check(scene.get_tree().get_nodes_in_group("facade_collapse_rubble").size() == 24, "ruined facades have distributed collapse rubble")
 
     var node_count := _count_nodes(scene)
     var mesh_count := _count_meshes(scene)
