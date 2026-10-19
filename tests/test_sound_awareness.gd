@@ -92,12 +92,18 @@ func _run_tests() -> void:
         enemies[index].global_position = original_enemy_positions[index]
         enemies[index].state = "SEARCH"
         enemies[index].alert_memory_timer = 0.0
+    scene.hostile_investigation_reported = false
+    scene.hostile_contact_reported = false
+    scene.hostile_search_reported = false
     var heard_gunshot: int = scene.call("report_noise", player.global_position, 120.0, "GUNSHOT", player)
     _check(heard_gunshot == enemies.size(), "gunshot noise propagates to all enemies within range")
+    _check(scene.hostile_investigation_reported and scene.hud.status_label.text == "NOISE DETECTED  //  HOSTILES INVESTIGATING GUNFIRE", "real gunshot propagation raises the hostile investigation HUD warning")
     var all_investigating := true
     for enemy in enemies:
         all_investigating = all_investigating and enemy.alert_memory_timer >= 5.0 and enemy.state == "INVESTIGATE"
     _check(all_investigating, "gunshot creates persistent enemy investigation memory")
+    enemies[0]._complete_investigation()
+    _check(scene.hostile_search_reported and scene.hud.status_label.text == "HOSTILES SEARCHING  //  LAST KNOWN POSITION", "finishing an actual investigation advances HUD feedback to search state")
 
     # Hostile gunfire is also audible to nearby members of the opposing squad.
     for index in range(enemies.size()):
