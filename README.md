@@ -8,7 +8,7 @@ A lightweight Godot 4 first-person tactical shooter vertical-slice prototype. Th
 - First-person mouse look, WASD movement, sprint, jump, crouch, prone
 - Aim-down-sights field-of-view change, breathing/strafe sway, recoil, and brief muzzle illumination
 - Assault rifle firing, raycast hit detection, ammunition and reloads
-- Hostile AI: line-of-sight detection, pursuit/strafe, last-known-position investigation, cover-aware repositioning to clear positions beside barriers and service-alley crates, short-range obstacle steering around concrete barriers, visible muzzle flashes during return fire, and hitscan return fire; taking damage triggers a brief hit reaction and suppression/reposition response
+- Hostile AI: line-of-sight detection, pursuit/strafe, last-known-position investigation, cautious approach and lateral movement while searching, cover-aware repositioning across central and outer-district positions, short-range obstacle steering around concrete barriers, visible muzzle flashes during return fire, and hitscan return fire; taking damage triggers a brief hit reaction and suppression/reposition response
 - Health and directional damage feedback, brief respawn protection, headshot-aware hit confirmation, hold-to-recover intel objective gated behind enemy clearance, a marked extraction zone that requires a second hold interaction, pause menu, and mission-complete/replay screen
 - Combat HUD feedback with low-ammo warning colors, stamina percentage and faster recovery while stationary, a live intel distance/bearing indicator, and wrapped viewport-aware text; weapon view shifts into a tighter aim-down-sights position
 - Expanded hostile cover choices across the outer district to reduce repeated movement toward the same central cover positions
