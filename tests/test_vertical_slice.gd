@@ -64,6 +64,7 @@ func _run_tests() -> void:
     _check(scene.get_tree().get_nodes_in_group("district_buildings").size() == 8, "eight perimeter buildings are generated")
     _check(scene.get_tree().get_nodes_in_group("service_alley_crates").size() == 5, "service alley utility crates are generated")
     _check(scene.get_tree().get_nodes_in_group("facade_collapse_rubble").size() == 24, "ruined facades have distributed collapse rubble")
+    _check(scene.get_tree().get_nodes_in_group("ammo_caches").size() == 3, "three ammo resupply caches spawn around the district")
 
     var node_count := _count_nodes(scene)
     var mesh_count := _count_meshes(scene)
@@ -72,6 +73,24 @@ func _run_tests() -> void:
     _check(mesh_count < 650, "procedural scene stays within mesh budget")
 
     var player := scene.get_node("Player")
+    var ammo_caches: Array = scene.get_tree().get_nodes_in_group("ammo_caches")
+    var first_cache: Node = ammo_caches[0]
+    player.reserve = 0
+    first_cache.player_inside = true
+    Input.action_press("interact")
+    first_cache._process(0.016)
+    Input.action_release("interact")
+    _check(first_cache.used and player.reserve == 30, "ammo cache resupplies reserve ammunition")
+    _check(scene.hud.ammo_label.text == "30 / 030", "ammo cache refreshes the HUD")
+    await process_frame
+    var second_cache: Node = ammo_caches[1]
+    player.reserve = 170
+    second_cache.player_inside = true
+    Input.action_press("interact")
+    second_cache._process(0.016)
+    Input.action_release("interact")
+    _check(player.reserve == 180 and second_cache.used, "ammo cache respects the reserve ammunition cap")
+
     var starting_health: float = player.health
     player.apply_damage(12.0, Vector3(3, 0, 3))
     _check(is_equal_approx(player.health, starting_health - 12.0), "player takes damage")
