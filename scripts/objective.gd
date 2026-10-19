@@ -6,11 +6,13 @@ var completed := false
 var area: Area3D
 var beacon_ring: MeshInstance3D
 var beacon_light: OmniLight3D
+var beacon_beam: MeshInstance3D
 var pulse_time := 0.0
 
 func _ready() -> void:
     beacon_ring = get_node_or_null("IntelBeaconRing") as MeshInstance3D
     beacon_light = get_node_or_null("IntelBeaconLight") as OmniLight3D
+    beacon_beam = get_node_or_null("IntelBeaconBeam") as MeshInstance3D
     area = Area3D.new()
     area.name = "IntelInteractionArea"
     area.collision_layer = 0
@@ -28,11 +30,18 @@ func _process(delta: float) -> void:
     if completed:
         return
     pulse_time += delta
+    var collection_ratio := clampf(progress / 2.0, 0.0, 1.0) if player_inside and _all_hostiles_down() and Input.is_action_pressed("interact") else 0.0
     if is_instance_valid(beacon_ring):
-        var pulse := 1.0 + sin(pulse_time * 2.4) * 0.08
+        var pulse := 1.0 + sin(pulse_time * (2.4 + collection_ratio * 5.0)) * (0.08 + collection_ratio * 0.035)
         beacon_ring.scale = Vector3.ONE * pulse
+        beacon_ring.rotation.y += delta * (0.35 + collection_ratio * 2.2)
     if is_instance_valid(beacon_light):
-        beacon_light.light_energy = 0.58 + (sin(pulse_time * 2.1) + 1.0) * 0.22
+        beacon_light.light_energy = 0.58 + (sin(pulse_time * (2.1 + collection_ratio * 4.0)) + 1.0) * 0.22 + collection_ratio * 1.1
+    if is_instance_valid(beacon_beam):
+        var beam_material := beacon_beam.material_override as StandardMaterial3D
+        if is_instance_valid(beam_material):
+            beam_material.albedo_color.a = 0.28 + collection_ratio * 0.42
+            beam_material.emission = Color(0.55, 0.16, 0.025).lerp(Color(1.0, 0.48, 0.12), collection_ratio)
     if not player_inside:
         progress = 0.0
         return
