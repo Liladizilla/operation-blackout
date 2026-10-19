@@ -89,6 +89,9 @@ func _run_tests() -> void:
     _check(alert_receiver.state == "REPOSITION", "suppressed hostiles break from their current firing lane")
     _check(alert_receiver.last_known_position.is_equal_approx(suppression_source), "suppressed hostiles remember the source of incoming fire")
 
+    _check(is_equal_approx(alert_receiver._cover_approach_scale(1.5), 0.5), "hostile slows to half approach speed near cover")
+    _check(is_equal_approx(alert_receiver._cover_approach_scale(0.5), 1.0 / 6.0), "hostile makes a controlled final approach to cover")
+    _check(is_equal_approx(alert_receiver._cover_approach_scale(4.0), 1.0), "hostile keeps full approach speed when cover is distant")
     var first_cover: Vector3 = alert_receiver._choose_cover(suppression_source)
     var second_cover: Vector3 = alert_receiver._choose_cover(suppression_source)
     _check(not first_cover.is_equal_approx(second_cover), "cover selection discourages immediately reusing the previous position")
