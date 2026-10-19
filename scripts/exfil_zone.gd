@@ -4,6 +4,7 @@ var player_inside := false
 var progress := 0.0
 var completed := false
 var current_status := ""
+var beacon_pulse_time := 0.0
 var area: Area3D
 var beacon_light: OmniLight3D
 
@@ -119,6 +120,9 @@ func _build_marker() -> void:
     add_child(smoke)
 
 func _process(delta: float) -> void:
+    beacon_pulse_time += delta
+    if is_instance_valid(beacon_light):
+        beacon_light.light_energy = 0.65 + (sin(beacon_pulse_time * 2.6) + 1.0) * 0.18
     if completed:
         return
     if not player_inside:
