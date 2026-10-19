@@ -28,6 +28,7 @@ var is_crouched := false
 var is_prone := false
 var stamina := MAX_STAMINA
 var stamina_regen_delay := 0.0
+var footstep_noise_timer := 0.0
 var bob_time := 0.0
 var recoil := 0.0
 var ads := false
@@ -212,6 +213,8 @@ func _physics_process(delta: float) -> void:
     velocity.x = move_toward(velocity.x, direction.x * speed, 18.0 * delta)
     velocity.z = move_toward(velocity.z, direction.z * speed, 18.0 * delta)
     move_and_slide()
+    var moving_on_foot := is_on_floor() and input_dir.length() > 0.1 and Vector2(velocity.x, velocity.z).length() > 0.45
+    _update_footstep_noise(delta, moving_on_foot, sprinting)
     bob_time += delta * (velocity.length() * 0.65)
     var bob_scale := 0.0 if input_dir.length() < 0.1 else (0.012 if ads else 0.035)
     if is_crouched:
@@ -236,6 +239,26 @@ func _physics_process(delta: float) -> void:
     camera.rotation.z = lerpf(camera.rotation.z, -input_dir.x * 0.006 + sin(bob_time * 0.4) * 0.0015, delta * 4.0)
     if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and fire_cooldown <= 0 and not is_reloading:
         _fire()
+
+func _update_footstep_noise(delta: float, moving: bool, sprinting: bool) -> void:
+    footstep_noise_timer = maxf(0.0, footstep_noise_timer - delta)
+    if not moving or footstep_noise_timer > 0.0:
+        return
+    var radius := 10.0
+    if is_prone:
+        radius = 1.5
+        footstep_noise_timer = 0.95
+    elif is_crouched:
+        radius = 4.5
+        footstep_noise_timer = 0.72
+    elif sprinting:
+        radius = 20.0
+        footstep_noise_timer = 0.32
+    else:
+        footstep_noise_timer = 0.52
+    var active_scene := get_tree().current_scene
+    if is_instance_valid(active_scene) and active_scene.has_method("report_noise"):
+        active_scene.report_noise(global_position, radius, "FOOTSTEP", self)
 
 func _update_stamina(delta: float, sprinting: bool) -> void:
     if sprinting:
@@ -275,6 +298,9 @@ func _fire() -> void:
     if is_instance_valid(weapon_audio):
         weapon_audio.pitch_scale = randf_range(0.96, 1.04)
         weapon_audio.play()
+    var active_scene := get_tree().current_scene
+    if is_instance_valid(active_scene) and active_scene.has_method("report_noise"):
+        active_scene.report_noise(global_position, 58.0, "GUNSHOT", self)
     ammo -= 1
     fire_cooldown = 0.095
     recoil = 0.055 if ads else 0.09
