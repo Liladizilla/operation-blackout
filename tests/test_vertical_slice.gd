@@ -328,6 +328,7 @@ func _run_tests() -> void:
         exfil.player_inside = true
         Input.action_press("interact")
         exfil._process(0.5)
+        exfil._process(0.1)
         _check(exfil.beacon_mesh_instance.rotation.y > 0.0, "extraction beacon rotates during confirmation")
         _check(exfil.beacon_light.light_energy > 1.0, "extraction beacon intensifies during confirmation")
         var exfil_material := exfil.beacon_mesh_instance.material_override as StandardMaterial3D
