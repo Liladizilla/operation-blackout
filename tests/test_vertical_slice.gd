@@ -138,6 +138,10 @@ func _run_tests() -> void:
 
     var exfil: Node = scene.get_node_or_null("ExfilZone")
     if exfil:
+        _check(exfil.get_node_or_null("ExfilBeacon") != null, "extraction zone has a visible beacon")
+        scene.hud._update_navigation()
+        _check(scene.hud.navigation_label.text.begins_with("EXFIL"), "HUD switches navigation from intel to extraction")
+    if exfil:
         scene.player.global_position = Vector3(0.0, 1.2, 39.0)
         exfil.player_inside = true
         Input.action_press("interact")
