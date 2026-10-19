@@ -827,8 +827,8 @@ func report_hostile_investigation(_enemy: Node, noise_type: String) -> void:
         hud.call("notify_hostile_investigation", noise_type)
 
 func report_hostile_search(_enemy: Node) -> void:
-    # A single search update communicates that the first noise investigation has lost the trail.
-    if hostile_search_reported or mission_complete or enemies.is_empty():
+    # Search feedback must not replace a stronger visual-contact or mission-completion update.
+    if hostile_search_reported or hostile_contact_reported or mission_complete or enemies.is_empty():
         return
     hostile_search_reported = true
     if is_instance_valid(hud):
