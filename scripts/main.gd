@@ -801,6 +801,8 @@ func enemy_killed(enemy: Node) -> void:
         hostiles_eliminated += 1
     if is_instance_valid(hud):
         hud.call("set_enemy_count", enemies.size())
+        if not enemies.is_empty():
+            hud.call("notify_hostile_neutralized", enemies.size())
     if enemies.is_empty():
         if is_instance_valid(hud):
             hud.call("set_mission_state", "AREA SECURE. RECOVER THE INTEL.")
