@@ -347,6 +347,10 @@ func _run_tests() -> void:
     _check(scene.get_node_or_null("IntelObjective") == null, "intel objective completes and is removed")
     _check(scene.get_node_or_null("ExfilZone") != null, "recovering intel activates the extraction zone")
     _check(not scene.mission_complete and scene.hud.objective_label.text.contains("MOVE TO EXFIL"), "intel recovery starts a separate extraction phase")
+    _check(scene.mission_phase == "EXTRACTION", "mission phase advances to extraction after intel recovery")
+    var first_exfil: Node = scene.get_node_or_null("ExfilZone")
+    scene.objective_complete()
+    _check(scene.get_node_or_null("ExfilZone") == first_exfil, "duplicate intel-completion callback cannot create a second extraction zone")
 
     var exfil: Node = scene.get_node_or_null("ExfilZone")
     if exfil:
@@ -375,6 +379,10 @@ func _run_tests() -> void:
     await process_frame
     _check(scene.get_node_or_null("ExfilZone") == null, "holding interact completes extraction and removes the zone")
     _check(scene.mission_complete and scene.hud.objective_label.text.contains("EXFILTRATION COMPLETE"), "extraction completes the mission and updates HUD")
+    _check(scene.mission_phase == "COMPLETE", "successful extraction moves mission into its terminal phase")
+    var completed_objective_text: String = scene.hud.objective_label.text
+    scene.exfiltration_complete()
+    _check(scene.mission_phase == "COMPLETE" and scene.hud.objective_label.text == completed_objective_text, "duplicate extraction callback cannot replay or alter completed mission state")
     _check(scene.hud.mission_stats_label != null and scene.hud.mission_stats_label.text.contains("HOSTILES NEUTRALIZED 5"), "mission debrief reports hostiles eliminated")
     _check(scene.hud.mission_stats_label.text.contains("FRAGS 1") and scene.hud.mission_stats_label.text.contains("AMMO CACHES 2"), "mission debrief reports grenade and resupply usage")
     _check(paused, "mission completion pauses gameplay behind the debrief")
