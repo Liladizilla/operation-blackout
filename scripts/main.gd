@@ -251,7 +251,7 @@ func _build_distant_skyline() -> void:
             var depth := -62.0 + float(row) * 14.0
             var height := 9.0 + float(absi(row * 7 + int(side * 3.0)) % 8) * 2.1
             var width := 5.5 + float((row * 3) % 5) * 1.7
-            var x := side * (53.0 + float((row * 11) % 9))
+            var x: float = side * (53.0 + float((row * 11) % 9))
             var z := depth + float((row % 3) - 1) * 4.0
             var color: Color = palettes[index % palettes.size()]
             index += 1
@@ -264,7 +264,7 @@ func _build_distant_skyline() -> void:
                 _box_child(skyline_root, "RoofAerial_%02d" % index, Vector3(x + width * 0.22, height + 1.25, z), Vector3(0.08, 2.5, 0.08), Color(0.10, 0.11, 0.10), false)
             # Sparse, dim window slits provide scale without turning the horizon into a grid.
             for window_index in range(2 + row % 3):
-                var window_x := x - width * 0.35 + float(window_index) * width * 0.28
+                var window_x: float = x - width * 0.35 + float(window_index) * width * 0.28
                 var window_y := 2.0 + float((window_index * 3 + row) % maxi(1, int(height / 3.0))) * 2.5
                 if window_y < height - 0.8:
                     _box_child(skyline_root, "HorizonWindow_%02d_%02d" % [index, window_index], Vector3(window_x, window_y, z - (4.0 + float(row % 4) * 1.8) * 0.5 - 0.035), Vector3(0.38, 0.7, 0.06), Color(0.10, 0.12, 0.12), false)
@@ -364,7 +364,7 @@ func _cable_segment(start: Vector3, finish: Vector3, radius: float, material: Ma
     mesh.height = delta.length()
     cable.mesh = mesh
     cable.position = (start + finish) * 0.5
-    cable.basis = Basis(Vector3.UP, delta.normalized())
+    cable.quaternion = Quaternion(Vector3.UP, delta.normalized())
     cable.material_override = material
     add_child(cable)
     cable.add_to_group("utility_cables")
@@ -404,13 +404,14 @@ func _building(pos: Vector3, size: Vector3, color: Color) -> void:
     var balcony_col := columns - 1 if pos.x < 0.0 else 0
     var balcony_x := pos.x - size.x * 0.5 + size.x * (float(balcony_col) + 0.5) / float(columns)
     var balcony_y := pos.y + 2.1
+    var balcony_width := minf(1.15, size.x / float(columns) * 0.48)
     var balcony_z := pos.z - size.z * 0.5 - 0.58
-    var balcony := _box("DamagedBalcony", Vector3(balcony_x, balcony_y - 0.72, balcony_z), Vector3(ww + 0.52, 0.14, 0.82), color.darkened(0.12), true)
+    var balcony := _box("DamagedBalcony", Vector3(balcony_x, balcony_y - 0.72, balcony_z), Vector3(balcony_width + 0.52, 0.14, 0.82), color.darkened(0.12), true)
     balcony.add_to_group("facade_balconies")
     var rail_material := Color(0.15, 0.16, 0.14)
-    _box("BalconyFrontRail", Vector3(balcony_x, balcony_y - 0.12, balcony_z - 0.36), Vector3(ww + 0.42, 0.075, 0.065), rail_material, true)
+    _box("BalconyFrontRail", Vector3(balcony_x, balcony_y - 0.12, balcony_z - 0.36), Vector3(balcony_width + 0.42, 0.075, 0.065), rail_material, true)
     for side in [-1.0, 1.0]:
-        _box("BalconySideRail", Vector3(balcony_x + side * (ww + 0.42) * 0.5, balcony_y - 0.35, balcony_z), Vector3(0.065, 0.62, 0.72), rail_material, true)
+        _box("BalconySideRail", Vector3(balcony_x + side * (balcony_width + 0.42) * 0.5, balcony_y - 0.35, balcony_z), Vector3(0.065, 0.62, 0.72), rail_material, true)
         _box("BalconyRailPost", Vector3(balcony_x + side * (ww + 0.42) * 0.5, balcony_y - 0.35, balcony_z - 0.36), Vector3(0.065, 0.62, 0.065), rail_material, true)
 
     # Exposed reinforcement, cracked plaster, and battered service equipment.
