@@ -11,6 +11,7 @@ const MAX_STAMINA := 8.0
 const STAMINA_REGEN_DELAY := 1.0
 const SPENT_CASING_SCRIPT = preload("res://scripts/spent_casing.gd")
 const BULLET_IMPACT_SCRIPT = preload("res://scripts/bullet_impact.gd")
+const MAX_IMPACT_AUDIO := 8
 const MAX_SPENT_CASINGS := 8
 const MAX_BULLET_IMPACTS := 12
 const STAMINA_REGEN_RATE := 1.4
@@ -439,6 +440,7 @@ func _fire() -> void:
                 hud.flash_hitmarker(killed, headshot)
         if not confirmed_hit and collider is StaticBody3D:
             _spawn_bullet_impact(hit.get("position", to), hit.get("normal", Vector3.UP))
+            _play_impact_audio(hit.get("position", to))
         _impact_spark(hit.get("position", to), hit.get("normal", Vector3.UP))
     var scene := get_tree().current_scene
     if is_instance_valid(scene) and scene.has_method("register_shot"):
@@ -522,6 +524,28 @@ func _spawn_bullet_impact(pos: Vector3, normal: Vector3) -> void:
     mark.set_script(BULLET_IMPACT_SCRIPT)
     active_scene.add_child(mark)
     mark.call("configure", pos, normal)
+
+func _play_impact_audio(pos: Vector3) -> void:
+    var active_scene := get_tree().current_scene
+    if not is_instance_valid(active_scene):
+        return
+    var existing := get_tree().get_nodes_in_group("impact_audio")
+    while existing.size() >= MAX_IMPACT_AUDIO:
+        var oldest := existing.pop_front() as Node
+        if is_instance_valid(oldest):
+            oldest.queue_free()
+    var audio_fx = load("res://scripts/audio_fx.gd")
+    var emitter := AudioStreamPlayer3D.new()
+    emitter.name = "BulletImpactAudio"
+    emitter.add_to_group("impact_audio")
+    emitter.stream = audio_fx.create_impact()
+    emitter.volume_db = -10.0
+    emitter.unit_size = 4.0
+    emitter.max_distance = 32.0
+    active_scene.add_child(emitter)
+    emitter.global_position = pos
+    emitter.play()
+    emitter.finished.connect(emitter.queue_free)
 
 func _impact_spark(pos: Vector3, normal: Vector3) -> void:
     var marker := MeshInstance3D.new()
