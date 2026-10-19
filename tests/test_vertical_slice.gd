@@ -86,6 +86,8 @@ func _run_tests() -> void:
     _check(scene.get_tree().get_nodes_in_group("district_buildings").size() == 8, "eight perimeter buildings are generated")
     _check(scene.get_tree().get_nodes_in_group("service_alley_crates").size() == 5, "service alley utility crates are generated")
     _check(scene.get_tree().get_nodes_in_group("facade_collapse_rubble").size() == 24, "ruined facades have distributed collapse rubble")
+    _check(scene.get_tree().get_nodes_in_group("facade_balconies").size() == 6, "main district buildings have varied damaged balcony silhouettes")
+    _check(scene.get_tree().get_nodes_in_group("facade_damage_details").size() >= 24, "main district facades include cracks, exposed rebar and battered service equipment")
     _check(scene.get_tree().get_nodes_in_group("ammo_caches").size() == 3, "three ammo resupply caches spawn around the district")
 
     var node_count := _count_nodes(scene)
