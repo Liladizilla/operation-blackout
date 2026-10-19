@@ -87,6 +87,8 @@ func _run_tests() -> void:
     _check(scene.get_tree().get_nodes_in_group("service_alley_crates").size() == 5, "service alley utility crates are generated")
     _check(scene.get_tree().get_nodes_in_group("facade_collapse_rubble").size() == 24, "ruined facades have distributed collapse rubble")
     _check(scene.get_tree().get_nodes_in_group("facade_balconies").size() == 6, "main district buildings have varied damaged balcony silhouettes")
+    var first_balcony := scene.get_tree().get_nodes_in_group("facade_balconies")[0] as StaticBody3D
+    _check(first_balcony != null and first_balcony.get_child_count() >= 2, "damaged balcony platforms have physical collision shapes")
     _check(scene.get_tree().get_nodes_in_group("facade_damage_details").size() >= 24, "main district facades include cracks, exposed rebar and battered service equipment")
     _check(scene.get_tree().get_nodes_in_group("ammo_caches").size() == 3, "three ammo resupply caches spawn around the district")
 
