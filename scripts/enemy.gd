@@ -619,6 +619,18 @@ func _show_muzzle_flash() -> void:
     enemy_muzzle_light.light_energy = 1.6
     muzzle_flash_timer = 0.055
 
+func apply_suppression(source_position: Vector3) -> void:
+    if is_dead or health <= 0.0:
+        return
+    last_known_position = source_position
+    alert_memory_timer = maxf(alert_memory_timer, 3.5)
+    suppression_timer = maxf(suppression_timer, 0.85)
+    cover_timer = 0.0
+    think_timer = 0.0
+    if state != "COMBAT":
+        state = "REPOSITION"
+    _broadcast_alert(source_position)
+
 func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot: bool = false) -> bool:
     if is_dead:
         return true
