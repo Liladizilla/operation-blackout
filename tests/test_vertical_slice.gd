@@ -48,6 +48,11 @@ func _run_tests() -> void:
     _check(paused, "mission briefing pauses the operation before deployment")
     scene.hud.dismiss_briefing()
     _check(not paused, "deploying dismisses briefing and resumes the operation")
+    _check(scene.mission_phase == "ENGAGEMENT", "deployment begins the engagement mission phase")
+    scene.objective_complete()
+    _check(scene.mission_phase == "ENGAGEMENT" and scene.get_node_or_null("ExfilZone") == null, "intel completion cannot skip the hostile-clear phase")
+    scene.exfiltration_complete()
+    _check(not scene.mission_complete and scene.mission_phase == "ENGAGEMENT", "extraction cannot complete before intel recovery")
     await physics_frame
 
     _check(scene.get_node_or_null("Player") != null, "player spawns")
