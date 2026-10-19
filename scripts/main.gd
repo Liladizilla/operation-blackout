@@ -324,13 +324,13 @@ func _building(pos: Vector3, size: Vector3, color: Color) -> void:
     var balcony_x := pos.x - size.x * 0.5 + size.x * (float(balcony_col) + 0.5) / float(columns)
     var balcony_y := pos.y + 2.1
     var balcony_z := pos.z - size.z * 0.5 - 0.58
-    var balcony := _box("DamagedBalcony", Vector3(balcony_x, balcony_y - 0.72, balcony_z), Vector3(ww + 0.52, 0.14, 0.82), color.darkened(0.12), false)
+    var balcony := _box("DamagedBalcony", Vector3(balcony_x, balcony_y - 0.72, balcony_z), Vector3(ww + 0.52, 0.14, 0.82), color.darkened(0.12), true)
     balcony.add_to_group("facade_balconies")
     var rail_material := Color(0.15, 0.16, 0.14)
-    _box("BalconyFrontRail", Vector3(balcony_x, balcony_y - 0.12, balcony_z - 0.36), Vector3(ww + 0.42, 0.075, 0.065), rail_material, false)
+    _box("BalconyFrontRail", Vector3(balcony_x, balcony_y - 0.12, balcony_z - 0.36), Vector3(ww + 0.42, 0.075, 0.065), rail_material, true)
     for side in [-1.0, 1.0]:
-        _box("BalconySideRail", Vector3(balcony_x + side * (ww + 0.42) * 0.5, balcony_y - 0.35, balcony_z), Vector3(0.065, 0.62, 0.72), rail_material, false)
-        _box("BalconyRailPost", Vector3(balcony_x + side * (ww + 0.42) * 0.5, balcony_y - 0.35, balcony_z - 0.36), Vector3(0.065, 0.62, 0.065), rail_material, false)
+        _box("BalconySideRail", Vector3(balcony_x + side * (ww + 0.42) * 0.5, balcony_y - 0.35, balcony_z), Vector3(0.065, 0.62, 0.72), rail_material, true)
+        _box("BalconyRailPost", Vector3(balcony_x + side * (ww + 0.42) * 0.5, balcony_y - 0.35, balcony_z - 0.36), Vector3(0.065, 0.62, 0.065), rail_material, true)
 
     # Exposed reinforcement, cracked plaster, and battered service equipment.
     for damage_index in range(2):
@@ -342,7 +342,7 @@ func _building(pos: Vector3, size: Vector3, color: Color) -> void:
         var rebar := _box("RustedRebar", Vector3(pos.x + (-0.32 if damage_index == 0 else 0.34) * size.x, pos.y + size.y + 0.34, pos.z - size.z * 0.2), Vector3(0.045, 0.78, 0.045), Color(0.23, 0.12, 0.075), false)
         rebar.rotation_degrees.z = 24.0 if damage_index == 0 else -21.0
         rebar.add_to_group("facade_damage_details")
-    var ac_unit := _box("BatteredAirConditioner", Vector3(pos.x + size.x * 0.27, pos.y + minf(3.1, size.y * 0.52), pos.z - size.z * 0.5 - 0.24), Vector3(0.72, 0.46, 0.28), Color(0.19, 0.20, 0.18), false)
+    var ac_unit := _box("BatteredAirConditioner", Vector3(pos.x + size.x * 0.27, pos.y + minf(3.1, size.y * 0.52), pos.z - size.z * 0.5 - 0.24), Vector3(0.72, 0.46, 0.28), Color(0.19, 0.20, 0.18), true)
     ac_unit.add_to_group("facade_damage_details")
     for grille_index in range(3):
         _box("AirConditionerGrille", Vector3(pos.x + size.x * 0.27 - 0.2 + float(grille_index) * 0.2, pos.y + minf(3.1, size.y * 0.52), pos.z - size.z * 0.5 - 0.40), Vector3(0.035, 0.29, 0.025), Color(0.07, 0.08, 0.075), false)
