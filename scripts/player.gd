@@ -14,6 +14,7 @@ const STAMINA_REGEN_RATE := 1.4
 var camera_pivot: Node3D
 var camera: Camera3D
 var weapon_audio: AudioStreamPlayer3D
+var footstep_audio: AudioStreamPlayer3D
 var weapon_root: Node3D
 var hud: Node
 var pitch := 0.0
@@ -57,6 +58,7 @@ func _ready() -> void:
     camera_pivot.add_child(camera)
     _build_view_weapon()
     _setup_weapon_audio()
+    _setup_footstep_audio()
     Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _build_view_weapon() -> void:
@@ -158,6 +160,16 @@ func _setup_weapon_audio() -> void:
     weapon_audio.max_distance = 55.0
     add_child(weapon_audio)
 
+func _setup_footstep_audio() -> void:
+    footstep_audio = AudioStreamPlayer3D.new()
+    footstep_audio.name = "FootstepAudio"
+    var audio_fx = load("res://scripts/audio_fx.gd")
+    footstep_audio.stream = audio_fx.create_footstep()
+    footstep_audio.volume_db = -8.0
+    footstep_audio.unit_size = 3.5
+    footstep_audio.max_distance = 26.0
+    add_child(footstep_audio)
+
 func _physics_process(delta: float) -> void:
     if get_tree().paused:
         return
@@ -245,17 +257,29 @@ func _update_footstep_noise(delta: float, moving: bool, sprinting: bool) -> void
     if not moving or footstep_noise_timer > 0.0:
         return
     var radius := 10.0
+    var step_volume := -8.0
+    var step_pitch := randf_range(0.94, 1.04)
     if is_prone:
         radius = 1.5
         footstep_noise_timer = 0.95
+        step_volume = -17.0
+        step_pitch = 0.72
     elif is_crouched:
         radius = 4.5
         footstep_noise_timer = 0.72
+        step_volume = -12.0
+        step_pitch = 0.84
     elif sprinting:
         radius = 20.0
         footstep_noise_timer = 0.32
+        step_volume = -3.0
+        step_pitch = 1.12
     else:
         footstep_noise_timer = 0.52
+    if is_instance_valid(footstep_audio):
+        footstep_audio.volume_db = step_volume
+        footstep_audio.pitch_scale = step_pitch
+        footstep_audio.play()
     var active_scene := get_tree().current_scene
     if is_instance_valid(active_scene) and active_scene.has_method("report_noise"):
         active_scene.report_noise(global_position, radius, "FOOTSTEP", self)
