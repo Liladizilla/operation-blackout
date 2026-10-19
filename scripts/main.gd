@@ -87,6 +87,8 @@ func _key_action(action: String, keycode: int) -> void:
         InputMap.action_add_event(action, event)
 
 func _input(event: InputEvent) -> void:
+    if mission_complete:
+        return
     if is_instance_valid(hud) and hud.has_method("is_briefing_open") and hud.call("is_briefing_open"):
         return
     if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
