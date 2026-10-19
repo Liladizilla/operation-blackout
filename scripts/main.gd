@@ -318,6 +318,35 @@ func _building(pos: Vector3, size: Vector3, color: Color) -> void:
             _box("WindowSill", Vector3(wx, wy - 0.64, pos.z - size.z * 0.5 - 0.08), Vector3(ww + 0.28, 0.13, 0.18), color.darkened(0.12), false)
             if (row + col) % 4 == 1:
                 _box("BrokenShutter", Vector3(wx + ww * 0.25, wy, pos.z - size.z * 0.5 - 0.13), Vector3(0.08, 0.95, 0.08), Color(0.16, 0.15, 0.12), false)
+    # One damaged balcony per block gives the skyline a different silhouette
+    # while keeping the collision hull simple and predictable.
+    var balcony_col := columns - 1 if pos.x < 0.0 else 0
+    var balcony_x := pos.x - size.x * 0.5 + size.x * (float(balcony_col) + 0.5) / float(columns)
+    var balcony_y := pos.y + 2.1
+    var balcony_z := pos.z - size.z * 0.5 - 0.58
+    var balcony := _box("DamagedBalcony", Vector3(balcony_x, balcony_y - 0.72, balcony_z), Vector3(ww + 0.52, 0.14, 0.82), color.darkened(0.12), false)
+    balcony.add_to_group("facade_balconies")
+    var rail_material := Color(0.15, 0.16, 0.14)
+    _box("BalconyFrontRail", Vector3(balcony_x, balcony_y - 0.12, balcony_z - 0.36), Vector3(ww + 0.42, 0.075, 0.065), rail_material, false)
+    for side in [-1.0, 1.0]:
+        _box("BalconySideRail", Vector3(balcony_x + side * (ww + 0.42) * 0.5, balcony_y - 0.35, balcony_z), Vector3(0.065, 0.62, 0.72), rail_material, false)
+        _box("BalconyRailPost", Vector3(balcony_x + side * (ww + 0.42) * 0.5, balcony_y - 0.35, balcony_z - 0.36), Vector3(0.065, 0.62, 0.065), rail_material, false)
+
+    # Exposed reinforcement, cracked plaster, and battered service equipment.
+    for damage_index in range(2):
+        var crack_x := pos.x + (-0.24 if damage_index == 0 else 0.31) * size.x
+        var crack_y := pos.y + size.y * (0.42 if damage_index == 0 else 0.68)
+        var crack := _box("FacadeCrack", Vector3(crack_x, crack_y, pos.z - size.z * 0.5 - 0.17), Vector3(0.055, minf(2.1, size.y * 0.34), 0.035), color.darkened(0.32), false)
+        crack.rotation_degrees.z = -18.0 if damage_index == 0 else 13.0
+        crack.add_to_group("facade_damage_details")
+        var rebar := _box("RustedRebar", Vector3(pos.x + (-0.32 if damage_index == 0 else 0.34) * size.x, pos.y + size.y + 0.34, pos.z - size.z * 0.2), Vector3(0.045, 0.78, 0.045), Color(0.23, 0.12, 0.075), false)
+        rebar.rotation_degrees.z = 24.0 if damage_index == 0 else -21.0
+        rebar.add_to_group("facade_damage_details")
+    var ac_unit := _box("BatteredAirConditioner", Vector3(pos.x + size.x * 0.27, pos.y + minf(3.1, size.y * 0.52), pos.z - size.z * 0.5 - 0.24), Vector3(0.72, 0.46, 0.28), Color(0.19, 0.20, 0.18), false)
+    ac_unit.add_to_group("facade_damage_details")
+    for grille_index in range(3):
+        _box("AirConditionerGrille", Vector3(pos.x + size.x * 0.27 - 0.2 + float(grille_index) * 0.2, pos.y + minf(3.1, size.y * 0.52), pos.z - size.z * 0.5 - 0.40), Vector3(0.035, 0.29, 0.025), Color(0.07, 0.08, 0.075), false)
+
     # Side-wall vents and a service entrance break up the large silhouette.
     for side in [-1.0, 1.0]:
         for row in range(rows):
@@ -370,7 +399,7 @@ func _surface_kind_for_name(label: String) -> float:
         return 2.0
     if label in ["Road", "BrokenAsphalt", "RoadGutter", "ServiceLane"]:
         return 1.0
-    if label in ["Building", "OuterDistrictBuilding", "RoofRubble", "CollapsedRoof", "ConcreteBarrier", "ExposedFacadeRib"]:
+    if label in ["Building", "OuterDistrictBuilding", "RoofRubble", "CollapsedRoof", "ConcreteBarrier", "ExposedFacadeRib", "DamagedBalcony"]:
         return 0.0
     return -1.0
 
