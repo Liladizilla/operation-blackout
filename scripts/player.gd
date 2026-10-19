@@ -131,8 +131,10 @@ func _build_view_weapon() -> void:
     front_sight.material_override = mat
     weapon_root.add_child(front_sight)
 
-func _unhandled_input(event: InputEvent) -> void:
-    if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+func _input(event: InputEvent) -> void:
+    # Read mouse motion before full-screen HUD Controls can consume it.
+    # The camera should only rotate while the game owns the captured mouse.
+    if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not get_tree().paused:
         rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
         pitch = clamp(pitch - event.relative.y * MOUSE_SENSITIVITY, deg_to_rad(-85), deg_to_rad(85))
         camera_pivot.rotation.x = pitch
