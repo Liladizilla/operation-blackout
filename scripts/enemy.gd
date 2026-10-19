@@ -264,6 +264,18 @@ func hear_alert(threat_position: Vector3) -> void:
         cover_timer = 1.2
     think_timer = minf(think_timer, 0.1)
 
+func _get_district_cover_candidates() -> Array[Vector3]:
+    var candidates: Array[Vector3] = []
+    var offsets := [Vector3(-1.65, 0, 0), Vector3(1.65, 0, 0), Vector3(0, 0, -1.35), Vector3(0, 0, 1.35)]
+    for group_name in ["ammo_caches", "service_alley_crates"]:
+        for prop in get_tree().get_nodes_in_group(group_name):
+            if not is_instance_valid(prop):
+                continue
+            var prop_position: Vector3 = prop.global_position
+            for offset in offsets:
+                candidates.append(prop_position + offset)
+    return candidates
+
 func _choose_cover(threat_position: Vector3) -> Vector3:
     # Candidate positions sit near concrete barriers and wreckage in the arena.
     # Stand beside cover rather than targeting the solid center of each obstacle.
@@ -279,20 +291,9 @@ func _choose_cover(threat_position: Vector3) -> Vector3:
         Vector3(-28.5, 0, 0), Vector3(-28.5, 0, 12),
         Vector3(-28.5, 0, 24)
     ]
-    # Add positions beside actual service-alley caches so nearby enemies can use
-    # the expanded district rather than treating the original arena as the map.
-    for cache in get_tree().get_nodes_in_group("ammo_caches"):
-        if not is_instance_valid(cache):
-            continue
-        var cache_position: Vector3 = cache.global_position
-        for offset in [Vector3(-1.65, 0, 0), Vector3(1.65, 0, 0), Vector3(0, 0, -1.35), Vector3(0, 0, 1.35)]:
-            candidates.append(cache_position + offset)
-    for crate in get_tree().get_nodes_in_group("service_alley_crates"):
-        if not is_instance_valid(crate):
-            continue
-        var crate_position: Vector3 = crate.global_position
-        for offset in [Vector3(-1.65, 0, 0), Vector3(1.65, 0, 0), Vector3(0, 0, -1.35), Vector3(0, 0, 1.35)]:
-            candidates.append(crate_position + offset)
+    # Include cover positions around usable resupply caches and the outer
+    # service-alley crates, not just the original central arena.
+    candidates.append_array(_get_district_cover_candidates())
     var best := global_position
     var best_score := -INF
     for candidate in candidates:
