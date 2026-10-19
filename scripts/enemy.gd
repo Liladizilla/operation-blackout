@@ -1,6 +1,11 @@
 extends CharacterBody3D
 
 var health := 100.0
+var shot_damage := 7.0
+var detection_range := 30.0
+var fire_interval_min := 0.65
+var fire_interval_max := 1.25
+var difficulty := "STANDARD"
 var player: Node3D
 var state := "SEARCH"
 var think_timer := 0.0
@@ -125,6 +130,28 @@ func _ready() -> void:
     add_child(enemy_fire_audio)
     add_to_group("enemies")
     _initialize_patrol()
+    set_difficulty(difficulty)
+
+func set_difficulty(value: String) -> void:
+    difficulty = value.strip_edges().to_upper()
+    match difficulty:
+        "RECRUIT":
+            shot_damage = 4.0
+            detection_range = 25.0
+            fire_interval_min = 1.0
+            fire_interval_max = 1.7
+        "VETERAN":
+            shot_damage = 10.0
+            detection_range = 34.0
+            fire_interval_min = 0.45
+            fire_interval_max = 0.9
+        _:
+            difficulty = "STANDARD"
+            shot_damage = 7.0
+            detection_range = 30.0
+            fire_interval_min = 0.65
+            fire_interval_max = 1.25
+    fire_timer = fire_interval_max
 
 func _physics_process(delta: float) -> void:
     if get_tree().paused:
@@ -153,7 +180,7 @@ func _physics_process(delta: float) -> void:
         var query := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 1.2, player.global_position + Vector3.UP * 1.3)
         query.exclude = [get_rid()]
         var sight := get_world_3d().direct_space_state.intersect_ray(query)
-        var sees_player: bool = distance < 30.0 and (sight.is_empty() or sight.get("collider") == player)
+        var sees_player: bool = distance < detection_range and (sight.is_empty() or sight.get("collider") == player)
         var grenade_threat := _nearest_grenade_threat()
         if is_instance_valid(grenade_threat):
             if state != "REPOSITION" or cover_timer <= 0.0:
@@ -196,8 +223,8 @@ func _physics_process(delta: float) -> void:
         else:
             target_dir = Vector3(-to_player.z,0,to_player.x).normalized() * strafe_sign * 0.42
         look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
-        if distance_to_player < 25 and fire_timer <= 0:
-            fire_timer = randf_range(0.65,1.25)
+        if distance_to_player < maxf(10.0, detection_range - 5.0) and fire_timer <= 0:
+            fire_timer = randf_range(fire_interval_min, fire_interval_max)
             _try_shoot_player()
     elif state == "REPOSITION":
         var to_cover := cover_goal - global_position
@@ -458,7 +485,7 @@ func _try_shoot_player() -> void:
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
     if not hit.is_empty() and hit.get("collider") == player:
         if player.has_method("apply_damage"):
-            player.apply_damage(7.0, global_position)
+            player.apply_damage(shot_damage, global_position)
 
 func _show_muzzle_flash() -> void:
     enemy_muzzle_flash.visible = true
