@@ -263,7 +263,8 @@ func _animate_visuals(delta: float) -> void:
         left_arm_pivot.rotation.x = lerpf(left_arm_pivot.rotation.x, 0.0, delta * 7.0)
         right_arm_pivot.rotation.x = lerpf(right_arm_pivot.rotation.x, 0.0, delta * 7.0)
         visual_root.position.y = lerpf(visual_root.position.y, sin(gait_time) * 0.006, delta * 4.0)
-        visual_root.rotation.z = lerpf(visual_root.rotation.z, 0.0, delta * 4.0)
+        # Remove the previous frame's flinch offset before recentering the idle lean.
+        visual_root.rotation.z = lerpf(visual_root.rotation.z - hit_reaction_direction * 0.12 * reaction_strength, 0.0, delta * 4.0)
     # Layer a brief upper-body flinch over locomotion without freezing movement.
     visual_root.rotation.x = -0.16 * reaction_strength
     visual_root.rotation.z += hit_reaction_direction * 0.12 * reaction_strength
