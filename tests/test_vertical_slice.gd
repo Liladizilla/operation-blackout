@@ -1,0 +1,74 @@
+extends SceneTree
+
+var failed := false
+var passed := 0
+
+func _initialize() -> void:
+    call_deferred("_run_tests")
+
+func _check(condition: bool, message: String) -> void:
+    if condition:
+        passed += 1
+        print("PASS: ", message)
+    else:
+        failed = true
+        push_error("FAIL: " + message)
+
+func _run_tests() -> void:
+    var packed := load("res://scenes/main.tscn") as PackedScene
+    _check(packed != null, "main scene resource loads")
+    if packed == null:
+        quit(1)
+        return
+
+    var scene := packed.instantiate()
+    current_scene = scene
+    root.add_child(scene)
+    await process_frame
+    await physics_frame
+
+    _check(scene.get_node_or_null("Player") != null, "player spawns")
+    _check(scene.get_remaining_enemies() == 5, "five hostiles spawn")
+    _check(scene.get_node_or_null("IntelObjective") != null, "intel objective spawns")
+
+    var player := scene.get_node("Player")
+    var starting_health: float = player.health
+    player.apply_damage(12.0, Vector3(3, 0, 3))
+    _check(is_equal_approx(player.health, starting_health - 12.0), "player takes damage")
+    player.health = 1.0
+    player.apply_damage(10.0)
+    _check(is_equal_approx(player.health, 100.0), "player respawn restores health")
+
+    player.ammo = 5
+    player.reserve = 30
+    player._start_reload()
+    _check(player.is_reloading, "reload enters active state")
+    player.reload_time = 0.01
+    player._physics_process(0.02)
+    _check(not player.is_reloading and player.ammo == 30 and player.reserve == 5, "reload transfers ammunition and exits state")
+
+    var first_enemy: Node = scene.enemies[0]
+    var survived: bool = first_enemy.take_damage(10.0)
+    _check(not survived and is_equal_approx(first_enemy.health, 90.0), "enemy survives nonlethal damage")
+    survived = first_enemy.take_damage(100.0)
+    _check(survived, "enemy death is reported")
+    await process_frame
+    _check(scene.get_remaining_enemies() == 4, "enemy death updates remaining-hostile count")
+
+    for enemy in scene.enemies.duplicate():
+        enemy.take_damage(1000.0)
+    await process_frame
+    _check(scene.get_remaining_enemies() == 0, "clearing all hostiles updates objective gate")
+
+    var objective := scene.get_node_or_null("IntelObjective")
+    if objective:
+        objective.player_inside = true
+        Input.action_press("interact")
+        objective._process(2.1)
+        Input.action_release("interact")
+    await process_frame
+    _check(scene.get_node_or_null("IntelObjective") == null, "intel objective completes and is removed")
+    _check(scene.hud.objective_label.text.contains("EXFILTRATION COMPLETE"), "mission completion reaches HUD")
+
+    print("RESULT: ", passed, " checks passed; failed=", failed)
+    quit(1 if failed else 0)
