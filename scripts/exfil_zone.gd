@@ -62,6 +62,62 @@ func _build_marker() -> void:
     beacon_light.shadow_enabled = false
     add_child(beacon_light)
 
+    var bollard_material := StandardMaterial3D.new()
+    bollard_material.albedo_color = Color(0.10, 0.12, 0.11)
+    bollard_material.roughness = 0.82
+    var band_material := StandardMaterial3D.new()
+    band_material.albedo_color = Color(0.88, 0.48, 0.14)
+    band_material.emission_enabled = true
+    band_material.emission = Color(0.22, 0.07, 0.015)
+    for index in range(4):
+        var angle := TAU * float(index) / 4.0
+        var bollard_position := Vector3(cos(angle) * 1.78, 0.4, sin(angle) * 1.78)
+        var bollard := MeshInstance3D.new()
+        bollard.name = "ExfilBollard_%02d" % (index + 1)
+        bollard.add_to_group("exfil_bollards")
+        var bollard_mesh := CylinderMesh.new()
+        bollard_mesh.top_radius = 0.055
+        bollard_mesh.bottom_radius = 0.09
+        bollard_mesh.height = 0.8
+        bollard.mesh = bollard_mesh
+        bollard.position = bollard_position
+        bollard.material_override = bollard_material
+        add_child(bollard)
+
+        var band := MeshInstance3D.new()
+        band.name = "ExfilBollardBand_%02d" % (index + 1)
+        var band_mesh := BoxMesh.new()
+        band_mesh.size = Vector3(0.17, 0.09, 0.17)
+        band.mesh = band_mesh
+        band.position = bollard_position + Vector3(0.0, 0.12, 0.0)
+        band.material_override = band_material
+        add_child(band)
+
+    var smoke := CPUParticles3D.new()
+    smoke.name = "ExfilSmoke"
+    smoke.amount = 14
+    smoke.lifetime = 1.6
+    smoke.preprocess = 0.8
+    smoke.emitting = true
+    smoke.direction = Vector3.UP
+    smoke.spread = 10.0
+    smoke.gravity = Vector3(0.0, -0.18, 0.0)
+    smoke.initial_velocity_min = 0.18
+    smoke.initial_velocity_max = 0.55
+    smoke.scale_amount_min = 0.35
+    smoke.scale_amount_max = 0.75
+    var smoke_mesh := SphereMesh.new()
+    smoke_mesh.radius = 0.14
+    smoke_mesh.height = 0.28
+    var smoke_material := StandardMaterial3D.new()
+    smoke_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    smoke_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    smoke_material.albedo_color = Color(0.75, 0.33, 0.15, 0.18)
+    smoke_mesh.material = smoke_material
+    smoke.mesh = smoke_mesh
+    smoke.position = Vector3(0.0, 0.45, 0.0)
+    add_child(smoke)
+
 func _process(delta: float) -> void:
     if completed:
         return
