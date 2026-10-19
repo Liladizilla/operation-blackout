@@ -18,6 +18,7 @@ func _ready() -> void:
     _build_arena()
     _spawn_atmosphere()
     _spawn_player()
+    _spawn_ammo_caches()
     _spawn_enemies()
     _spawn_objective()
     _spawn_hud()
@@ -299,6 +300,15 @@ func _spawn_player() -> void:
     player.set_script(PLAYER_SCRIPT)
     player.position = Vector3(0, 1.2, 25)
     add_child(player)
+
+func _spawn_ammo_caches() -> void:
+    var positions := [Vector3(-12.0, 0.0, 22.0), Vector3(12.0, 0.0, -4.0), Vector3(27.0, 0.0, 18.0)]
+    for index in range(positions.size()):
+        var cache := Node3D.new()
+        cache.name = "AmmoCache_%02d" % (index + 1)
+        cache.position = positions[index]
+        cache.set_script(load("res://scripts/ammo_cache.gd"))
+        add_child(cache)
 
 func _spawn_enemies() -> void:
     var positions := [Vector3(-8,0,-13), Vector3(8,0,-24), Vector3(17,0,1), Vector3(-17,0,16), Vector3(3,0,-38)]
