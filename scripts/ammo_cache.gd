@@ -98,6 +98,7 @@ func _on_enter(body: Node3D) -> void:
 func _on_exit(body: Node3D) -> void:
     if body.is_in_group("player") or body.name == "Player":
         player_inside = false
+        _set_status("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   RMB AIM   LMB FIRE   R RELOAD   F INTERACT")
 
 func _set_status(message: String) -> void:
     if current_status == message:
