@@ -14,6 +14,19 @@ func _check(condition: bool, message: String) -> void:
         failed = true
         push_error("FAIL: " + message)
 
+
+func _count_nodes(node: Node) -> int:
+    var count := 1
+    for child in node.get_children():
+        count += _count_nodes(child)
+    return count
+
+func _count_meshes(node: Node) -> int:
+    var count := 1 if node is MeshInstance3D else 0
+    for child in node.get_children():
+        count += _count_meshes(child)
+    return count
+
 func _run_tests() -> void:
     var packed := load("res://scenes/main.tscn") as PackedScene
     _check(packed != null, "main scene resource loads")
@@ -30,6 +43,12 @@ func _run_tests() -> void:
     _check(scene.get_node_or_null("Player") != null, "player spawns")
     _check(scene.get_remaining_enemies() == 5, "five hostiles spawn")
     _check(scene.get_node_or_null("IntelObjective") != null, "intel objective spawns")
+
+    var node_count := _count_nodes(scene)
+    var mesh_count := _count_meshes(scene)
+    print("PROFILE: scene_nodes=", node_count, " mesh_instances=", mesh_count)
+    _check(node_count < 1800, "procedural scene stays within node budget")
+    _check(mesh_count < 650, "procedural scene stays within mesh budget")
 
     var player := scene.get_node("Player")
     var starting_health: float = player.health
@@ -56,14 +75,6 @@ func _run_tests() -> void:
     player.pitch = 0.0
     player.ammo = 30
     player.fire_cooldown = 0.0
-    var debug_from: Vector3 = player.camera.global_position
-    var debug_to: Vector3 = debug_from + (-player.camera.global_transform.basis.z) * 180.0
-    var debug_query := PhysicsRayQueryParameters3D.create(debug_from, debug_to)
-    debug_query.exclude = [player.get_rid()]
-    debug_query.collide_with_areas = true
-    debug_query.collision_mask = 3
-    var debug_hit: Dictionary = player.get_world_3d().direct_space_state.intersect_ray(debug_query)
-    print("DEBUG: camera=", debug_from, " forward=", -player.camera.global_transform.basis.z, " target=", firing_target.global_position, " hit=", debug_hit.get("collider").name if not debug_hit.is_empty() else "none")
     player._fire()
     _check(player.ammo == 29, "firing consumes one round")
     _check(firing_target.health < 100.0 or not scene.enemies.has(firing_target), "hitscan shot damages target")
