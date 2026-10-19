@@ -61,6 +61,7 @@ func _run_tests() -> void:
     visual_test_enemy.state = "COMBAT"
     visual_test_enemy._animate_visuals(0.2)
     _check(visual_test_enemy.left_arm_pivot.rotation.x < -0.1 and visual_test_enemy.right_arm_pivot.rotation.x < -0.1, "hostile arms settle into a shouldered combat-ready rifle posture")
+    _check(visual_test_enemy.visual_root.rotation.x < -0.05, "hostile torso adopts a subtle forward combat lean")
     visual_test_enemy.state = "SEARCH"
     visual_test_enemy._show_muzzle_flash()
     _check(visual_test_enemy.enemy_muzzle_flash.visible and visual_test_enemy.enemy_muzzle_light.light_energy > 0.0, "hostile muzzle flash activates")
