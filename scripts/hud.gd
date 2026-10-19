@@ -49,6 +49,8 @@ func _build() -> void:
     root.add_child(top)
     objective_label = _label("OBJECTIVE  //  ELIMINATE HOSTILES, THEN RECOVER INTEL", 18, Color(0.92,0.90,0.82))
     objective_label.position = Vector2(28,58)
+    objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    objective_label.size = Vector2(620, 48)
     root.add_child(objective_label)
     enemy_label = _label("VANGUARD HOSTILES: 5", 16, Color(0.82,0.36,0.25))
     enemy_label.position = Vector2(28,88)
@@ -112,6 +114,7 @@ func _build() -> void:
     damage_direction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     root.add_child(damage_direction_label)
     status_label = _label("WASD MOVE   SHIFT SPRINT   CTRL CROUCH   Z PRONE   RMB AIM   LMB FIRE   R RELOAD   F INTERACT", 13, Color(0.70,0.72,0.68))
+    status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     status_label.anchor_top = 1
     status_label.anchor_bottom = 1
     status_label.offset_left = 28
