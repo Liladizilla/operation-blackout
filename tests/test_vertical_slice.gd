@@ -120,6 +120,10 @@ func _run_tests() -> void:
     scene.hostile_search_reported = false
     scene.hud.set_status("READY")
     scene.report_hostile_search(scene.enemies[0])
+    _check(not scene.hostile_search_reported and scene.hud.status_label.text == "CONTACT  //  HOSTILES HAVE VISUAL", "search feedback cannot overwrite a visual-contact alert")
+    scene.hostile_contact_reported = false
+    scene.hud.set_status("READY")
+    scene.report_hostile_search(scene.enemies[0])
     _check(scene.hostile_search_reported and scene.hud.status_label.text == "HOSTILES SEARCHING  //  LAST KNOWN POSITION", "hostiles report a search when investigation loses the trail")
     scene.hud.set_status("KEEP THIS UPDATE")
     scene.report_hostile_search(scene.enemies[1])
