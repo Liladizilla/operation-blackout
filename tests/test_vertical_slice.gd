@@ -28,7 +28,7 @@ func _count_meshes(node: Node) -> int:
     return count
 
 func _count_named_nodes(node: Node, target_name: String) -> int:
-    var count := 1 if node.name == target_name else 0
+    var count := 1 if node.name == target_name or node.name.begins_with(target_name) else 0
     for child in node.get_children():
         count += _count_named_nodes(child, target_name)
     return count
