@@ -32,6 +32,8 @@ var enemy_muzzle_light: OmniLight3D
 var enemy_fire_audio: AudioStreamPlayer3D
 var muzzle_flash_timer := 0.0
 var hit_flash_timer := 0.0
+var hit_reaction_timer := 0.0
+var hit_reaction_direction := 1.0
 var last_known_position := Vector3.ZERO
 var cover_goal := Vector3.ZERO
 var last_cover_goal := Vector3.ZERO
@@ -241,6 +243,9 @@ func _process(delta: float) -> void:
 func _animate_visuals(delta: float) -> void:
     if is_dead or not is_instance_valid(visual_root):
         return
+    hit_reaction_timer = maxf(0.0, hit_reaction_timer - delta)
+    var reaction_strength := clampf(hit_reaction_timer / 0.28, 0.0, 1.0)
+    reaction_strength = reaction_strength * reaction_strength * (3.0 - 2.0 * reaction_strength)
     var horizontal_speed := Vector2(velocity.x, velocity.z).length()
     if horizontal_speed > 0.22:
         gait_time += delta * lerpf(5.0, 10.0, clampf(horizontal_speed / 3.5, 0.0, 1.0))
@@ -259,6 +264,11 @@ func _animate_visuals(delta: float) -> void:
         right_arm_pivot.rotation.x = lerpf(right_arm_pivot.rotation.x, 0.0, delta * 7.0)
         visual_root.position.y = lerpf(visual_root.position.y, sin(gait_time) * 0.006, delta * 4.0)
         visual_root.rotation.z = lerpf(visual_root.rotation.z, 0.0, delta * 4.0)
+    # Layer a brief upper-body flinch over locomotion without freezing movement.
+    visual_root.rotation.x = -0.16 * reaction_strength
+    visual_root.rotation.z += hit_reaction_direction * 0.12 * reaction_strength
+    left_arm_pivot.rotation.z = -0.26 - hit_reaction_direction * 0.18 * reaction_strength
+    right_arm_pivot.rotation.z = 0.24 + hit_reaction_direction * 0.18 * reaction_strength
 
 func _physics_process(delta: float) -> void:
     if get_tree().paused:
@@ -685,7 +695,7 @@ func apply_suppression(source_position: Vector3) -> void:
         state = "REPOSITION"
     _broadcast_alert(source_position)
 
-func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot: bool = false) -> bool:
+func take_damage(amount: float, hit_position: Vector3 = Vector3.ZERO, headshot: bool = false) -> bool:
     if is_dead:
         return true
     health -= amount * (3.0 if headshot else 1.0)
@@ -707,6 +717,12 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO, headshot:
         _broadcast_alert(player.global_position)
     body_material.albedo_color = Color(0.55,0.12,0.08)
     hit_flash_timer = 0.14
+    hit_reaction_timer = maxf(hit_reaction_timer, 0.32 if headshot else 0.22)
+    if hit_position != Vector3.ZERO:
+        var local_hit := global_transform.basis.inverse() * (hit_position - global_position)
+        hit_reaction_direction = -1.0 if local_hit.x < 0.0 else 1.0
+    else:
+        hit_reaction_direction = -hit_reaction_direction
     return false
 
 func _begin_death() -> void:
