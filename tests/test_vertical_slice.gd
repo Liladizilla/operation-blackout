@@ -77,8 +77,8 @@ func _run_tests() -> void:
     var first_lamp := lamp_bodies[0] as StaticBody3D if not lamp_bodies.is_empty() else null
     _check(first_lamp != null and first_lamp.get_node_or_null("CollisionShape3D") != null, "street lamp shafts have physical collision")
     _check(scene.get_tree().get_nodes_in_group("utility_cables").size() == 12, "overhead utility cables span between lamp poles in sagging segments")
-    var environment_node: WorldEnvironment = scene.world_environment as WorldEnvironment
-    _check(environment_node != null and environment_node.environment.fog_enabled and environment_node.environment.fog_density >= 0.008, "depth fog softens the distant skyline")
+    var skyline_environment: WorldEnvironment = scene.world_environment as WorldEnvironment
+    _check(skyline_environment != null and skyline_environment.environment.fog_enabled and skyline_environment.environment.fog_density >= 0.008, "depth fog softens the distant skyline")
     var sun_lights := scene.find_children("*", "DirectionalLight3D", true, false)
     _check(not sun_lights.is_empty() and (sun_lights[0] as DirectionalLight3D).shadow_enabled, "battlefield uses directional sunlight with shadows")
     var ground_node := scene.find_child("Ground", true, false)
